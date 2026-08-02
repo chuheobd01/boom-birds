@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020712" />
+    <meta name="description" content="Join the Boom Birds OG waitlist and reserve your free mint spot." />
+    <title>Boom Birds — OG Waitlist</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="waitlist-page">
+      <header class="site-header" aria-label="Main navigation">
+        <a class="brand" href="#" aria-label="Boom Birds home">
+          <img src="assets/logo.png" alt="Boom Birds" />
+        </a>
+
+        <div class="phase-pill" aria-label="Current launch phase">
+          <span aria-hidden="true">🔥</span>
+          <span>Phase 1 · OG Waitlist · Free Mint Spots</span>
+        </div>
+
+        <nav class="social-nav" aria-label="Social links">
+          <a class="icon-button" href="#" aria-label="Follow Boom Birds on X">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18.9 2H22l-6.77 7.74L23.2 22h-6.24l-4.89-6.39L6.48 22H3.36l7.25-8.29L2.97 2h6.4l4.42 5.84L18.9 2Zm-1.1 17.84h1.73L8.43 4.05H6.58L17.8 19.84Z" />
+            </svg>
+          </a>
+          <a class="icon-button" href="#" aria-label="Follow Boom Birds on LinkedIn">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6.5 8.2H3.1V21h3.4V8.2ZM4.8 3A2 2 0 1 0 4.8 7a2 2 0 0 0 0-4ZM21 13.7c0-3.86-2.06-5.66-4.81-5.66-2.22 0-3.21 1.22-3.76 2.08V8.2H9V21h3.43v-6.34c0-1.67.32-3.3 2.4-3.3 2.05 0 2.08 1.92 2.08 3.4V21H21v-7.3Z" />
+            </svg>
+          </a>
+          <button class="rules-button" type="button" data-open-rules>Rules</button>
+        </nav>
+      </header>
+
+      <section class="hero" aria-labelledby="waitlist-title">
+        <div class="egg-scene" aria-hidden="true">
+          <img src="assets/egg.png" alt="" />
+        </div>
+
+        <div class="hero-content">
+          <h1 id="waitlist-title">Your Egg Is Waiting<br />Free For The First 1,000.</h1>
+          <p class="hero-copy">No wallet. No crypto experience. Just your Gmail</p>
+
+          <form class="reserve-form" id="waitlist-form" novalidate>
+            <label class="email-field">
+              <span class="sr-only">Gmail address</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3.75 5.75h16.5v12.5H3.75zM4.5 6.5 12 12l7.5-5.5" />
+              </svg>
+              <input type="email" id="email" name="email" placeholder="Enter your Gmail" autocomplete="email" required />
+            </label>
+            <button class="reserve-button" type="submit">Reserve My Egg</button>
+          </form>
+          <p class="form-message" id="form-message" aria-live="polite"></p>
+
+          <div class="spots-card" aria-label="Waitlist availability">
+            <p><span aria-hidden="true">🔥</span> Only <strong>158 / 1,000</strong> OG Waitlist Spots Left</p>
+            <div class="progress-track" role="progressbar" aria-label="Waitlist spots claimed" aria-valuemin="0" aria-valuemax="1000" aria-valuenow="842">
+              <span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-title">
+      <button class="dialog-close" type="button" data-close-rules aria-label="Close rules">×</button>
+      <span class="dialog-icon" aria-hidden="true">🔥</span>
+      <h2 id="rules-title">OG Waitlist Rules</h2>
+      <ol>
+        <li>Use a valid Gmail address to reserve one spot.</li>
+        <li>The first 1,000 verified entries receive a free mint spot.</li>
+        <li>One reservation per person. No wallet is required yet.</li>
+      </ol>
+      <button class="reserve-button dialog-action" type="button" data-close-rules>Got It</button>
+    </dialog>
+
+    <script src="script.js"></script>
+  </body>
+</html>
