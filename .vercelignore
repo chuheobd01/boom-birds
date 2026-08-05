@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+dist
+*-check.png
+viewport-check.png
+logo-check.png
+button-check.png
+fullscreen-check.png
+spread-check.png

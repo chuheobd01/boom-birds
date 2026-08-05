@@ -38,7 +38,7 @@ const render = () => {
 };
 
 const load = async (token) => {
-  const response = await fetch("/.netlify/functions/admin-users", { headers: { Authorization: `Bearer ${token}` } });
+  const response = await fetch("/api/admin-users", { headers: { Authorization: `Bearer ${token}` } });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || "Dashboard could not be loaded.");
   sessionStorage.setItem("eggoriaAdminToken", token); users = data.users;

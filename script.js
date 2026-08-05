@@ -134,7 +134,7 @@ const handleGoogleCredential = async ({ credential }) => {
   setGoogleButtonState("Verifying account...", true);
 
   try {
-    const response = await fetch("/.netlify/functions/google-connections", {
+    const response = await fetch("/api/google-connections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
