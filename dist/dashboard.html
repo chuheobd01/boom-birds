@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow"><title>Eggoria Admin Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+<main class="shell">
+  <header class="header">
+    <a class="brand" href="index.html"><img src="assets/eggoria/logo-waitlist.png" alt="Eggoria"></a>
+    <div><small>ADMINISTRATION</small><h1>Google Connections</h1></div>
+    <button class="ghost" id="sign-out" hidden>Sign out</button>
+  </header>
+  <section class="login" id="login-card">
+    <i>✦</i><h2>Admin access</h2><p>Enter the dashboard token configured in Netlify.</p>
+    <form id="login-form"><label for="admin-token">Admin token</label><div><input id="admin-token" type="password" autocomplete="current-password" required><button>Open dashboard</button></div><p id="login-error" role="alert"></p></form>
+  </section>
+  <section id="dashboard-content" hidden>
+    <div class="stats">
+      <article><span>Total connected</span><strong id="total-users">0</strong><small>Verified Google accounts</small></article>
+      <article><span>Guaranteed eggs</span><strong id="guaranteed-users">0</strong><small>Within the first 5,555</small></article>
+      <article><span>Referred users</span><strong id="referred-users">0</strong><small>Joined through invite links</small></article>
+    </div>
+    <section class="users">
+      <header><div><small>VERIFIED COMMUNITY</small><h2>Connected Gmail accounts</h2></div><input id="user-search" type="search" placeholder="Search name, Gmail or ID…" aria-label="Search users"></header>
+      <div class="table-wrap"><table><thead><tr><th>User</th><th>Position</th><th>Referral</th><th>Connected</th><th>Last seen</th></tr></thead><tbody id="users-body"></tbody></table><p class="empty" id="empty-state" hidden>No matching accounts found.</p></div>
+    </section>
+  </section>
+</main>
+<script src="dashboard.js"></script>
+</body>
+</html>

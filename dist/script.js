@@ -1,12 +1,19 @@
 const rulesDialog = document.querySelector("#rules-dialog");
-const rulesDialogScroll = rulesDialog.querySelector(".rules-dialog-scroll");
+const rulesModalContent = rulesDialog.querySelector(".rules-modal-content");
+const rulesTabs = [...rulesDialog.querySelectorAll("[data-rules-tab]")];
+const rulesPanels = [...rulesDialog.querySelectorAll("[data-rules-panel]")];
+const faqScrollList = rulesDialog.querySelector(".rules-faq-list");
+const faqScrollThumb = rulesDialog.querySelector(".faq-scroll-thumb");
 const googleButton = document.querySelector("#google-signin");
 const toast = document.querySelector("#toast");
 const stage = document.querySelector(".eggoria-stage");
 const signinArea = document.querySelector(".signin-area");
-const connectionsPanel = document.querySelector("#connections-panel");
-const connectionsBody = document.querySelector("#connections-body");
-const connectionsCount = document.querySelector("#connections-count");
+const keeperCard = document.querySelector("#keeper-card");
+const keeperPosition = document.querySelector("#keeper-position");
+const keeperGuarantee = document.querySelector("#keeper-guarantee");
+const referralProgress = document.querySelector("#referral-progress");
+const referralReward = document.querySelector("#referral-reward");
+const copyInviteButton = document.querySelector("#copy-invite");
 const googleNativeButton = document.querySelector("#google-native-button");
 const googleClientId = document.querySelector('meta[name="google-client-id"]')?.content || "";
 
@@ -83,56 +90,45 @@ const setGoogleButtonState = (text, disabled = false) => {
   googleButton.querySelector("span").textContent = text;
 };
 
-const formatConnectionDate = (isoDate) =>
-  new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(
-    new Date(isoDate),
-  );
+let inviteLink = "";
 
-const renderConnections = (members, currentUser, total) => {
-  const rows = members.map((member) =>
-    member.id === currentUser.id
-      ? { ...member, name: currentUser.name, picture: currentUser.picture, current: true }
-      : member,
-  );
+const renderKeeperCard = (user) => {
+  const position = Number(user.position) || 1;
+  const referrals = Number(user.referrals) || 0;
+  const remaining = Math.max(0, 5 - referrals);
 
-  if (!rows.some((member) => member.id === currentUser.id)) {
-    rows.unshift({ ...currentUser, current: true });
-  }
+  keeperPosition.textContent = `#${position.toLocaleString("en-US")}`;
+  keeperGuarantee.textContent = position <= 5555
+    ? "You’re within the first 5,555 — your egg is guaranteed."
+    : "You’re on standby and first in line for the next Season.";
+  referralProgress.textContent = `${Math.min(referrals, 5)}/5 invited`;
+  referralReward.textContent = remaining > 0
+    ? ` — ${remaining} more unlock${remaining === 1 ? "s" : ""} Tier 1 (1.5% → 2% Mythic)`
+    : " — Tier 1 unlocked! (2% Mythic)";
 
-  connectionsBody.replaceChildren();
-  rows.slice(0, 6).forEach((member) => {
-    const row = document.createElement("tr");
-    if (member.current) row.classList.add("is-current");
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
+  url.searchParams.set("ref", user.id);
+  inviteLink = url.toString();
 
-    const explorerCell = document.createElement("td");
-    const explorer = document.createElement("span");
-    explorer.className = "connection-person";
-    const avatar = document.createElement(member.picture ? "img" : "span");
-    avatar.className = "connection-avatar";
-    if (member.picture) {
-      avatar.src = member.picture;
-      avatar.alt = "";
-      avatar.referrerPolicy = "no-referrer";
-    } else {
-      avatar.textContent = "✦";
-    }
-    const name = document.createElement("span");
-    name.textContent = member.current ? `${member.name} (You)` : member.name;
-    explorer.append(avatar, name);
-    explorerCell.append(explorer);
-
-    const statusCell = document.createElement("td");
-    statusCell.innerHTML = '<span class="verified-status">✓ Verified</span>';
-    const dateCell = document.createElement("td");
-    dateCell.textContent = formatConnectionDate(member.connectedAt);
-    row.append(explorerCell, statusCell, dateCell);
-    connectionsBody.append(row);
-  });
-
-  connectionsCount.textContent = `${total} connected`;
-  connectionsPanel.hidden = false;
+  keeperCard.hidden = false;
   signinArea.classList.add("is-connected");
 };
+
+copyInviteButton.addEventListener("click", async () => {
+  if (!inviteLink) return;
+  try {
+    await navigator.clipboard.writeText(inviteLink);
+    copyInviteButton.querySelector("span:last-child").textContent = "Invite link copied!";
+    showToast("Invite link copied to your clipboard.");
+    window.setTimeout(() => {
+      copyInviteButton.querySelector("span:last-child").textContent = "Copy invite link";
+    }, 2200);
+  } catch {
+    window.prompt("Copy your invite link:", inviteLink);
+  }
+});
 
 const handleGoogleCredential = async ({ credential }) => {
   setGoogleButtonState("Verifying account...", true);
@@ -141,12 +137,15 @@ const handleGoogleCredential = async ({ credential }) => {
     const response = await fetch("/.netlify/functions/google-connections", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ credential }),
+      body: JSON.stringify({
+        credential,
+        referralCode: new URLSearchParams(window.location.search).get("ref") || "",
+      }),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.message || "Google connection failed.");
 
-    renderConnections(result.members, result.user, result.total);
+    renderKeeperCard(result.user);
     setGoogleButtonState("Google Connected");
     showToast(`Welcome to Eggoria, ${result.user.name}.`);
   } catch (error) {
@@ -206,11 +205,102 @@ document.querySelectorAll(".element-icon[data-land]").forEach((icon) => {
 
 });
 
+const activateRulesTab = (tabName, moveFocus = false) => {
+  rulesDialog.classList.toggle("is-faq-view", tabName === "faq");
+  rulesTabs.forEach((tab) => {
+    const isActive = tab.dataset.rulesTab === tabName;
+    tab.classList.toggle("is-active", isActive);
+    tab.setAttribute("aria-selected", String(isActive));
+    tab.tabIndex = isActive ? 0 : -1;
+    if (isActive && moveFocus) tab.focus();
+  });
+
+  rulesPanels.forEach((panel) => {
+    const isActive = panel.dataset.rulesPanel === tabName;
+    panel.hidden = !isActive;
+    panel.classList.toggle("is-active", isActive);
+  });
+
+  rulesModalContent.scrollTop = 0;
+  if (tabName === "faq") {
+    window.requestAnimationFrame(() => {
+      faqScrollList.scrollTop = 0;
+      faqScrollList.dispatchEvent(new Event("scroll"));
+    });
+  }
+};
+
+rulesTabs.forEach((tab, index) => {
+  tab.addEventListener("click", () => activateRulesTab(tab.dataset.rulesTab));
+  tab.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const direction = event.key === "ArrowRight" ? 1 : -1;
+    const nextTab = rulesTabs[(index + direction + rulesTabs.length) % rulesTabs.length];
+    activateRulesTab(nextTab.dataset.rulesTab, true);
+  });
+});
+
+const getFaqScrollMetrics = () => {
+  const thumbInset = Number.parseFloat(window.getComputedStyle(faqScrollThumb).top) || 0;
+  return {
+    maxScroll: Math.max(0, faqScrollList.scrollHeight - faqScrollList.clientHeight),
+    thumbInset,
+    trackTravel: Math.max(0, faqScrollThumb.parentElement.clientHeight - faqScrollThumb.offsetHeight - thumbInset * 2),
+  };
+};
+
+const syncFaqScrollThumb = () => {
+  const { maxScroll, trackTravel } = getFaqScrollMetrics();
+  const progress = maxScroll > 0 ? faqScrollList.scrollTop / maxScroll : 0;
+  faqScrollThumb.style.transform = `translateY(${trackTravel * progress}px)`;
+};
+
+faqScrollList.addEventListener("scroll", syncFaqScrollThumb, { passive: true });
+window.addEventListener("resize", syncFaqScrollThumb);
+
+let faqThumbDrag = null;
+
+faqScrollThumb.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  faqThumbDrag = { pointerY: event.clientY, scrollTop: faqScrollList.scrollTop };
+  faqScrollThumb.setPointerCapture(event.pointerId);
+  faqScrollThumb.classList.add("is-dragging");
+});
+
+faqScrollThumb.addEventListener("pointermove", (event) => {
+  if (!faqThumbDrag) return;
+  const { maxScroll, trackTravel } = getFaqScrollMetrics();
+  if (maxScroll <= 0 || trackTravel <= 0) return;
+  faqScrollList.scrollTop = faqThumbDrag.scrollTop + (event.clientY - faqThumbDrag.pointerY) * (maxScroll / trackTravel);
+});
+
+const stopFaqThumbDrag = (event) => {
+  if (!faqThumbDrag) return;
+  faqThumbDrag = null;
+  faqScrollThumb.classList.remove("is-dragging");
+  if (faqScrollThumb.hasPointerCapture(event.pointerId)) faqScrollThumb.releasePointerCapture(event.pointerId);
+};
+
+faqScrollThumb.addEventListener("pointerup", stopFaqThumbDrag);
+faqScrollThumb.addEventListener("pointercancel", stopFaqThumbDrag);
+
+faqScrollThumb.parentElement.addEventListener("pointerdown", (event) => {
+  if (event.target === faqScrollThumb) return;
+  const track = faqScrollThumb.parentElement;
+  const bounds = track.getBoundingClientRect();
+  const { maxScroll, thumbInset, trackTravel } = getFaqScrollMetrics();
+  if (trackTravel <= 0 || maxScroll <= 0) return;
+  const targetY = Math.min(trackTravel, Math.max(0, event.clientY - bounds.top - thumbInset - faqScrollThumb.offsetHeight / 2));
+  faqScrollList.scrollTop = (targetY / trackTravel) * maxScroll;
+});
+
 const openRulesDialog = () => {
   if (rulesDialog.open) return;
+  activateRulesTab("rules");
   rulesDialog.classList.remove("is-closing");
   rulesDialog.showModal();
-  rulesDialogScroll.scrollTop = 0;
+  rulesModalContent.scrollTop = 0;
 };
 
 const closeRulesDialog = () => {
@@ -241,15 +331,34 @@ document.querySelectorAll(".accordion-trigger").forEach((trigger) => {
       accordion.classList.add("is-open");
       trigger.setAttribute("aria-expanded", "true");
       panel.setAttribute("aria-hidden", "false");
+      window.setTimeout(() => {
+        const itemTop = accordion.offsetTop;
+        const itemBottom = itemTop + accordion.offsetHeight;
+        const visibleTop = faqScrollList.scrollTop;
+        const visibleBottom = visibleTop + faqScrollList.clientHeight;
+
+        if (itemBottom > visibleBottom) {
+          faqScrollList.scrollTo({
+            top: itemBottom - faqScrollList.clientHeight + 8,
+            behavior: "smooth",
+          });
+        } else if (itemTop < visibleTop) {
+          faqScrollList.scrollTo({ top: itemTop, behavior: "smooth" });
+        }
+
+        syncFaqScrollThumb();
+      }, 340);
       return;
     }
 
     trigger.setAttribute("aria-expanded", "false");
+    accordion.classList.remove("is-open");
     accordion.classList.add("is-collapsing");
     accordion.collapseTimer = window.setTimeout(() => {
-      accordion.classList.remove("is-open", "is-collapsing");
+      accordion.classList.remove("is-collapsing");
       panel.setAttribute("aria-hidden", "true");
-    }, 100);
+      syncFaqScrollThumb();
+    }, 290);
   });
 });
 

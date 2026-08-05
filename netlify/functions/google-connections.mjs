@@ -18,8 +18,14 @@ const publicMember = (record) => ({
   status: "Verified",
 });
 
+const listAllBlobs = async (store, prefix) => {
+  const blobs = [];
+  for await (const page of store.list({ prefix, paginate: true })) blobs.push(...page.blobs);
+  return blobs;
+};
+
 const listMembers = async (store) => {
-  const { blobs } = await store.list({ prefix: "users/" });
+  const blobs = await listAllBlobs(store, "users/");
   const latestKeys = blobs.slice(-50).map(({ key }) => key);
   const records = await Promise.all(
     latestKeys.map((key) => store.get(key, { type: "json", consistency: "strong" })),
@@ -56,6 +62,7 @@ export default async (request) => {
   }
 
   const credential = String(body.credential || "");
+  const referralCode = String(body.referralCode || "").trim().toUpperCase();
   if (!credential || credential.length > 10000) {
     return json({ message: "Missing Google credential." }, 400);
   }
@@ -77,6 +84,9 @@ export default async (request) => {
       .slice(0, 6)
       .toUpperCase();
     const now = new Date().toISOString();
+    const currentUsers = await listAllBlobs(store, "users/");
+    const position = existing?.position || currentUsers.length + 1;
+    const validReferral = /^[A-F0-9]{6}$/.test(referralCode) && referralCode !== publicId;
     const record = {
       googleSub: payload.sub,
       publicId,
@@ -85,9 +95,19 @@ export default async (request) => {
       picture: payload.picture || "",
       connectedAt: existing?.connectedAt || now,
       lastSeenAt: now,
+      position,
+      referredBy: existing?.referredBy || (validReferral ? referralCode : ""),
     };
 
     await store.setJSON(key, record);
+
+    if (!existing && record.referredBy) {
+      await store.setJSON(`referrals/${record.referredBy}/${payload.sub}.json`, {
+        joinedAt: now,
+      });
+    }
+
+    const referrals = await listAllBlobs(store, `referrals/${publicId}/`);
 
     const community = await listMembers(store);
     return json({
@@ -98,6 +118,8 @@ export default async (request) => {
         picture: record.picture,
         connectedAt: record.connectedAt,
         status: "Verified",
+        position: record.position,
+        referrals: referrals.length,
       },
       ...community,
     });

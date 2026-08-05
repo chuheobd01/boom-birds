@@ -11,6 +11,9 @@ const builtHTML = sourceHTML.replaceAll("__GOOGLE_CLIENT_ID__", clientId);
 
 await Promise.all([
   writeFile(new URL("index.html", outputDirectory), builtHTML),
+  cp(new URL("../dashboard.html", import.meta.url), new URL("dashboard.html", outputDirectory)),
+  cp(new URL("../dashboard.css", import.meta.url), new URL("dashboard.css", outputDirectory)),
+  cp(new URL("../dashboard.js", import.meta.url), new URL("dashboard.js", outputDirectory)),
   cp(new URL("../styles.css", import.meta.url), new URL("styles.css", outputDirectory)),
   cp(new URL("../script.js", import.meta.url), new URL("script.js", outputDirectory)),
   cp(new URL("../assets/", import.meta.url), new URL("assets/", outputDirectory), {
