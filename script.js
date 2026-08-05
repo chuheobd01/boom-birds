@@ -128,6 +128,20 @@ const renderKeeperCard = (user) => {
   signinArea.classList.add("is-connected");
 };
 
+const restoreSession = async () => {
+  signinArea.classList.add("is-checking-session");
+  try {
+    const response = await fetch("/api/session", { credentials: "same-origin" });
+    if (!response.ok) return;
+    const result = await response.json();
+    if (result.authenticated && result.user) renderKeeperCard(result.user);
+  } catch {
+    // The Google button remains available when session restore is unavailable.
+  } finally {
+    signinArea.classList.remove("is-checking-session");
+  }
+};
+
 copyInviteButton.addEventListener("click", async () => {
   if (!inviteLink) return;
   try {
@@ -207,6 +221,7 @@ window.addEventListener("resize", updateStageScale);
 window.addEventListener("load", bootGoogleButton, { once: true });
 prepareScene();
 loadPublicStats();
+restoreSession();
 
 document.querySelectorAll(".element-icon[data-land]").forEach((icon) => {
   icon.addEventListener("pointerenter", () => {

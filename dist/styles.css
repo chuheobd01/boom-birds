@@ -912,6 +912,14 @@ button {
   pointer-events: none;
 }
 
+.signin-area.is-checking-session .google-button-wrap,
+.signin-area.is-checking-session .privacy-copy,
+.signin-area.is-checking-session .terms-rule,
+.signin-area.is-checking-session .terms-copy {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .signin-area.is-connected .google-native-button {
   display: none;
 }

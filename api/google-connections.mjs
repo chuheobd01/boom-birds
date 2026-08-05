@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { OAuth2Client } from "google-auth-library";
 import { getDatabase, sendJson } from "../lib/database.mjs";
+import { createSessionCookie } from "../lib/session.mjs";
 
 const handler = async (request, response) => {
   if (request.method !== "POST") return sendJson(response, { message: "Method not allowed." }, 405);
@@ -43,6 +44,7 @@ const handler = async (request, response) => {
     const record = rows[0];
     const referralCount = await sql`SELECT COUNT(*)::int AS count FROM eggoria_users WHERE referred_by = ${record.public_id}`;
 
+    response.setHeader("Set-Cookie", createSessionCookie(payload.sub));
     return sendJson(response, { user: {
       id: record.public_id,
       name: record.name,
