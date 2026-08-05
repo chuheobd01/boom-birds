@@ -1649,6 +1649,7 @@ button {
   outline: 0;
   box-shadow: none;
   transition: box-shadow 150ms ease-out, transform 150ms ease-out, filter 150ms ease-out;
+  translate: 0 2px;
 }
 
 .rules-dialog.is-faq-view .dialog-action {
