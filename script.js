@@ -16,8 +16,20 @@ const referralReward = document.querySelector("#referral-reward");
 const copyInviteButton = document.querySelector("#copy-invite");
 const googleNativeButton = document.querySelector("#google-native-button");
 const googleClientId = document.querySelector('meta[name="google-client-id"]')?.content || "";
+const intentCount = document.querySelector(".intent-count");
 
 let motionStarted = false;
+
+const loadPublicStats = async () => {
+  try {
+    const response = await fetch("/api/public-stats");
+    if (!response.ok) return;
+    const result = await response.json();
+    intentCount.textContent = Number(result.total || 0).toLocaleString("en-US");
+  } catch {
+    // Keep the last known value when stats are temporarily unavailable.
+  }
+};
 
 const startMotion = () => {
   if (motionStarted) return;
@@ -146,6 +158,7 @@ const handleGoogleCredential = async ({ credential }) => {
     if (!response.ok) throw new Error(result.message || "Google connection failed.");
 
     renderKeeperCard(result.user);
+    loadPublicStats();
     setGoogleButtonState("Google Connected");
     showToast(`Welcome to Eggoria, ${result.user.name}.`);
   } catch (error) {
@@ -193,6 +206,7 @@ window.addEventListener("resize", updateStageScale);
 
 window.addEventListener("load", bootGoogleButton, { once: true });
 prepareScene();
+loadPublicStats();
 
 document.querySelectorAll(".element-icon[data-land]").forEach((icon) => {
   icon.addEventListener("pointerenter", () => {
