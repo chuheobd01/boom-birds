@@ -274,14 +274,14 @@ button {
 .intent-badge {
   position: absolute;
   z-index: 22;
-  top: 218px;
+  top: 208px;
   left: 50%;
   display: flex;
   width: max-content;
-  height: 104px;
+  height: 124px;
   align-items: center;
   justify-content: center;
-  padding-inline: 73px;
+  padding-inline: 83px;
   transform: translateX(-50%);
 }
 
