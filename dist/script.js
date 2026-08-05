@@ -1,4 +1,5 @@
 const rulesDialog = document.querySelector("#rules-dialog");
+const rulesDialogScroll = rulesDialog.querySelector(".rules-dialog-scroll");
 const googleButton = document.querySelector("#google-signin");
 const toast = document.querySelector("#toast");
 const stage = document.querySelector(".eggoria-stage");
@@ -6,6 +7,7 @@ const signinArea = document.querySelector(".signin-area");
 const connectionsPanel = document.querySelector("#connections-panel");
 const connectionsBody = document.querySelector("#connections-body");
 const connectionsCount = document.querySelector("#connections-count");
+const googleNativeButton = document.querySelector("#google-native-button");
 const googleClientId = document.querySelector('meta[name="google-client-id"]')?.content || "";
 
 let motionStarted = false;
@@ -13,7 +15,46 @@ let motionStarted = false;
 const startMotion = () => {
   if (motionStarted) return;
   motionStarted = true;
-  document.documentElement.classList.replace("motion-pending", "motion-ready");
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      document.documentElement.classList.replace("motion-pending", "motion-ready");
+    });
+  });
+};
+
+const decodeImage = (image) => {
+  if (image.complete && image.naturalWidth > 0) {
+    return image.decode?.().catch(() => undefined) || Promise.resolve();
+  }
+
+  if (image.complete) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const finish = () => {
+      const decoded = image.decode?.();
+      if (decoded) decoded.catch(() => undefined).finally(resolve);
+      else resolve();
+    };
+
+    image.addEventListener("load", finish, { once: true });
+    image.addEventListener("error", finish, { once: true });
+  });
+};
+
+const prepareScene = async () => {
+  const background = new Image();
+  background.src = "assets/eggoria/background.png";
+
+  const sceneImages = [...document.querySelectorAll(".eggoria-stage img")];
+  const assetsReady = Promise.all([
+    decodeImage(background),
+    ...sceneImages.map(decodeImage),
+    document.fonts?.ready || Promise.resolve(),
+  ]);
+  const loadingFallback = new Promise((resolve) => window.setTimeout(resolve, 4500));
+
+  await Promise.race([assetsReady, loadingFallback]);
+  startMotion();
 };
 
 const updateStageScale = () => {
@@ -127,15 +168,32 @@ const initializeGoogle = () => {
     cancel_on_tap_outside: false,
     use_fedcm_for_prompt: true,
   });
+  window.google.accounts.id.renderButton(googleNativeButton, {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+    text: "signin_with",
+    shape: "rectangular",
+    width: 400,
+  });
   googleInitialized = true;
+  signinArea.classList.add("google-ready");
   return true;
+};
+
+let googleBootAttempts = 0;
+const bootGoogleButton = () => {
+  if (initializeGoogle()) return;
+  if (googleClientId.includes("__GOOGLE_CLIENT_ID__")) return;
+  googleBootAttempts += 1;
+  if (googleBootAttempts < 40) window.setTimeout(bootGoogleButton, 150);
 };
 
 updateStageScale();
 window.addEventListener("resize", updateStageScale);
 
-window.addEventListener("load", startMotion, { once: true });
-window.setTimeout(startMotion, 80);
+window.addEventListener("load", bootGoogleButton, { once: true });
+prepareScene();
 
 document.querySelectorAll(".element-icon[data-land]").forEach((icon) => {
   icon.addEventListener("pointerenter", () => {
@@ -148,12 +206,51 @@ document.querySelectorAll(".element-icon[data-land]").forEach((icon) => {
 
 });
 
-document.querySelector("[data-open-rules]").addEventListener("click", () => {
+const openRulesDialog = () => {
+  if (rulesDialog.open) return;
+  rulesDialog.classList.remove("is-closing");
   rulesDialog.showModal();
-});
+  rulesDialogScroll.scrollTop = 0;
+};
+
+const closeRulesDialog = () => {
+  if (!rulesDialog.open || rulesDialog.classList.contains("is-closing")) return;
+  rulesDialog.classList.add("is-closing");
+  window.setTimeout(() => {
+    rulesDialog.close();
+    rulesDialog.classList.remove("is-closing");
+  }, 180);
+};
+
+document.querySelector("[data-open-rules]").addEventListener("click", openRulesDialog);
 
 document.querySelectorAll("[data-close-rules]").forEach((button) => {
-  button.addEventListener("click", () => rulesDialog.close());
+  button.addEventListener("click", closeRulesDialog);
+});
+
+document.querySelectorAll(".accordion-trigger").forEach((trigger) => {
+  trigger.addEventListener("click", () => {
+    const accordion = trigger.closest(".rules-accordion");
+    const panel = document.getElementById(trigger.getAttribute("aria-controls"));
+    const isOpen = trigger.getAttribute("aria-expanded") === "true";
+
+    window.clearTimeout(accordion.collapseTimer);
+
+    if (!isOpen) {
+      accordion.classList.remove("is-collapsing");
+      accordion.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      panel.setAttribute("aria-hidden", "false");
+      return;
+    }
+
+    trigger.setAttribute("aria-expanded", "false");
+    accordion.classList.add("is-collapsing");
+    accordion.collapseTimer = window.setTimeout(() => {
+      accordion.classList.remove("is-open", "is-collapsing");
+      panel.setAttribute("aria-hidden", "true");
+    }, 100);
+  });
 });
 
 rulesDialog.addEventListener("click", (event) => {
@@ -164,22 +261,16 @@ rulesDialog.addEventListener("click", (event) => {
     event.clientY < bounds.top ||
     event.clientY > bounds.bottom;
 
-  if (clickedOutside) rulesDialog.close();
+  if (clickedOutside) closeRulesDialog();
+});
+
+rulesDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeRulesDialog();
 });
 
 googleButton.addEventListener("click", () => {
   if (!initializeGoogle()) {
     showToast("Add GOOGLE_CLIENT_ID in Netlify before using Google Sign-In.");
-    return;
   }
-
-  setGoogleButtonState("Choose a Google account...");
-  window.google.accounts.id.prompt((notification) => {
-    const unavailable = notification.isNotDisplayed?.() || notification.isSkippedMoment?.();
-    const dismissed = notification.isDismissedMoment?.();
-    if (unavailable || dismissed) {
-      setGoogleButtonState("Sign in with Google");
-      if (unavailable) showToast("Google Sign-In is unavailable in this browser. Please try Chrome.");
-    }
-  });
 });

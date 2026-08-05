@@ -1,0 +1,33 @@
+<svg width="22" height="66" viewBox="0 0 22 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rail" x1="5" y1="0" x2="17" y2="66" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7557D9"/>
+      <stop offset="0.5" stop-color="#3A208E"/>
+      <stop offset="1" stop-color="#6847C7"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="5" y1="23" x2="17" y2="43" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF1AF"/>
+      <stop offset="0.42" stop-color="#F4B94B"/>
+      <stop offset="1" stop-color="#B86A17"/>
+    </linearGradient>
+    <radialGradient id="gem" cx="0" cy="0" r="1" gradientTransform="translate(9 31) rotate(58) scale(10 8)">
+      <stop stop-color="#FFB4FF"/>
+      <stop offset="0.42" stop-color="#B765EA"/>
+      <stop offset="1" stop-color="#4A168F"/>
+    </radialGradient>
+    <filter id="glow" x="-8" y="16" width="38" height="34" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect x="7" y="1" width="8" height="64" rx="4" fill="#24116B" stroke="#C39A52"/>
+  <rect x="9" y="3" width="4" height="60" rx="2" fill="url(#rail)"/>
+  <path d="M6 6L11 1L16 6L11 10L6 6Z" fill="url(#gold)"/>
+  <path d="M6 60L11 65L16 60L11 56L6 60Z" fill="url(#gold)"/>
+  <g filter="url(#glow)">
+    <path d="M11 21L20 33L11 45L2 33L11 21Z" fill="url(#gold)" stroke="#FFE29A" stroke-width="0.8"/>
+    <path d="M11 24L17 33L11 42L5 33L11 24Z" fill="url(#gem)" stroke="#DCA4FF" stroke-width="0.8"/>
+    <path d="M11 26L11 40M6.5 33H15.5" stroke="#FFD979" stroke-width="0.7" opacity="0.9"/>
+    <circle cx="11" cy="33" r="1.6" fill="#FFF5D2"/>
+  </g>
+</svg>

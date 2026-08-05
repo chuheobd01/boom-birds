@@ -71,9 +71,10 @@ body::before {
   inset: 0;
   background: url("assets/eggoria/background.png") center / cover no-repeat;
   content: "";
+  opacity: 0;
   pointer-events: none;
+  transform: scale(1.025);
   transform-origin: center;
-  animation: background-camera-in 450ms ease-out both;
 }
 
 body::after {
@@ -82,8 +83,15 @@ body::after {
   inset: 0;
   background: #7d79e8;
   content: "";
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
+}
+
+.motion-ready body::before {
+  animation: background-camera-in 450ms ease-out both;
+}
+
+.motion-ready body::after {
   animation: sky-reveal 450ms ease-out both;
 }
 
@@ -140,7 +148,7 @@ button {
 .eggoria-logo {
   position: absolute;
   top: 16px;
-  left: calc(42px - var(--stage-gutter));
+  left: calc(72px - var(--stage-gutter));
   display: flex;
   align-items: center;
   gap: 12px;
@@ -150,13 +158,13 @@ button {
 }
 
 .eggoria-logo img {
-  width: 65px;
-  height: 85px;
+  width: 75px;
+  height: 95px;
 }
 
 .eggoria-logo span {
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 55px;
+  font-size: 65px;
   font-weight: 700;
   line-height: 1;
   text-shadow: 0 2px 5px rgba(45, 31, 128, 0.2);
@@ -165,10 +173,10 @@ button {
 .social-panel {
   position: absolute;
   top: 27px;
-  right: calc(25px - var(--stage-gutter));
+  right: calc(55px - var(--stage-gutter));
   display: flex;
-  width: 238px;
-  height: 60px;
+  width: 280px;
+  height: 75px;
   align-items: center;
   justify-content: center;
   gap: 40px;
@@ -182,8 +190,8 @@ button {
 .social-panel a,
 .social-panel button {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   place-items: center;
   border: 0;
@@ -192,8 +200,8 @@ button {
 }
 
 .social-panel img {
-  width: 30px;
-  height: 30px;
+  width: 40px;
+  height: 40px;
 }
 
 .social-panel a:hover,
@@ -260,7 +268,7 @@ button {
 }
 
 .intro-primary {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 500;
 }
 
@@ -301,6 +309,12 @@ button {
   font-weight: 600;
   transform: translateX(-50%);
   white-space: nowrap;
+}
+
+.intent-copy span {
+  position: relative;
+  top: -4px;
+  text-align: center;
 }
 
 .intent-copy img {
@@ -400,23 +414,6 @@ button {
   left: -6%;
   width: 112%;
   height: 126%;
-}
-
-.water-plant {
-  z-index: 2;
-  opacity: 0.18;
-  mix-blend-mode: screen;
-  will-change: transform;
-}
-
-.water-plant-left {
-  clip-path: polygon(0 15%, 42% 15%, 44% 92%, 0 92%);
-  transform-origin: 25% 78%;
-}
-
-.water-plant-right {
-  clip-path: polygon(62% 18%, 100% 18%, 100% 94%, 59% 94%);
-  transform-origin: 76% 78%;
 }
 
 .bubble {
@@ -836,6 +833,38 @@ button {
 
 .google-button-wrap:hover .button-ornament {
   filter: brightness(1.1) drop-shadow(0 0 5px rgba(255, 208, 132, 0.5));
+}
+
+.google-native-button {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 39px;
+  display: flex;
+  width: 500px;
+  height: 70px;
+  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.01;
+  pointer-events: none;
+}
+
+.signin-area.google-ready .google-native-button {
+  pointer-events: auto;
+}
+
+.signin-area.google-ready .google-button {
+  pointer-events: none;
+}
+
+.signin-area.is-connected .google-native-button {
+  display: none;
+}
+
+.google-native-button > div {
+  transform: scale(1.25);
+  transform-origin: center;
 }
 
 .ornament-left { left: 0; }
@@ -1458,14 +1487,12 @@ button {
 .motion-ready .fire-icon .icon-ring { animation: fire-ring-pulse 3.8s ease-in-out 1.25s infinite; }
 .fire-icon:hover::after { animation: icon-shockwave 650ms cubic-bezier(0.22, 1, 0.36, 1); }
 
-.motion-ready .water-plant-left { animation: water-plant-left-sway 7.2s ease-in-out 1.3s infinite; }
-.motion-ready .water-plant-right { animation: water-plant-right-sway 8.6s ease-in-out 2s infinite; }
 .motion-ready .bubble-1 { animation: bubble-rise 6.2s ease-in 1.5s infinite; }
 .motion-ready .bubble-2 { animation: bubble-rise 7.7s ease-in 4.1s infinite; }
 .motion-ready .bubble-3 { animation: bubble-rise 5.4s ease-in 2.8s infinite; }
 .motion-ready .bubble-4 { animation: bubble-rise 8.3s ease-in 6.2s infinite; }
 
-.motion-ready .water-icon .icon-core { animation: water-drop-breathe 5.4s ease-in-out 1.3s infinite; }
+.motion-ready .water-icon .icon-base { animation: water-drop-breathe 5.4s ease-in-out 1.3s infinite; }
 .motion-ready .water-icon .icon-ring { animation: icon-ring-spin 34s linear 1.25s infinite reverse; }
 .water-icon:hover::after { animation: water-ripple 780ms cubic-bezier(0.22, 1, 0.36, 1); }
 
@@ -1534,8 +1561,8 @@ button {
 .glow-10 { animation-duration: 7.9s; }
 
 @keyframes background-camera-in {
-  from { transform: scale(1.025); }
-  to { transform: scale(1); }
+  from { opacity: 0; transform: scale(1.025); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 @keyframes sky-reveal {
@@ -1612,8 +1639,8 @@ button {
 }
 
 @keyframes egg-idle-float {
-  0%, 100% { transform: translateY(0) rotate(-0.35deg); }
-  50% { transform: translateY(-5px) rotate(0.35deg); }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 @keyframes radial-spark {
@@ -1767,16 +1794,6 @@ button {
 @keyframes icon-shockwave {
   from { opacity: 0.75; transform: scale(0.78); }
   to { opacity: 0; transform: scale(1.65); }
-}
-
-@keyframes water-plant-left-sway {
-  0%, 100% { opacity: 0.16; transform: rotate(-0.8deg); }
-  50% { opacity: 0.22; transform: rotate(1deg); }
-}
-
-@keyframes water-plant-right-sway {
-  0%, 100% { opacity: 0.17; transform: rotate(0.7deg); }
-  50% { opacity: 0.21; transform: rotate(-0.9deg); }
 }
 
 @keyframes bubble-rise {

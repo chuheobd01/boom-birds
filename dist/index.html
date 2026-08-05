@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#5548d7" />
     <meta name="description" content="Reserve a mysterious Eggoria egg and begin your journey across five magical lands." />
-    <meta name="google-client-id" content="__GOOGLE_CLIENT_ID__" />
+    <meta name="google-client-id" content="1029497538704-jv83fedtorju68oj3h77c6lm26p5b2vc.apps.googleusercontent.com" />
     <title>Eggoria — Hatch Your Destiny</title>
     <script>document.documentElement.classList.add("motion-pending");</script>
+    <link rel="preload" as="image" href="assets/eggoria/background.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="assets/eggoria/egg.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="assets/eggoria/island.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="assets/eggoria/bottom-frame.png" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -39,14 +43,14 @@
         </div>
         <img class="title-rule" src="assets/eggoria/title-rule.png" alt="" aria-hidden="true" />
         <p class="intro-primary">Reserve a mysterious egg and begin your journey across five magical Lands.</p>
-        <p class="intro-secondary">Up to <strong class="supply-count">5,555</strong> eggs. Final count set by community demand, not a fixed sale target.</p>
+        <p class="intro-secondary">Up to <strong class="supply-count">5,555</strong> free eggs, guaranteed while supply lasts, first come, first served.</p>
       </section>
 
       <div class="intent-badge" aria-label="Recent mint interest">
         <img class="intent-frame" src="assets/eggoria/intent-badge.png" alt="" aria-hidden="true" />
         <div class="intent-copy">
           <img src="assets/eggoria/badge-fire.png" alt="" aria-hidden="true" />
-          <span><strong class="intent-count">1,240</strong> people confirmed mint intent in the last 48 hours</span>
+          <span><strong class="intent-count">1,240</strong> people already reserved their egg in the last 48 hours</span>
         </div>
       </div>
 
@@ -61,8 +65,6 @@
         </div>
         <div class="art-crop land-water">
           <img src="assets/eggoria/land-water.png" alt="" />
-          <img class="water-plant water-plant-left" src="assets/eggoria/land-water.png" alt="" />
-          <img class="water-plant water-plant-right" src="assets/eggoria/land-water.png" alt="" />
           <div class="water-bubbles">
             <span class="bubble bubble-1"></span><span class="bubble bubble-2"></span>
             <span class="bubble bubble-3"></span><span class="bubble bubble-4"></span>
@@ -85,7 +87,7 @@
           <img class="icon-base" src="assets/eggoria/fire.png" alt="Fire Land" /><img class="icon-core" src="assets/eggoria/fire.png" alt="" /><span class="icon-ring"></span>
         </span>
         <span class="element-icon water-icon" data-land="water" title="Water Land">
-          <img class="icon-base" src="assets/eggoria/water.png" alt="Water Land" /><img class="icon-core" src="assets/eggoria/water.png" alt="" /><span class="icon-ring"></span>
+          <img class="icon-base" src="assets/eggoria/water.png" alt="Water Land" /><span class="icon-ring"></span>
         </span>
         <span class="element-icon crown-icon" data-land="king" title="Kingdom Land">
           <img class="icon-base" src="assets/eggoria/crown.png" alt="Kingdom Land" /><img class="icon-core" src="assets/eggoria/crown.png" alt="" /><span class="icon-ring"></span>
@@ -140,6 +142,7 @@
             <img src="assets/eggoria/google.svg" alt="" />
             <span>Sign in with Google</span>
           </button>
+          <div class="google-native-button" id="google-native-button" aria-label="Sign in with Google"></div>
           <img class="button-ornament ornament-right" src="assets/eggoria/button-right.svg" alt="" aria-hidden="true" />
         </div>
         <p class="privacy-copy">We only use this to verify you and create your Eggoria wallet,<br />we never post or access your data.</p>
@@ -166,23 +169,95 @@
     </main>
 
     <dialog class="rules-dialog" id="rules-dialog" aria-labelledby="rules-title">
-      <button class="dialog-close" type="button" data-close-rules aria-label="Close rules">✕</button>
-      <h2 id="rules-title">📜 Eggoria Waitlist Rules</h2>
-      <div class="rules-body">
-        <section>
-          <h3>Reserve your egg</h3>
-          <p>Sign in with Google to verify your place and create your private Eggoria wallet.</p>
+      <div class="rules-dialog-scroll">
+      <div class="rules-heading">
+        <h2 id="rules-title">Eggoria Waitlist Rules</h2>
+        <button class="dialog-close" type="button" data-close-rules aria-label="Close rules">✕</button>
+      </div>
+
+      <ul class="rules-summary" aria-label="Waitlist rules summary">
+        <li>
+          <span class="rule-summary-icon" aria-hidden="true"><span class="rule-icon-art rule-icon-egg"><img src="assets/eggoria/rule-egg.png" alt="" /></span></span>
+          <span>First 5,555 verified sign-ups get a guaranteed, free egg.</span>
+        </li>
+        <li>
+          <span class="rule-summary-icon" aria-hidden="true"><span class="rule-icon-art rule-icon-shield"><img src="assets/eggoria/rule-shield.png" alt="" /></span></span>
+          <span>One account = one entry. Duplicate/fraudulent accounts will be disqualified.</span>
+        </li>
+        <li>
+          <span class="rule-summary-icon" aria-hidden="true"><span class="rule-icon-art rule-icon-rarity"><img src="assets/eggoria/rule-rarity.png" alt="" /></span></span>
+          <span>Referrals affect rarity odds only.</span>
+        </li>
+        <li>
+          <span class="rule-summary-icon" aria-hidden="true"><span class="rule-icon-art rule-icon-standby"><img src="assets/eggoria/rule-standby.png" alt="" /></span></span>
+          <span>Sign-ups beyond the cap move to standby for the next Season.</span>
+        </li>
+        <li>
+          <span class="rule-summary-icon" aria-hidden="true"><span class="rule-icon-art rule-icon-terms"><img src="assets/eggoria/rule-terms.png" alt="" /></span></span>
+          <span>Terms are final once published and will not change.</span>
+        </li>
+      </ul>
+
+      <div class="rules-accordions">
+        <section class="rules-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-safe">
+            <span>Is this safe? Will connecting Google give you access to my account?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-safe" aria-hidden="true"><div class="accordion-content"><p>Yes, it's safe. We only use Google Sign-in to verify you're a real person and to automatically create your Eggoria wallet behind the scenes, there's no seed phrase to write down and nothing complicated to set up. We never post, message, or take any action on your behalf, and we don't access anything beyond your basic email and profile info. That's all we need, and that's all we ask for.</p></div></div>
         </section>
-        <section>
-          <h3>Community-powered supply</h3>
-          <p>Up to 5,555 eggs may hatch. The final count follows verified community demand.</p>
+
+        <section class="rules-accordion guarantee-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-guarantee">
+            <span>Am I guaranteed to get an egg, or is this a lottery?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-guarantee" aria-hidden="true"><div class="accordion-content"><p>You're guaranteed one. If you're among the first 5,555 verified sign-ups, your egg is yours free. This isn't a raffle where most people walk away empty-handed. As long as you sign up before the cap is reached, your spot is locked in. Once we hit 5,555, later sign-ups move to standby for the next Season instead.</p></div></div>
         </section>
-        <section>
-          <h3>Privacy first</h3>
-          <p>Eggoria never posts through your account and does not access unrelated personal data.</p>
+
+        <section class="rules-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-receive">
+            <span>What exactly will I receive?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-receive" aria-hidden="true"><div class="accordion-content"><p>A mystery egg belonging to one of five magical Lands: Verdant (Nature), Ember (Fire), Tide (Water), Aether (Magic), and Crown (Royalty). Your egg also carries a rarity, ranging from Common all the way up to Mythic. You won't know which Land or rarity your egg is until it's revealed after mint, that's part of the fun.</p></div></div>
+        </section>
+
+        <section class="rules-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-fees">
+            <span>Do I have to pay anything for the egg, or for gas fees?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-fees" aria-hidden="true"><div class="accordion-content"><p>No, it's completely free. There's no cost to sign up, no cost to mint your Genesis egg, and no gas fees to worry about, we cover those for you. The only thing we ask is that you verify with Google so we know you're a real person, not a bot.</p></div></div>
+        </section>
+
+        <section class="rules-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-standby">
+            <span>What happens if I sign up after the 5,555 spots are already taken?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-standby" aria-hidden="true"><div class="accordion-content"><p>You'll automatically be placed on the standby list for the next Season. We'll notify you if a spot opens up earlier than expected, and standby members get priority access when we open the next batch of Lands. You won't lose your place in line, you'll just be queued for the round after this one.</p></div></div>
+        </section>
+
+        <section class="rules-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-referrals">
+            <span>If I invite friends, does that increase my chances of getting an egg?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-referrals" aria-hidden="true"><div class="accordion-content"><p>Not quite, inviting friends doesn't change whether you get an egg. Every verified sign-up within the 5,555 cap is guaranteed one either way. What referrals do change is the rarity of the egg you get: more verified referrals mean better odds of hatching something rare, like a Mythic.</p></div></div>
+        </section>
+
+        <section class="rules-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-next">
+            <span>I've signed up, what happens next, step by step?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-next" aria-hidden="true"><div class="accordion-content"><ul><li>Right away you'll see your confirmation and where you stand in the queue.</li><li>When your claim page opens we'll notify you, so you don't miss it.</li><li>You mint your egg in one click, free, with no wallet setup required.</li><li>Right after mint, you'll discover which Land and rarity your egg belongs to.</li></ul></div></div>
+        </section>
+
+        <section class="rules-accordion">
+          <button class="accordion-trigger" type="button" aria-expanded="false" aria-controls="rule-answer-access">
+            <span>One more time: what exactly can Eggoria see or do with my Google account?</span><span class="accordion-chevron" aria-hidden="true"></span>
+          </button>
+          <div class="accordion-panel" id="rule-answer-access" aria-hidden="true"><div class="accordion-content"><p>Just your basic email and profile info, enough to verify you and set up your wallet. We can't post on your behalf, read your emails, or access anything else in your Google account. You can revoke access at any time from your Google account settings.</p></div></div>
         </section>
       </div>
+
       <button class="dialog-action" type="button" data-close-rules>Got it</button>
+      </div>
     </dialog>
 
     <script src="script.js"></script>
