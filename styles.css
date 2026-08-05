@@ -823,7 +823,7 @@ button {
 
 .google-button-wrap {
   position: relative;
-  width: 500px;
+  width: 445px;
   height: 70px;
   margin: 0 auto;
   translate: 0 0;
@@ -840,24 +840,17 @@ button {
   top: 0;
   left: 0;
   display: flex;
-  width: 500px;
+  width: 445px;
   height: 70px;
   align-items: center;
   justify-content: center;
   gap: 16px;
-  border: 4px solid transparent;
-  border-radius: 12px;
-  background:
-    radial-gradient(circle at 11% 31%, rgba(255, 255, 255, 0.95) 0 1px, transparent 1.8px) padding-box,
-    radial-gradient(circle at 15% 71%, rgba(220, 205, 255, 0.78) 0 1px, transparent 2px) padding-box,
-    radial-gradient(circle at 87% 30%, rgba(255, 211, 229, 0.95) 0 1px, transparent 1.8px) padding-box,
-    radial-gradient(circle at 95% 72%, rgba(255, 211, 229, 0.9) 0 1px, transparent 2px) padding-box,
-    linear-gradient(90deg, #f3eeff 0%, #fff 50%, #e9e0ff 100%) padding-box,
-    linear-gradient(90deg, #8e72e8 0%, #d8ccff 50%, #7657d5 100%) border-box;
+  border: 0;
+  border-radius: 0;
+  background: url("assets/eggoria/button-frame.png") center / 109.56% 175.43% no-repeat;
   color: #2f2489;
-  outline: 1px solid #dcd3ff;
-  outline-offset: -1px;
-  box-shadow: 0 4px 6px rgba(55, 31, 130, 0.45);
+  outline: 0;
+  box-shadow: none;
   transition: transform 170ms ease, box-shadow 170ms ease, filter 170ms ease;
 }
 
@@ -895,7 +888,7 @@ button {
   top: 0;
   left: 0;
   display: flex;
-  width: 500px;
+  width: 445px;
   height: 70px;
   overflow: hidden;
   align-items: center;
@@ -1131,7 +1124,7 @@ button {
 }
 
 .google-native-button > div {
-  transform: scale(1.25);
+  transform: scale(1.1125);
   transform-origin: center;
 }
 
@@ -1638,30 +1631,23 @@ button {
 
 .dialog-action {
   display: grid;
-  width: 357.143px;
+  width: 320.244px;
   max-width: 100%;
   height: 50px;
   flex: 0 0 50px;
   align-self: center;
   padding: 0;
   place-items: center;
-  border: 3px solid transparent;
-  border-radius: 8.571px;
-  background:
-    radial-gradient(circle at 5% 28%, #fff 0 1px, transparent 1.6px) padding-box,
-    radial-gradient(circle at 13% 72%, rgba(213, 193, 255, 0.75) 0 1px, transparent 1.8px) padding-box,
-    radial-gradient(circle at 87% 30%, rgba(255, 215, 231, 0.9) 0 1px, transparent 1.7px) padding-box,
-    radial-gradient(circle at 95% 72%, rgba(255, 215, 231, 0.9) 0 1px, transparent 1.8px) padding-box,
-    linear-gradient(90deg, #f3eeff 0%, #fff 50%, #e9e0ff 100%) padding-box,
-    linear-gradient(90deg, #8e72e8 0%, #d8ccff 50%, #7657d5 100%) border-box;
+  border: 0;
+  border-radius: 0;
+  background: url("assets/eggoria/button-frame.png") center / 109.56% 175.43% no-repeat;
   color: #2f2489;
   font-family: inherit;
   font-size: 20px;
   font-weight: 600;
   line-height: 24px;
-  outline: 0.714px solid #dcd3ff;
-  outline-offset: -0.714px;
-  box-shadow: 0 2.857px 4.286px rgba(55, 31, 130, 0.45);
+  outline: 0;
+  box-shadow: none;
   transition: box-shadow 150ms ease-out, transform 150ms ease-out, filter 150ms ease-out;
 }
 
