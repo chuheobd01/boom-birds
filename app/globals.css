@@ -26,7 +26,7 @@
 /* Desktop frame: preserve the 1440 × 840 Figma coordinate system and scale it as one unit. */
 @media(min-width:761px){
   body:has(.landing){height:100vh;overflow:hidden;background:#10105d}
-  .landing{position:fixed;top:0;left:calc(50% - 720px);width:1440px;height:1398.689px;min-height:0;background:transparent;transform:none;transform-origin:top center}
+  .landing{position:fixed;top:0;left:50%;width:1440px;height:840px;min-height:0;background:transparent;transform:translateX(-50%) scale(calc(100vw / 1440px));transform-origin:top center}
   .landing-header{height:119px;gap:40px;padding:0 40px}
   .brand-new{width:300px;min-width:300px;height:106px}.brand-new img{width:69px;height:90px}.brand-new span{font-size:55px}
   .main-nav{width:640px;min-width:640px;max-width:640px;height:60px;flex:none}.main-nav>div{gap:40px;padding:0 32px}.main-nav a{font-size:16px}
@@ -71,10 +71,11 @@
   .main-nav>img{top:-39.42px;left:-13.64px;width:652.51px;height:140.07px}
   .main-nav>div{inset:auto;top:17.5px;left:32.46px;gap:40px;padding:0}
   .main-nav a{position:relative;color:rgba(25,10,90,.8);font-family:"Be Vietnam Pro",sans-serif;font-size:16px;font-weight:600;line-height:normal}
-  .main-nav a.is-active{color:#9b4fd1;text-shadow:none}
+  .main-nav a.is-active{color:#7329c9;text-shadow:none}
   .main-nav a.is-active::before,.main-nav a.is-active::after{content:none}
-  .nav-active-top{position:absolute;top:-9px;left:50%;width:12.122px;height:12.121px;max-width:none;transform:translateX(-50%) rotate(-45deg);transform-origin:center}
-  .nav-active-bottom{position:absolute;top:20px;left:50%;width:24px;height:4.243px;max-width:none;transform:translateX(-50%)}
+  .nav-active-top,.nav-active-bottom{position:absolute;left:50%;display:block;max-width:none;transform:translateX(-50%)}
+  .nav-active-top{top:-9px;width:12.122px;height:12.121px;object-fit:contain}
+  .nav-active-bottom{top:20px;width:24px;height:4.243px}
   .header-connect{width:170px;height:42px;font-size:16px}
   .hero-connect-wrap{gap:0}
   .hero-connect{width:340px;height:66px;font-size:24px}
@@ -87,4 +88,14 @@
   .hero-art{position:absolute;top:-20px;left:0;width:1440px;height:721px;transform:scale(.83);transform-origin:1100px 0}
   .egg-new{top:-53px;left:916px;width:380px;height:571px;max-width:none}
   .island-new{top:271px;left:694px;width:814px;height:458px;max-width:none}
+
+  /* Balance both sides so the navigation stays on the exact header centerline. */
+  .landing-header{gap:0;padding-inline:40px;justify-content:space-between}
+  .brand-new{width:320px;min-width:320px;padding-left:0}
+  .header-actions{width:320px;min-width:320px;padding-right:0}
+}
+
+/* Keep the full-width background, but fit the egg and island on wide screens. */
+@media(min-width:761px) and (min-aspect-ratio:2/1){
+  .hero-art{transform:scale(.7);transform-origin:1100px 0}
 }

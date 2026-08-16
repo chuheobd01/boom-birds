@@ -13,9 +13,9 @@
 <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_400_196"/>
 <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_400_196" result="shape"/>
 </filter>
-<linearGradient id="paint0_linear_400_196" x1="7.39602" y1="3.30005" x2="4.63898" y2="6.0571" gradientUnits="userSpaceOnUse">
-<stop stop-color="#A96BFF"/>
-<stop offset="1" stop-color="#6330B5"/>
+<linearGradient id="paint0_linear_400_196" x1="6.0611" y1="2.13631" x2="6.0611" y2="7.13631" gradientUnits="userSpaceOnUse">
+<stop stop-color="#6330B5"/>
+<stop offset="1" stop-color="#7329C9"/>
 </linearGradient>
 </defs>
 </svg>
