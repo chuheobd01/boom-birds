@@ -153,17 +153,34 @@ export default function EggoriaLanding({ googleClientId }: { googleClientId: str
           </div>
         </div>
         <div className="hero-art" aria-hidden="true">
-          <img className="egg-glow-new" src={asset("glow.svg")} alt="" />
+          <span className="egg-glow-new">
+            <img src={asset("glow.svg")} alt="" />
+          </span>
           <img className="island-new" src={asset("island.png")} alt="" />
           <img className="egg-new" src={asset("egg.png")} alt="" />
+          <span className="egg-burst-field">
+            <i className="egg-burst egg-burst-one">✦</i>
+            <i className="egg-burst egg-burst-two">✦</i>
+            <i className="egg-burst egg-burst-three">✦</i>
+            <i className="egg-burst egg-burst-four">✦</i>
+            <i className="egg-burst egg-burst-five">✦</i>
+            <i className="egg-burst egg-burst-six">✦</i>
+          </span>
+        </div>
+        <div className="spark-field" aria-hidden="true">
+          <i className="light-spark light-spark-two">✦</i>
+          <i className="light-spark light-spark-three">✦</i>
+          <i className="light-spark light-spark-four">✦</i>
+          <i className="light-spark light-spark-five">✦</i>
         </div>
         <img className="balloon balloon-one" src={asset("balloon.png")} alt="" />
         <img className="balloon balloon-two" src={asset("balloon.png")} alt="" />
         <img className="crystal crystal-one" src={asset("crystal.png")} alt="" />
         <img className="crystal crystal-two" src={asset("crystal.png")} alt="" />
-        <img className="floating-gem" src={asset("gem.png")} alt="" />
-        <img className="floating-bird" src={asset("bird.png")} alt="" />
-        <img className="floating-feather" src={asset("feather-b.png")} alt="" />
+        <img className="crystal crystal-three" src={asset("crystal.png")} alt="" />
+        <span className="floating-petal floating-petal-one"><img src={asset("bird.png")} alt="" /></span>
+        <span className="floating-petal floating-petal-two"><img src={asset("feather-b.png")} alt="" /></span>
+        <span className="floating-petal floating-petal-three"><img src={asset("feather-a.png")} alt="" /></span>
       </section>
     </main>
   );
