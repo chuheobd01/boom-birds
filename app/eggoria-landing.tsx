@@ -2,10 +2,19 @@
 
 /* eslint-disable @next/next/no-img-element -- exact Figma exports use native image crops */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import { createThirdwebClient, defineChain } from "thirdweb";
+import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
+import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
 
 type EggoriaUser = { id: string; name: string; position: number };
 type GoogleCredential = { credential: string };
+type EthereumProvider = {
+  isMetaMask?: boolean;
+  providers?: EthereumProvider[];
+  request(options: { method: string; params?: unknown[] }): Promise<unknown>;
+};
 
 declare global {
   interface Window {
@@ -13,22 +22,57 @@ declare global {
       initialize(options: Record<string, unknown>): void;
       renderButton(element: HTMLElement, options: Record<string, unknown>): void;
     } } };
+    ethereum?: EthereumProvider;
   }
 }
 
 const asset = (name: string) => `/assets/landing/${name}`;
+const subscribeToClient = () => () => undefined;
+const ARC_TESTNET = defineChain({
+  id: 5_042_002,
+  name: "Arc Testnet",
+  rpc: "https://rpc.testnet.arc.network",
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+  blockExplorers: [{ name: "ArcScan", url: "https://testnet.arcscan.app" }],
+  testnet: true,
+});
+const googleInAppWallet = inAppWallet({ auth: { mode: "popup", options: ["google"] } });
+const metaMaskWallet = createWallet("io.metamask");
+const supportedWallets = [googleInAppWallet, metaMaskWallet];
 const navItems = [
   ["home", "Home"], ["how-it-works", "How It Works"], ["lands", "Lands"],
   ["rarity", "Rarity"], ["roadmap", "Roadmap"], ["faq", "FAQ"],
 ] as const;
 
-export default function EggoriaLanding({ googleClientId }: { googleClientId: string }) {
+const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
+const readProviderErrorCode = (error: unknown): number | undefined => {
+  if (!error || typeof error !== "object") return undefined;
+  if ("code" in error && typeof error.code === "number") return error.code;
+  if ("cause" in error) return readProviderErrorCode(error.cause);
+  return undefined;
+};
+
+export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { googleClientId: string; thirdwebClientId: string }) {
   const [minted, setMinted] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
   const [user, setUser] = useState<EggoriaUser | null>(null);
   const [notice, setNotice] = useState("");
-  const [googleReady, setGoogleReady] = useState(false);
+  const [, setGoogleReady] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [arcBalance, setArcBalance] = useState("0.00");
+  const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
+  const portalReady = useSyncExternalStore(subscribeToClient, () => true, () => false);
+  const closeWalletRef = useRef<HTMLButtonElement>(null);
+  const thirdwebClient = useMemo(
+    () => thirdwebClientId ? createThirdwebClient({ clientId: thirdwebClientId }) : null,
+    [thirdwebClientId],
+  );
+  const activeAccount = useActiveAccount();
+  const activeWallet = useActiveWallet();
+  const { connect, isConnecting } = useConnect();
+  const { disconnect } = useDisconnect();
 
   const connectGoogle = useCallback(async ({ credential }: GoogleCredential) => {
     setNotice("Verifying your account…");
@@ -46,6 +90,7 @@ export default function EggoriaLanding({ googleClientId }: { googleClientId: str
       setUser(result.user);
       setMinted((value) => Math.max(value, Number(result.user.position) || 0));
       setNotice(`Welcome to Eggoria, ${result.user.name}.`);
+      setWalletModalOpen(false);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Google connection failed. Please try again.");
     }
@@ -67,7 +112,7 @@ export default function EggoriaLanding({ googleClientId }: { googleClientId: str
   }, []);
 
   useEffect(() => {
-    if (!googleClientId) return;
+    if (!googleClientId || !portalReady) return;
     let attempts = 0;
     const boot = () => {
       const identity = window.google?.accounts?.id;
@@ -93,16 +138,129 @@ export default function EggoriaLanding({ googleClientId }: { googleClientId: str
       setGoogleReady(true);
     };
     boot();
-  }, [connectGoogle, googleClientId]);
+  }, [connectGoogle, googleClientId, portalReady]);
+
+  useEffect(() => {
+    if (!walletModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeWalletRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setWalletModalOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [walletModalOpen]);
+
+  const connectGoogleWallet = async () => {
+    if (!thirdwebClient) {
+      setWalletError("thirdweb-config");
+      return;
+    }
+    setWalletError("");
+    try {
+      await connect(async () => {
+        await googleInAppWallet.connect({ client: thirdwebClient, chain: ARC_TESTNET, strategy: "google" });
+        return googleInAppWallet;
+      });
+      window.localStorage.setItem("eggoria-wallet-kind", "google");
+      setWalletModalOpen(false);
+    } catch {
+      // OAuth cancellation intentionally leaves the chooser open for another attempt.
+    }
+  };
+
+  const getMetaMaskProvider = () => {
+    const injected = window.ethereum;
+    if (!injected) return undefined;
+    return injected.providers?.find((provider) => provider.isMetaMask)
+      ?? (injected.isMetaMask ? injected : undefined);
+  };
+
+  const ensureArcTestnet = async (provider: EthereumProvider) => {
+    const targetChainId = "0x4cef52";
+    if (await provider.request({ method: "eth_chainId" }) === targetChainId) return;
+    try {
+      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: targetChainId }] });
+    } catch (error) {
+      if (readProviderErrorCode(error) !== 4902) throw error;
+      await provider.request({
+        method: "wallet_addEthereumChain",
+        params: [{ chainId: targetChainId, chainName: "Arc Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: ["https://rpc.testnet.arc.network"], blockExplorerUrls: ["https://testnet.arcscan.app"] }],
+      });
+      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: targetChainId }] });
+    }
+  };
 
   const count = Math.min(minted, 500);
   const progress = Math.min(100, (count / 500) * 100);
-  const connectionLabel = user ? "Connected" : "Connect Wallet";
-  const unavailable = () => {
-    if (!googleReady && googleClientId) setNotice("Google Sign-In is still loading.");
+  const walletAddress = activeAccount?.address ?? "";
+  const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Connect Wallet";
+
+  useEffect(() => {
+    if (!walletAddress || !thirdwebClient) return;
+    let active = true;
+    getWalletBalance({ client: thirdwebClient, chain: ARC_TESTNET, address: walletAddress })
+      .then((balance) => {
+        if (active) setArcBalance(Number(balance.displayValue).toFixed(2));
+      })
+      .catch(() => {
+        if (active) setArcBalance("0.00");
+      });
+    return () => { active = false; };
+  }, [thirdwebClient, walletAddress]);
+  const openWallet = () => {
+    if (walletAddress) {
+      setWalletMenuOpen((open) => !open);
+      return;
+    }
+    setWalletError("");
+    setWalletModalOpen(true);
+  };
+  const connectMetaMask = async () => {
+    const provider = getMetaMaskProvider();
+    if (!provider) {
+      setWalletError("missing-metamask");
+      return;
+    }
+    if (!thirdwebClient) {
+      setWalletError("thirdweb-config");
+      return;
+    }
+    setWalletError("");
+    try {
+      const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[];
+      await ensureArcTestnet(provider);
+      await connect(async () => {
+        await metaMaskWallet.connect({ client: thirdwebClient, chain: ARC_TESTNET });
+        return metaMaskWallet;
+      });
+      window.localStorage.setItem("eggoria-wallet-kind", "metamask");
+      setNotice(accounts[0] ? `MetaMask connected: ${accounts[0].slice(0, 6)}…${accounts[0].slice(-4)}` : "MetaMask connection was cancelled.");
+      setWalletModalOpen(false);
+    } catch (error) {
+      setWalletModalOpen(false);
+      if (readProviderErrorCode(error) === 4001) {
+        setWalletError("");
+        return;
+      }
+      setNotice("MetaMask could not connect. Please try again.");
+    }
+  };
+
+  const disconnectWallet = () => {
+    if (activeWallet) disconnect(activeWallet);
+    window.localStorage.removeItem("eggoria-wallet-kind");
+    setWalletMenuOpen(false);
+    setNotice("");
   };
 
   return (
+    <>
+    {thirdwebClient && <AutoConnect client={thirdwebClient} wallets={supportedWallets} />}
     <main className="landing" data-node-id="316:5">
       <header className="landing-header" data-node-id="316:63">
         <a className="brand-new" href="#home" aria-label="Eggoria home">
@@ -125,10 +283,14 @@ export default function EggoriaLanding({ googleClientId }: { googleClientId: str
             <a href="#" aria-label="Eggoria on X"><img className="social-frame" src={asset("icon-frame.png")} alt="" /><img className="social-glyph" src={asset("twitter.svg")} alt="" /></a>
             <a href="#" aria-label="Eggoria on Discord"><img className="social-frame" src={asset("icon-frame.png")} alt="" /><img className="social-glyph" src={asset("discord.svg")} alt="" /></a>
           </div>
-          <button className="figma-button header-connect" type="button" onClick={unavailable}>
-            <img src={asset("button.png")} alt="" /><span>{connectionLabel}</span>
-            {!user && <span className="google-hitbox" data-google-button data-width="180" />}
+          <button className="figma-button header-connect" type="button" onClick={openWallet}>
+            <img src={asset("button.png")} alt="" />
+            <span className="header-connect-label">{connectionLabel}{walletAddress && <img className="wallet-chevron" src={asset("wallet-chevron.svg")} alt="" />}</span>
           </button>
+          {walletAddress && walletMenuOpen && <div className="wallet-nav-menu">
+            <a href={`https://testnet.arcscan.app/address/${walletAddress}`} target="_blank" rel="noreferrer">View on ArcScan</a>
+            <button type="button" onClick={disconnectWallet}>Disconnect</button>
+          </div>}
         </div>
       </header>
 
@@ -144,11 +306,16 @@ export default function EggoriaLanding({ googleClientId }: { googleClientId: str
             </div>
           </div>
           <div className="hero-connect-wrap">
-            <button className="figma-button hero-connect" type="button" onClick={unavailable}>
-              <img src={asset("button.png")} alt="" /><span>{connectionLabel}</span>
-              {!user && <span className="google-hitbox" data-google-button data-width="350" />}
+            <button className="figma-button hero-connect" type="button" onClick={walletAddress ? () => window.open("https://faucet.circle.com/", "_blank", "noopener,noreferrer") : openWallet}>
+              <img src={asset("button.png")} alt="" /><span>{walletAddress ? "Get Free Test Funds" : "Connect Wallet"}</span>
             </button>
-            <p className="login-note"><img src={asset("lock.svg")} alt="" />{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Sign in with MetaMask or Google"}</p>
+            {walletAddress ? <>
+              <p className="login-note funds-note"><img src={asset("funds-shield.svg")} alt="" />Covers the small network fee. Totally free, just for testing</p>
+              <div className="wallet-balance-card">
+                <img src={asset("funds-balance-frame.png")} alt="" />
+                <span>You have {arcBalance} USDC. You&apos;ll need this to create your egg</span>
+              </div>
+            </> : <p className="login-note"><img src={asset("lock.svg")} alt="" />{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Sign in with MetaMask or Google"}</p>}
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div>
         </div>
@@ -183,5 +350,56 @@ export default function EggoriaLanding({ googleClientId }: { googleClientId: str
         <span className="floating-petal floating-petal-three"><img src={asset("feather-a.png")} alt="" /></span>
       </section>
     </main>
+
+      {portalReady && createPortal(<div
+        className={`wallet-modal-layer${walletModalOpen ? " is-open" : ""}`}
+        aria-hidden={!walletModalOpen}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setWalletModalOpen(false);
+        }}
+      >
+        <section className="wallet-modal" role="dialog" aria-modal="true" aria-labelledby="wallet-modal-title">
+          <img className="wallet-modal-frame" src={asset("wallet-modal-frame.png")} alt="" />
+          <button ref={closeWalletRef} className="wallet-modal-close" type="button" aria-label="Close wallet options" onClick={() => setWalletModalOpen(false)}>
+            <img src={asset("wallet-close.svg")} alt="" />
+          </button>
+          <header className="wallet-modal-heading">
+            <h2 id="wallet-modal-title">Begin Your Journey</h2>
+            <p>Choose how you’d like to enter Eggoria</p>
+          </header>
+          <div className="wallet-options">
+            <div className="wallet-option">
+              <button className="wallet-provider wallet-provider-google" type="button" onClick={connectGoogleWallet} disabled={isConnecting}>
+                <img className="wallet-provider-frame" src={asset("wallet-google-button.png")} alt="" />
+                <span className="wallet-provider-content">
+                  <img src={asset("wallet-google.svg")} alt="" />
+                  <strong>Continue With Google</strong>
+                  <small>Recommended</small>
+                </span>
+              </button>
+              <p>Fast, secure, and no wallet setup required.</p>
+            </div>
+            <div className="wallet-divider" aria-hidden="true">
+              <span className="wallet-divider-side"><i /><img src={asset("wallet-spark.svg")} alt="" /></span>
+              <b>OR</b>
+              <span className="wallet-divider-side"><i /><img src={asset("wallet-spark.svg")} alt="" /></span>
+            </div>
+            <div className="wallet-option">
+              <button className="wallet-provider wallet-provider-metamask" type="button" onClick={connectMetaMask} disabled={isConnecting}>
+                <img className="wallet-provider-frame" src={asset("wallet-metamask-button.png")} alt="" />
+                <span className="wallet-provider-content">
+                  <img src={asset("wallet-metamask.svg")} alt="" />
+                  <strong>Continue With MetaMask</strong>
+                </span>
+              </button>
+              <p>Use your existing Web3 wallet.</p>
+              {walletError === "missing-metamask" && <p className="wallet-error">MetaMask not found. <a href="https://metamask.io/download/" target="_blank" rel="noreferrer">Install extension</a></p>}
+            </div>
+          </div>
+          {walletError === "thirdweb-config" && <p className="wallet-config-error" role="alert">Wallet login is not configured yet.</p>}
+          <p className="wallet-privacy"><img src={asset("wallet-lock.svg")} alt="" />We only use your Google info to create your wallet.</p>
+        </section>
+      </div>, document.body)}
+    </>
   );
 }

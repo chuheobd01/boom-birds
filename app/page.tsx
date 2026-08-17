@@ -6,7 +6,10 @@ export default function HomePage() {
   return (
     <>
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
-      <EggoriaLanding googleClientId={process.env.GOOGLE_CLIENT_ID ?? ""} />
+      <EggoriaLanding
+        googleClientId={process.env.GOOGLE_CLIENT_ID ?? ""}
+        thirdwebClientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? ""}
+      />
     </>
   );
 }

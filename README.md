@@ -9,6 +9,7 @@ Create `.env.local`:
 ```env
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 GOOGLE_CLIENT_ID=your_web_client_id.apps.googleusercontent.com
+NEXT_PUBLIC_THIRDWEB_CLIENT_ID=your_thirdweb_client_id
 SESSION_SECRET=replace-with-a-long-random-secret
 ADMIN_DASHBOARD_TOKEN=replace-with-another-long-random-secret
 ```
