@@ -60,6 +60,10 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [, setGoogleReady] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [fundsModalOpen, setFundsModalOpen] = useState(false);
+  const [fundsError, setFundsError] = useState("");
+  const [fundsSending, setFundsSending] = useState(false);
+  const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; explorerUrl: string } | null>(null);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [arcBalance, setArcBalance] = useState("0.00");
   const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
@@ -141,19 +145,22 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   }, [connectGoogle, googleClientId, portalReady]);
 
   useEffect(() => {
-    if (!walletModalOpen) return;
+    if (!walletModalOpen && !fundsModalOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeWalletRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setWalletModalOpen(false);
+      if (event.key === "Escape") {
+        setWalletModalOpen(false);
+        setFundsModalOpen(false);
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [walletModalOpen]);
+  }, [fundsModalOpen, walletModalOpen]);
 
   const connectGoogleWallet = async () => {
     if (!thirdwebClient) {
@@ -258,6 +265,36 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     setNotice("");
   };
 
+  const claimTestFunds = async () => {
+    if (!activeAccount || !walletAddress || fundsSending) return;
+    setFundsError("");
+    setFundsSuccess(null);
+    setFundsSending(true);
+    try {
+      const message = `Eggoria ARC Testnet Faucet\nAddress: ${walletAddress}\nTimestamp: ${Date.now()}`;
+      const signature = await activeAccount.signMessage({ message });
+      const response = await fetch("/api/faucet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: walletAddress, message, signature }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        if (response.status === 429 && result.retryAt) {
+          const retryAt = new Date(result.retryAt).toLocaleString();
+          throw new Error(`Already claimed. Try again after ${retryAt}.`);
+        }
+        throw new Error(result.message || "Test USDC could not be sent.");
+      }
+      setArcBalance(String(result.balance || arcBalance));
+      setFundsSuccess({ amount: Number(result.amount) || 1, explorerUrl: String(result.explorerUrl || "") });
+    } catch (error) {
+      setFundsError(error instanceof Error ? error.message : "Test USDC could not be sent.");
+    } finally {
+      setFundsSending(false);
+    }
+  };
+
   return (
     <>
     {thirdwebClient && <AutoConnect client={thirdwebClient} wallets={supportedWallets} />}
@@ -306,7 +343,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             </div>
           </div>
           <div className="hero-connect-wrap">
-            <button className="figma-button hero-connect" type="button" onClick={walletAddress ? () => window.open("https://faucet.circle.com/", "_blank", "noopener,noreferrer") : openWallet}>
+            <button className="figma-button hero-connect" type="button" onClick={walletAddress ? () => { setFundsError(""); setFundsSuccess(null); setFundsModalOpen(true); } : openWallet}>
               <img src={asset("button.png")} alt="" /><span>{walletAddress ? "Get Free Test Funds" : "Connect Wallet"}</span>
             </button>
             {walletAddress ? <>
@@ -398,6 +435,46 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           </div>
           {walletError === "thirdweb-config" && <p className="wallet-config-error" role="alert">Wallet login is not configured yet.</p>}
           <p className="wallet-privacy"><img src={asset("wallet-lock.svg")} alt="" />We only use your Google info to create your wallet.</p>
+        </section>
+      </div>, document.body)}
+
+      {portalReady && createPortal(<div
+        className={`wallet-modal-layer${fundsModalOpen ? " is-open" : ""}`}
+        aria-hidden={!fundsModalOpen}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setFundsModalOpen(false);
+        }}
+      >
+        <section className="funds-modal" role="dialog" aria-modal="true" aria-labelledby="funds-modal-title">
+          <img className="funds-modal-frame" src={asset("funds-modal-frame.png")} alt="" />
+          <button className="funds-modal-close" type="button" aria-label="Close test funds confirmation" onClick={() => setFundsModalOpen(false)}>
+            <img src={asset("wallet-close.svg")} alt="" />
+          </button>
+          {fundsSuccess ? <>
+            <span className="funds-success-icon"><img src={asset("funds-success.png")} alt="Success" /></span>
+            <div className="funds-modal-copy">
+              <h2 id="funds-modal-title">Test USDC Sent</h2>
+              <p>{fundsSuccess.amount} test USDC has been sent to your wallet.<br />Your balance will update shortly.</p>
+            </div>
+            <div className="funds-modal-actions funds-success-action">
+              <button className="figma-button funds-done" type="button" onClick={() => setFundsModalOpen(false)}>
+                <img src={asset("button.png")} alt="" /><span>Done</span>
+              </button>
+            </div>
+          </> : <>
+            <img className="funds-usdc-icon" src={asset("usdc.svg")} alt="USDC" />
+            <div className="funds-modal-copy">
+              <h2 id="funds-modal-title">Get Free Test USDC</h2>
+              <p>You&apos;ll receive 1 test USDC. This is testnet<br />money, not real currency</p>
+            </div>
+            <div className="funds-modal-actions">
+              <button className="funds-cancel" type="button" onClick={() => setFundsModalOpen(false)}>Cancel</button>
+              <button className="figma-button funds-confirm" type="button" onClick={claimTestFunds} disabled={fundsSending}>
+                <img src={asset("button.png")} alt="" /><span>{fundsSending ? "Sending..." : "Confirm"}</span>
+              </button>
+            </div>
+            {fundsError && <p className="funds-modal-error" role="alert">{fundsError}</p>}
+          </>}
         </section>
       </div>, document.body)}
     </>

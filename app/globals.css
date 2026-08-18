@@ -81,6 +81,22 @@
 
 @media(prefers-reduced-motion:reduce){.wallet-modal-layer,.wallet-modal{transition:none}.wallet-modal-layer.is-open .wallet-modal{transform:none}}
 
+/* Figma node 468:2 — test USDC confirmation. */
+.funds-modal{position:relative;width:min(472.668px,calc(100vw - 24px));aspect-ratio:472.668/400;overflow:hidden;color:#fff;filter:drop-shadow(0 22px 42px rgba(11,4,54,.42));opacity:0;transform:translateY(12px) scale(.98);transition:opacity 220ms ease,transform 260ms cubic-bezier(.22,1,.36,1)}.wallet-modal-layer.is-open .funds-modal{opacity:1;transform:translateY(0) scale(1)}.funds-modal-frame{position:absolute;z-index:-1;top:-8.73%;left:-8.36%;width:116.36%;height:117.82%;max-width:none}.funds-modal-close{position:absolute;z-index:3;top:25.95px;right:31.34px;width:24px;height:24px;padding:0;border:0;background:transparent;cursor:pointer}.funds-modal-close img{display:block;width:100%;height:100%}.funds-usdc-icon{position:absolute;top:60.95px;left:50%;width:80px;height:80px;transform:translateX(-50%)}.funds-modal-copy{position:absolute;top:160.95px;left:50%;width:400px;transform:translateX(-50%);text-align:center}.funds-modal-copy h2{margin:0;color:#fff;font-family:"Playfair Display",serif;font-size:40px;font-weight:600;line-height:1.15;text-transform:capitalize}.funds-modal-copy p{margin:12px auto 0;color:#b7a0ee;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:16px;font-weight:400;line-height:1.3}.funds-modal-actions{position:absolute;top:300.95px;left:50%;display:flex;gap:30px;align-items:center;transform:translateX(-50%)}.funds-cancel,.funds-confirm{width:185px;height:43px;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:20px;font-weight:500;color:#fff}.funds-cancel{border:1px solid #8759e8;border-radius:999px;background:#171337;cursor:pointer}.funds-confirm{width:191.219px;height:43.375px}.funds-confirm:disabled{cursor:wait;filter:saturate(.75);opacity:.8}.funds-modal-error,.funds-modal-success{position:absolute;right:30px;bottom:17px;left:30px;margin:0;font-size:12px;text-align:center}.funds-modal-error{color:#ffd2e2}.funds-modal-success{color:#d7c9ff}.funds-modal-success a{color:#fff;text-underline-offset:2px}
+
+@media(max-width:500px){.funds-modal-close{top:6.5%;right:6.6%;width:20px;height:20px}.funds-usdc-icon{top:15.24%;width:20%;height:20%}.funds-modal-copy{top:40.24%;width:84.6%}.funds-modal-copy h2{font-size:clamp(25px,8.46vw,40px)}.funds-modal-copy p{margin-top:3%;font-size:clamp(10px,3.38vw,16px)}.funds-modal-actions{top:75.24%;width:81.2%;gap:6.35%}.funds-cancel,.funds-confirm{width:46.3%;height:auto;aspect-ratio:185/43;font-size:clamp(13px,4.23vw,20px)}.funds-confirm{aspect-ratio:191.219/43.375}.funds-modal-error{bottom:2%;font-size:10px}}
+
+@media(prefers-reduced-motion:reduce){.funds-modal{transition:none}.wallet-modal-layer.is-open .funds-modal{transform:none}}
+
+/* Figma 470:216 — Cancel button surface. */
+.funds-cancel{position:relative;border-color:#9a61ff;background:linear-gradient(180deg,#3b2b72 0%,#282052 45%,#17143d 100%);box-shadow:0 0 12px rgba(124,58,237,.22),0 0 5px rgba(168,85,247,.45),inset 0 -2px 4px rgba(8,5,31,.25),inset 0 2px 5px rgba(185,149,255,.16)}
+
+/* Figma 470:219 — exact 472.668 × 380 popup frame. */
+.funds-modal{width:min(472.668px,calc(100vw - 24px),calc((100dvh - 24px)*1.244));aspect-ratio:472.668/380}
+.funds-success-icon{position:absolute;top:61.45px;left:50%;display:block;width:80.61px;height:80px;overflow:hidden;transform:translateX(-50%)}.funds-success-icon img{position:absolute;top:-7.72%;left:-10.22%;width:119.88%;height:120.8%;max-width:none}.funds-success-action{width:240px}.funds-done{width:240px;height:43.375px;color:#fff;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:20px;font-weight:500}
+
+@media(max-width:500px){.funds-modal-close{top:6.83%}.funds-usdc-icon{top:16.04%}.funds-success-icon{top:16.17%;width:17.05%;height:21.05%}.funds-modal-copy{top:42.36%}.funds-modal-actions{top:79.2%}.funds-success-action{width:50.77%}.funds-done{width:100%;height:auto;aspect-ratio:240/43.375;font-size:clamp(13px,4.23vw,20px)}}
+
 @keyframes world-opening{from{opacity:0;transform:scale(1.025)}to{opacity:1;transform:scale(1)}}
 @keyframes logo-enter{from{opacity:0;transform:translateY(-12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes nav-frame-enter{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
