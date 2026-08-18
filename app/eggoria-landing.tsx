@@ -63,7 +63,8 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [fundsModalOpen, setFundsModalOpen] = useState(false);
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
-  const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; explorerUrl: string } | null>(null);
+  const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; balance: string; address: string } | null>(null);
+  const [mintReadyAddress, setMintReadyAddress] = useState("");
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [arcBalance, setArcBalance] = useState("0.00");
   const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
@@ -77,6 +78,13 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const activeWallet = useActiveWallet();
   const { connect, isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
+  const closeFundsModal = useCallback(() => {
+    if (fundsSuccess && activeAccount?.address.toLowerCase() === fundsSuccess.address.toLowerCase()) {
+      setArcBalance(fundsSuccess.balance);
+      setMintReadyAddress(fundsSuccess.address);
+    }
+    setFundsModalOpen(false);
+  }, [activeAccount?.address, fundsSuccess]);
 
   const connectGoogle = useCallback(async ({ credential }: GoogleCredential) => {
     setNotice("Verifying your account…");
@@ -152,7 +160,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setWalletModalOpen(false);
-        setFundsModalOpen(false);
+        closeFundsModal();
       }
     };
     window.addEventListener("keydown", closeOnEscape);
@@ -160,7 +168,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [fundsModalOpen, walletModalOpen]);
+  }, [closeFundsModal, fundsModalOpen, walletModalOpen]);
 
   const connectGoogleWallet = async () => {
     if (!thirdwebClient) {
@@ -206,6 +214,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const progress = Math.min(100, (count / 500) * 100);
   const walletAddress = activeAccount?.address ?? "";
   const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Connect Wallet";
+  const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
 
   useEffect(() => {
     if (!walletAddress || !thirdwebClient) return;
@@ -261,6 +270,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const disconnectWallet = () => {
     if (activeWallet) disconnect(activeWallet);
     window.localStorage.removeItem("eggoria-wallet-kind");
+    setMintReadyAddress("");
     setWalletMenuOpen(false);
     setNotice("");
   };
@@ -286,8 +296,11 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
         }
         throw new Error(result.message || "Test USDC could not be sent.");
       }
-      setArcBalance(String(result.balance || arcBalance));
-      setFundsSuccess({ amount: Number(result.amount) || 1, explorerUrl: String(result.explorerUrl || "") });
+      setFundsSuccess({
+        amount: Number(result.amount) || 1,
+        balance: String(result.balance || arcBalance),
+        address: walletAddress,
+      });
     } catch (error) {
       setFundsError(error instanceof Error ? error.message : "Test USDC could not be sent.");
     } finally {
@@ -320,7 +333,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             <a href="#" aria-label="Eggoria on X"><img className="social-frame" src={asset("icon-frame.png")} alt="" /><img className="social-glyph" src={asset("twitter.svg")} alt="" /></a>
             <a href="#" aria-label="Eggoria on Discord"><img className="social-frame" src={asset("icon-frame.png")} alt="" /><img className="social-glyph" src={asset("discord.svg")} alt="" /></a>
           </div>
-          <button className="figma-button header-connect" type="button" onClick={openWallet}>
+          <button className={`figma-button header-connect${walletAddress ? " is-connected" : ""}`} type="button" onClick={openWallet}>
             <img src={asset("button.png")} alt="" />
             <span className="header-connect-label">{connectionLabel}{walletAddress && <img className="wallet-chevron" src={asset("wallet-chevron.svg")} alt="" />}</span>
           </button>
@@ -343,10 +356,10 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             </div>
           </div>
           <div className="hero-connect-wrap">
-            <button className="figma-button hero-connect" type="button" onClick={walletAddress ? () => { setFundsError(""); setFundsSuccess(null); setFundsModalOpen(true); } : openWallet}>
-              <img src={asset("button.png")} alt="" /><span>{walletAddress ? "Get Free Test Funds" : "Connect Wallet"}</span>
+            <button className="figma-button hero-connect" type="button" onClick={!walletAddress ? openWallet : hasTestFunds ? () => setNotice("Egg minting will be available in the next step.") : () => { setFundsError(""); setFundsSuccess(null); setFundsModalOpen(true); }}>
+              <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Connect Wallet" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
-            {walletAddress ? <>
+            {hasTestFunds ? <p className="login-note funds-note mint-helper"><img src={asset("funds-shield.svg")} alt="" />One egg per wallet. Fee covered by your test funds</p> : walletAddress ? <>
               <p className="login-note funds-note"><img src={asset("funds-shield.svg")} alt="" />Covers the small network fee. Totally free, just for testing</p>
               <div className="wallet-balance-card">
                 <img src={asset("funds-balance-frame.png")} alt="" />
@@ -442,12 +455,12 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
         className={`wallet-modal-layer${fundsModalOpen ? " is-open" : ""}`}
         aria-hidden={!fundsModalOpen}
         onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setFundsModalOpen(false);
+          if (event.target === event.currentTarget) closeFundsModal();
         }}
       >
         <section className="funds-modal" role="dialog" aria-modal="true" aria-labelledby="funds-modal-title">
           <img className="funds-modal-frame" src={asset("funds-modal-frame.png")} alt="" />
-          <button className="funds-modal-close" type="button" aria-label="Close test funds confirmation" onClick={() => setFundsModalOpen(false)}>
+          <button className="funds-modal-close" type="button" aria-label="Close test funds confirmation" onClick={closeFundsModal}>
             <img src={asset("wallet-close.svg")} alt="" />
           </button>
           {fundsSuccess ? <>
@@ -457,7 +470,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
               <p>{fundsSuccess.amount} test USDC has been sent to your wallet.<br />Your balance will update shortly.</p>
             </div>
             <div className="funds-modal-actions funds-success-action">
-              <button className="figma-button funds-done" type="button" onClick={() => setFundsModalOpen(false)}>
+              <button className="figma-button funds-done" type="button" onClick={closeFundsModal}>
                 <img src={asset("button.png")} alt="" /><span>Done</span>
               </button>
             </div>
@@ -468,7 +481,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
               <p>You&apos;ll receive 1 test USDC. This is testnet<br />money, not real currency</p>
             </div>
             <div className="funds-modal-actions">
-              <button className="funds-cancel" type="button" onClick={() => setFundsModalOpen(false)}>Cancel</button>
+              <button className="funds-cancel" type="button" onClick={closeFundsModal}>Cancel</button>
               <button className="figma-button funds-confirm" type="button" onClick={claimTestFunds} disabled={fundsSending}>
                 <img src={asset("button.png")} alt="" /><span>{fundsSending ? "Sending..." : "Confirm"}</span>
               </button>

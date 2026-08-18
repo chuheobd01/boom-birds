@@ -97,6 +97,30 @@
 
 @media(max-width:500px){.funds-modal-close{top:6.83%}.funds-usdc-icon{top:16.04%}.funds-success-icon{top:16.17%;width:17.05%;height:21.05%}.funds-modal-copy{top:42.36%}.funds-modal-actions{top:79.2%}.funds-success-action{width:50.77%}.funds-done{width:100%;height:auto;aspect-ratio:240/43.375;font-size:clamp(13px,4.23vw,20px)}}
 
+/* Subtle button micro-interactions. */
+.figma-button,.wallet-provider,.funds-cancel,.funds-modal-close,.wallet-modal-close,.wallet-nav-menu button{transition:transform 180ms cubic-bezier(.22,1,.36,1),filter 180ms ease,box-shadow 180ms ease}.figma-button:not(:disabled):hover,.wallet-provider:not(:disabled):hover,.funds-cancel:not(:disabled):hover{transform:translateY(-1px) scale(1.015);filter:brightness(1.06)}.figma-button:not(:disabled):active,.wallet-provider:not(:disabled):active,.funds-cancel:not(:disabled):active{transform:translateY(1px) scale(.99);filter:brightness(.98)}.funds-modal-close:not(:disabled):hover,.wallet-modal-close:not(:disabled):hover{transform:scale(1.08);filter:brightness(1.15)}.funds-modal-close:not(:disabled):active,.wallet-modal-close:not(:disabled):active{transform:scale(.94)}.wallet-nav-menu button:not(:disabled):hover{transform:translateX(2px)}button:disabled{transform:none!important}
+
+@media(prefers-reduced-motion:reduce){.figma-button,.wallet-provider,.funds-cancel,.funds-modal-close,.wallet-modal-close,.wallet-nav-menu button{transition:none}.figma-button:hover,.figma-button:active,.wallet-provider:hover,.wallet-provider:active,.funds-cancel:hover,.funds-cancel:active,.funds-modal-close:hover,.funds-modal-close:active,.wallet-modal-close:hover,.wallet-modal-close:active,.wallet-nav-menu button:hover{transform:none}}
+
+.landing-header .figma-button:not(:disabled):hover{transform:translateY(-1px) scale(1.015);filter:brightness(1.06)}.landing-header .figma-button:not(:disabled):active{transform:translateY(1px) scale(.99);filter:brightness(.98)}
+@media(prefers-reduced-motion:reduce){.landing-header .figma-button:hover,.landing-header .figma-button:active{transform:none}}
+
+/* Keep both social icon frames pixel-identical. */
+.social-links a{width:42px;height:42px;flex:0 0 42px;overflow:hidden;border-radius:50%}.social-links a:first-child .social-frame,.social-links a:last-child .social-frame{inset:auto;top:-6.5px;left:-7px;width:56.6px;height:57.2px;max-width:none;object-fit:cover}.social-links a:first-child .social-glyph,.social-links a:last-child .social-glyph{inset:9px;width:24px;height:24px;object-fit:contain}
+
+/* Connected address opens a menu but has no hover movement. */
+.landing-header .header-connect.is-connected,.landing-header .header-connect.is-connected:hover,.landing-header .header-connect.is-connected:active{transform:none;filter:none}
+
+/* Hero primary CTA keeps the visible hover feedback. */
+.hero-connect:not(:disabled):hover{transform:translateY(-2px) scale(1.018);filter:brightness(1.08)}.hero-connect:not(:disabled):active{transform:translateY(1px) scale(.992);filter:brightness(.98)}
+
+@media(prefers-reduced-motion:reduce){.hero-connect:hover,.hero-connect:active{transform:none}}
+
+/* Connected-state sequence: helper first, balance badge 150ms later. */
+.funds-note{animation:helper-enter 500ms ease-out both}.wallet-balance-card{animation:helper-enter 500ms ease-out 150ms both}
+
+@media(prefers-reduced-motion:reduce){.funds-note,.wallet-balance-card{animation:none;opacity:1;transform:none}}
+
 @keyframes world-opening{from{opacity:0;transform:scale(1.025)}to{opacity:1;transform:scale(1)}}
 @keyframes logo-enter{from{opacity:0;transform:translateY(-12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes nav-frame-enter{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
