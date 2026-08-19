@@ -10,6 +10,7 @@ import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
 
 type EggoriaUser = { id: string; name: string; position: number };
 type GoogleCredential = { credential: string };
+type WalletKind = "google" | "metamask" | "";
 type EthereumProvider = {
   isMetaMask?: boolean;
   providers?: EthereumProvider[];
@@ -61,6 +62,9 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [activeNav, setActiveNav] = useState("home");
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [fundsModalOpen, setFundsModalOpen] = useState(false);
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimError, setClaimError] = useState("");
+  const [walletKind, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
   const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; balance: string; address: string } | null>(null);
@@ -153,7 +157,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   }, [connectGoogle, googleClientId, portalReady]);
 
   useEffect(() => {
-    if (!walletModalOpen && !fundsModalOpen) return;
+    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeWalletRef.current?.focus();
@@ -161,6 +165,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       if (event.key === "Escape") {
         setWalletModalOpen(false);
         closeFundsModal();
+        setClaimModalOpen(false);
       }
     };
     window.addEventListener("keydown", closeOnEscape);
@@ -168,7 +173,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [closeFundsModal, fundsModalOpen, walletModalOpen]);
+  }, [claimModalOpen, closeFundsModal, fundsModalOpen, walletModalOpen]);
 
   const connectGoogleWallet = async () => {
     if (!thirdwebClient) {
@@ -182,6 +187,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
         return googleInAppWallet;
       });
       window.localStorage.setItem("eggoria-wallet-kind", "google");
+      setWalletKind("google");
       setWalletModalOpen(false);
     } catch {
       // OAuth cancellation intentionally leaves the chooser open for another attempt.
@@ -217,6 +223,15 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
 
   useEffect(() => {
+    if (!walletAddress) {
+      Promise.resolve().then(() => setWalletKind(""));
+      return;
+    }
+    const storedKind = window.localStorage.getItem("eggoria-wallet-kind");
+    Promise.resolve().then(() => setWalletKind(storedKind === "google" || storedKind === "metamask" ? storedKind : ""));
+  }, [walletAddress]);
+
+  useEffect(() => {
     if (!walletAddress || !thirdwebClient) return;
     let active = true;
     getWalletBalance({ client: thirdwebClient, chain: ARC_TESTNET, address: walletAddress })
@@ -248,14 +263,15 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     }
     setWalletError("");
     try {
-      const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[];
+      await provider.request({ method: "eth_requestAccounts" });
       await ensureArcTestnet(provider);
       await connect(async () => {
         await metaMaskWallet.connect({ client: thirdwebClient, chain: ARC_TESTNET });
         return metaMaskWallet;
       });
       window.localStorage.setItem("eggoria-wallet-kind", "metamask");
-      setNotice(accounts[0] ? `MetaMask connected: ${accounts[0].slice(0, 6)}…${accounts[0].slice(-4)}` : "MetaMask connection was cancelled.");
+      setWalletKind("metamask");
+      setNotice("");
       setWalletModalOpen(false);
     } catch (error) {
       setWalletModalOpen(false);
@@ -270,9 +286,29 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const disconnectWallet = () => {
     if (activeWallet) disconnect(activeWallet);
     window.localStorage.removeItem("eggoria-wallet-kind");
+    setWalletKind("");
     setMintReadyAddress("");
     setWalletMenuOpen(false);
     setNotice("");
+  };
+
+  const handleHeroAction = () => {
+    if (!walletAddress) {
+      openWallet();
+      return;
+    }
+    if (hasTestFunds) {
+      if (walletKind === "google") {
+        setClaimError("");
+        setClaimModalOpen(true);
+      } else {
+        setNotice("Egg minting will be available in the next step.");
+      }
+      return;
+    }
+    setFundsError("");
+    setFundsSuccess(null);
+    setFundsModalOpen(true);
   };
 
   const claimTestFunds = async () => {
@@ -356,7 +392,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             </div>
           </div>
           <div className="hero-connect-wrap">
-            <button className="figma-button hero-connect" type="button" onClick={!walletAddress ? openWallet : hasTestFunds ? () => setNotice("Egg minting will be available in the next step.") : () => { setFundsError(""); setFundsSuccess(null); setFundsModalOpen(true); }}>
+            <button className="figma-button hero-connect" type="button" onClick={handleHeroAction}>
               <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Connect Wallet" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
             {hasTestFunds ? <p className="login-note funds-note mint-helper"><img src={asset("funds-shield.svg")} alt="" />One egg per wallet. Fee covered by your test funds</p> : walletAddress ? <>
@@ -488,6 +524,40 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             </div>
             {fundsError && <p className="funds-modal-error" role="alert">{fundsError}</p>}
           </>}
+        </section>
+      </div>, document.body)}
+
+      {portalReady && createPortal(<div
+        className={`wallet-modal-layer${claimModalOpen ? " is-open" : ""}`}
+        aria-hidden={!claimModalOpen}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setClaimModalOpen(false);
+        }}
+      >
+        <section className="claim-modal" role="dialog" aria-modal="true" aria-labelledby="claim-modal-title">
+          <img className="claim-modal-frame" src={asset("funds-modal-frame.png")} alt="" />
+          <button className="claim-modal-close" type="button" aria-label="Close egg claim" onClick={() => setClaimModalOpen(false)}>
+            <img src={asset("claim-close.svg")} alt="" />
+          </button>
+          <span className="claim-egg"><img src={asset("claim-egg.png")} alt="" /></span>
+          <header className="claim-modal-heading">
+            <h2 id="claim-modal-title">Claim Your Egg</h2>
+            <p>Your Eggoria journey begins here.</p>
+          </header>
+          <dl className="claim-details">
+            <div><dt><img src={asset("claim-wallet.svg")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
+            <div><dt><img src={asset("claim-network.svg")} alt="" />Network</dt><dd>ARC Testnet</dd></div>
+            <div><dt><img src={asset("claim-price.svg")} alt="" />Mint price</dt><dd>Free</dd></div>
+            <div><dt><img src={asset("claim-fee.svg")} alt="" />Network fee</dt><dd>~0.02 USDC</dd></div>
+          </dl>
+          <p className="claim-limit"><img src={asset("claim-shield.svg")} alt="" />Each wallet can claim one egg only</p>
+          <div className="claim-actions">
+            <button className="funds-cancel claim-cancel" type="button" onClick={() => setClaimModalOpen(false)}>Close</button>
+            <button className="figma-button claim-confirm" type="button" onClick={() => setClaimError("Egg minting is not configured yet.")}>
+              <img src={asset("button.png")} alt="" /><span>Confirm</span>
+            </button>
+          </div>
+          {claimError && <p className="claim-error" role="alert">{claimError}</p>}
         </section>
       </div>, document.body)}
     </>
