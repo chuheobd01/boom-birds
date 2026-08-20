@@ -64,6 +64,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [fundsModalOpen, setFundsModalOpen] = useState(false);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimError, setClaimError] = useState("");
+  const [networkFee, setNetworkFee] = useState("Estimating...");
   const [walletKind, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
@@ -243,6 +244,32 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       });
     return () => { active = false; };
   }, [thirdwebClient, walletAddress]);
+
+  useEffect(() => {
+    if (!claimModalOpen || !walletAddress) return;
+    const controller = new AbortController();
+    fetch(ARC_TESTNET.rpc, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_gasPrice", params: [] }),
+      signal: controller.signal,
+    })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("RPC unavailable")))
+      .then((result: { result?: string }) => {
+        if (!result.result) throw new Error("Gas price unavailable");
+        // Until the mint contract is wired, use a representative 1,000,000 gas mint.
+        const weiPerUsdc = BigInt("1000000000000000000");
+        const feeWei = BigInt(result.result) * BigInt("1000000");
+        const whole = feeWei / weiPerUsdc;
+        const fraction = feeWei % weiPerUsdc;
+        const fee = Number(whole) + Number(fraction) / 1e18;
+        setNetworkFee(fee < 0.01 ? fee.toFixed(4) : fee.toFixed(2));
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) setNetworkFee("Unavailable");
+      });
+    return () => controller.abort();
+  }, [claimModalOpen, walletAddress]);
   const openWallet = () => {
     if (walletAddress) {
       setWalletMenuOpen((open) => !open);
@@ -300,6 +327,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     if (hasTestFunds) {
       if (walletKind === "google") {
         setClaimError("");
+        setNetworkFee("Estimating...");
         setClaimModalOpen(true);
       } else {
         setNotice("Egg minting will be available in the next step.");
@@ -541,14 +569,14 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           </button>
           <span className="claim-egg"><img src={asset("claim-egg.png")} alt="" /></span>
           <header className="claim-modal-heading">
-            <h2 id="claim-modal-title">Claim Your Egg</h2>
+            <h2 id="claim-modal-title">Claim You Egg</h2>
             <p>Your Eggoria journey begins here.</p>
           </header>
           <dl className="claim-details">
             <div><dt><img src={asset("claim-wallet.svg")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
-            <div><dt><img src={asset("claim-network.svg")} alt="" />Network</dt><dd>ARC Testnet</dd></div>
+            <div><dt><img src={asset("claim-network.svg")} alt="" />Network</dt><dd>{ARC_TESTNET.name}</dd></div>
             <div><dt><img src={asset("claim-price.svg")} alt="" />Mint price</dt><dd>Free</dd></div>
-            <div><dt><img src={asset("claim-fee.svg")} alt="" />Network fee</dt><dd>~0.02 USDC</dd></div>
+            <div><dt><img src={asset("claim-fee.svg")} alt="" />Network fee</dt><dd>{networkFee === "Unavailable" || networkFee === "Estimating..." ? networkFee : `~${networkFee} USDC`}</dd></div>
           </dl>
           <p className="claim-limit"><img src={asset("claim-shield.svg")} alt="" />Each wallet can claim one egg only</p>
           <div className="claim-actions">
