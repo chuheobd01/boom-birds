@@ -294,3 +294,27 @@
 .claim-details dt{font-weight:400}
 .claim-details dd{font-weight:500}
 .figma-button.claim-confirm:not(:disabled):hover,.figma-button.claim-confirm:not(:disabled):active{transform:none}
+
+/* On-chain egg minting status */
+.claim-confirm>span{display:flex;align-items:center;justify-content:center;gap:8px}
+.claim-button-spinner{width:16px;height:16px;border:2px dotted rgba(255,255,255,.6);border-top-color:#fff;border-radius:50%;animation:minting-spin .8s linear infinite}
+.minting-modal{position:relative;width:min(651.461px,calc(100vw - 24px),calc((100dvh - 24px)*1.093));aspect-ratio:651.461/596;overflow:hidden;color:#fff;filter:drop-shadow(0 22px 42px rgba(11,4,54,.42));opacity:0;transform:translateY(12px) scale(.98);transition:opacity 220ms ease,transform 280ms cubic-bezier(.22,1,.36,1)}
+.wallet-modal-layer.is-open .minting-modal{opacity:1;transform:translateY(0) scale(1)}
+.minting-egg-orbit{position:absolute;top:8.4%;left:50%;width:132px;height:132px;border:4px solid transparent;border-top-color:#b14cff;border-right-color:#7b38df;border-bottom-color:#ca67ff;border-radius:50%;box-shadow:0 0 18px rgba(169,73,255,.45),inset 0 0 18px rgba(169,73,255,.18);transform:translateX(-50%);animation:minting-orbit 2.1s linear infinite}
+.minting-egg-orbit::before,.minting-egg-orbit::after{position:absolute;width:5px;height:5px;border-radius:50%;background:#e9c7ff;box-shadow:0 0 8px #fff;content:""}.minting-egg-orbit::before{top:19%;left:-10%}.minting-egg-orbit::after{right:-10%;bottom:31%}
+.minting-egg-orbit>span{position:absolute;top:50%;left:50%;width:70.484px;height:90px;overflow:hidden;transform:translate(-50%,-50%);animation:minting-orbit-counter 2.1s linear infinite}
+.minting-egg-orbit>span img{position:absolute;top:-17.68%;left:-10.44%;width:121.52%;height:142.75%;max-width:none}
+.minting-egg-orbit>i{position:absolute;border-radius:50%;background:#8240ed}.minting-egg-orbit>i:nth-of-type(1){top:-5px;left:54%;width:5px;height:5px}.minting-egg-orbit>i:nth-of-type(2){right:13%;bottom:5px;width:4px;height:4px}
+.minting-egg-orbit.phase-success{border-color:#36dfc0;box-shadow:0 0 20px rgba(54,223,192,.55)}.minting-egg-orbit.phase-error{border-color:#db7196;animation:none}
+.minting-heading{position:absolute;top:31.2%;left:10%;width:80%;text-align:center}.minting-heading h2{margin:0;font-family:"Playfair Display",serif;font-size:36px;font-weight:600;line-height:1.2}.minting-heading p{margin:8px 0 0;color:#b7a0ee;font-family:"Be Vietnam Pro",sans-serif;font-size:16px;font-weight:400;line-height:1.3}
+.minting-status{position:absolute;top:49.3%;left:50%;display:flex;width:430px;height:100px;align-items:center;justify-content:center;gap:18px;border:1px solid rgba(112,81,154,.8);border-radius:16px;background:linear-gradient(180deg,#151b38,#10172e);transform:translateX(-50%)}
+.minting-status p{margin:0;color:#b7a0ee;font-family:"Be Vietnam Pro",sans-serif;font-size:20px;font-weight:400}.minting-status strong{color:#fff;font-weight:500}
+.minting-spinner{width:42px;height:42px;border:5px dotted rgba(183,160,238,.45);border-top-color:#b7a0ee;border-radius:50%;animation:minting-spin 1s linear infinite}
+.minting-check,.minting-fail{display:grid;width:42px;height:42px;border:2px solid currentColor;border-radius:50%;font:500 24px/1 "Be Vietnam Pro",sans-serif;place-items:center}.minting-check{color:#38e0bf}.minting-fail{color:#ff9ab8}
+.minting-divider{position:absolute;top:71.2%;left:50%;display:flex;width:430px;align-items:center;color:#d7c9ff;transform:translateX(-50%)}.minting-divider span{height:1px;flex:1;background:linear-gradient(90deg,transparent,#7754aa)}.minting-divider span:last-child{background:linear-gradient(90deg,#7754aa,transparent)}.minting-divider i{padding:0 10px;font-style:normal}
+.minting-explorer,.minting-helper,.minting-error{position:absolute;top:77%;left:50%;margin:0;color:#b7a0ee;font-family:"Be Vietnam Pro",sans-serif;font-size:14px;font-weight:400;text-align:center;transform:translateX(-50%)}.minting-explorer{text-decoration:none}.minting-explorer:hover{color:#fff}.minting-error{width:72%;color:#ffd2e2}
+@keyframes minting-spin{to{rotate:360deg}}
+@keyframes minting-orbit{to{transform:translateX(-50%) rotate(360deg)}}
+@keyframes minting-orbit-counter{to{transform:translate(-50%,-50%) rotate(-360deg)}}
+@media(max-width:560px){.minting-egg-orbit{width:20.26%;height:auto;aspect-ratio:1}.minting-egg-orbit>span{width:53.4%;height:68.18%}.minting-heading h2{font-size:clamp(23px,5.53vw,36px)}.minting-heading p{font-size:clamp(10px,2.46vw,16px)}.minting-status{width:66%;height:16.78%;gap:3%}.minting-status p{font-size:clamp(12px,3.07vw,20px)}.minting-spinner,.minting-check,.minting-fail{width:clamp(28px,6.45vw,42px);height:clamp(28px,6.45vw,42px)}.minting-divider{width:66%}.minting-explorer,.minting-helper,.minting-error{font-size:clamp(10px,2.15vw,14px)}}
+@media(prefers-reduced-motion:reduce){.minting-modal,.minting-egg-orbit,.minting-egg-orbit>span,.minting-spinner,.claim-button-spinner{animation:none;transition:none}.wallet-modal-layer.is-open .minting-modal{transform:none}}

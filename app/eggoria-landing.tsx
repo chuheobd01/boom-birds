@@ -4,13 +4,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { createThirdwebClient, defineChain } from "thirdweb";
+import { createThirdwebClient, defineChain, getContract, readContract, sendTransaction, waitForReceipt } from "thirdweb";
+import { claimTo } from "thirdweb/extensions/erc721";
 import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
 import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
 
 type EggoriaUser = { id: string; name: string; position: number };
 type GoogleCredential = { credential: string };
 type WalletKind = "google" | "metamask" | "";
+type MintPhase = "submitting" | "confirming" | "success" | "error";
 type EthereumProvider = {
   isMetaMask?: boolean;
   providers?: EthereumProvider[];
@@ -29,6 +31,7 @@ declare global {
 
 const asset = (name: string) => `/assets/landing/${name}`;
 const subscribeToClient = () => () => undefined;
+const EGGORIA_CONTRACT_ADDRESS = "0x0Dda12D074D42D0B0728fed721eE7548C8cAa501";
 const ARC_TESTNET = defineChain({
   id: 5_042_002,
   name: "Arc Testnet",
@@ -53,6 +56,25 @@ const readProviderErrorCode = (error: unknown): number | undefined => {
   return undefined;
 };
 
+const readMintError = (error: unknown) => {
+  if (readProviderErrorCode(error) === 4001) return "Transaction cancelled.";
+  const raw = error instanceof Error ? error.message : String(error ?? "");
+  const message = raw.toLowerCase();
+  if (message.includes("already") && (message.includes("claim") || message.includes("mint"))) {
+    return "This wallet has already claimed its egg.";
+  }
+  if (message.includes("insufficient") || message.includes("funds")) {
+    return "Not enough test USDC to cover the network fee.";
+  }
+  if (message.includes("claimcondition") || message.includes("no active claim") || message.includes("not started")) {
+    return "Egg claiming is not available yet.";
+  }
+  if (message.includes("max supply") || message.includes("maxsupply") || message.includes("not enough minted")) {
+    return "All available eggs have already been claimed.";
+  }
+  return "Your egg could not be minted. Please try again.";
+};
+
 export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { googleClientId: string; thirdwebClientId: string }) {
   const [minted, setMinted] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -64,6 +86,11 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [fundsModalOpen, setFundsModalOpen] = useState(false);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimError, setClaimError] = useState("");
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+  const [mintingModalOpen, setMintingModalOpen] = useState(false);
+  const [mintPhase, setMintPhase] = useState<MintPhase>("submitting");
+  const [mintError, setMintError] = useState("");
+  const [mintTransactionHash, setMintTransactionHash] = useState("");
   const [networkFee, setNetworkFee] = useState("Estimating...");
   const [walletKind, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
@@ -78,6 +105,10 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const thirdwebClient = useMemo(
     () => thirdwebClientId ? createThirdwebClient({ clientId: thirdwebClientId }) : null,
     [thirdwebClientId],
+  );
+  const eggoriaContract = useMemo(
+    () => thirdwebClient ? getContract({ client: thirdwebClient, chain: ARC_TESTNET, address: EGGORIA_CONTRACT_ADDRESS }) : null,
+    [thirdwebClient],
   );
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
@@ -158,7 +189,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   }, [connectGoogle, googleClientId, portalReady]);
 
   useEffect(() => {
-    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen) return;
+    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen && !mintingModalOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeWalletRef.current?.focus();
@@ -167,6 +198,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
         setWalletModalOpen(false);
         closeFundsModal();
         setClaimModalOpen(false);
+        setMintingModalOpen(false);
       }
     };
     window.addEventListener("keydown", closeOnEscape);
@@ -174,7 +206,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [claimModalOpen, closeFundsModal, fundsModalOpen, walletModalOpen]);
+  }, [claimModalOpen, closeFundsModal, fundsModalOpen, mintingModalOpen, walletModalOpen]);
 
   const connectGoogleWallet = async () => {
     if (!thirdwebClient) {
@@ -372,6 +404,56 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     }
   };
 
+  const mintEgg = async () => {
+    if (!activeAccount || !walletAddress || !eggoriaContract || claimSubmitting) return;
+    setClaimSubmitting(true);
+    setClaimError("");
+    setMintError("");
+    setMintTransactionHash("");
+    let submitted = false;
+    try {
+      const [nextTokenIdToClaim, nextTokenIdToMint] = await Promise.all([
+        readContract({ contract: eggoriaContract, method: "function nextTokenIdToClaim() view returns (uint256)" }),
+        readContract({ contract: eggoriaContract, method: "function nextTokenIdToMint() view returns (uint256)" }),
+      ]);
+      if (nextTokenIdToClaim >= nextTokenIdToMint) {
+        setClaimError("All available eggs have already been claimed.");
+        return;
+      }
+      const transaction = claimTo({
+        contract: eggoriaContract,
+        to: walletAddress,
+        from: walletAddress,
+        quantity: BigInt(1),
+      });
+      const transactionResult = await sendTransaction({ transaction, account: activeAccount });
+      submitted = true;
+      setMintTransactionHash(transactionResult.transactionHash);
+      setMintPhase("submitting");
+      setClaimModalOpen(false);
+      setMintingModalOpen(true);
+      setClaimSubmitting(false);
+
+      const receiptPromise = waitForReceipt(transactionResult);
+      await new Promise((resolve) => window.setTimeout(resolve, 450));
+      setMintPhase("confirming");
+      await receiptPromise;
+      setMintPhase("success");
+      setMinted((value) => Math.min(500, value + 1));
+    } catch (error) {
+      const message = readMintError(error);
+      if (submitted) {
+        setMintError(message);
+        setMintPhase("error");
+        setMintingModalOpen(true);
+      } else {
+        setClaimError(message);
+      }
+    } finally {
+      setClaimSubmitting(false);
+    }
+  };
+
   return (
     <>
     {thirdwebClient && <AutoConnect client={thirdwebClient} wallets={supportedWallets} />}
@@ -564,7 +646,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       >
         <section className="claim-modal" role="dialog" aria-modal="true" aria-labelledby="claim-modal-title">
           <img className="claim-modal-frame" src={asset("funds-modal-frame.png")} alt="" />
-          <button className="claim-modal-close" type="button" aria-label="Close egg claim" onClick={() => setClaimModalOpen(false)}>
+          <button className="claim-modal-close" type="button" aria-label="Close egg claim" onClick={() => setClaimModalOpen(false)} disabled={claimSubmitting}>
             <img src={asset("claim-close.svg")} alt="" />
           </button>
           <span className="claim-egg"><img src={asset("claim-egg.png")} alt="" /></span>
@@ -580,12 +662,43 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           </dl>
           <p className="claim-limit"><img src={asset("claim-shield.svg")} alt="" />Each wallet can claim one egg only</p>
           <div className="claim-actions">
-            <button className="funds-cancel claim-cancel" type="button" onClick={() => setClaimModalOpen(false)}>Close</button>
-            <button className="figma-button claim-confirm" type="button" onClick={() => setClaimError("Egg minting is not configured yet.")}>
-              <img src={asset("button.png")} alt="" /><span>Confirm</span>
+            <button className="funds-cancel claim-cancel" type="button" onClick={() => setClaimModalOpen(false)} disabled={claimSubmitting}>Close</button>
+            <button className="figma-button claim-confirm" type="button" onClick={mintEgg} disabled={claimSubmitting}>
+              <img src={asset("button.png")} alt="" /><span>{claimSubmitting && <i className="claim-button-spinner" aria-hidden="true" />}{claimSubmitting ? "Minting..." : "Confirm"}</span>
             </button>
           </div>
           {claimError && <p className="claim-error" role="alert">{claimError}</p>}
+        </section>
+      </div>, document.body)}
+
+      {portalReady && createPortal(<div
+        className={`wallet-modal-layer${mintingModalOpen ? " is-open" : ""}`}
+        aria-hidden={!mintingModalOpen}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setMintingModalOpen(false);
+        }}
+      >
+        <section className="minting-modal" role="dialog" aria-modal="true" aria-labelledby="minting-modal-title">
+          <img className="claim-modal-frame" src={asset("funds-modal-frame.png")} alt="" />
+          <button className="claim-modal-close" type="button" aria-label="Close minting status" onClick={() => setMintingModalOpen(false)}>
+            <img src={asset("claim-close.svg")} alt="" />
+          </button>
+          <div className={`minting-egg-orbit phase-${mintPhase}`} aria-hidden="true">
+            <span><img src={asset("claim-egg.png")} alt="" /></span>
+            <i /><i />
+          </div>
+          <header className="minting-heading">
+            <h2 id="minting-modal-title">{mintPhase === "success" ? "Your Egg Is Ready" : mintPhase === "error" ? "Minting Failed" : "Minting Your Egg"}</h2>
+            <p>{mintPhase === "success" ? "Your Eggoria journey has begun." : mintPhase === "error" ? "The transaction could not be confirmed." : "Sitting tight. Your egg is being minted on ARC Testnet."}</p>
+          </header>
+          <div className={`minting-status phase-${mintPhase}`} aria-live="polite">
+            {mintPhase === "success" ? <span className="minting-check">✓</span> : mintPhase === "error" ? <span className="minting-fail">!</span> : <span className="minting-spinner" aria-hidden="true" />}
+            <p>Status: <strong>{mintPhase === "submitting" ? "Submitting..." : mintPhase === "confirming" ? "Confirming on-chain..." : mintPhase === "success" ? "Minted successfully" : "Transaction failed"}</strong></p>
+          </div>
+          <div className="minting-divider" aria-hidden="true"><span /><i>✦</i><span /></div>
+          {mintTransactionHash && <a className="minting-explorer" href={`https://testnet.arcscan.app/tx/${mintTransactionHash}`} target="_blank" rel="noreferrer">View on Explorer</a>}
+          {!mintTransactionHash && mintPhase !== "error" && <p className="minting-helper">Almost there. Just a few more seconds.</p>}
+          {mintPhase === "error" && <p className="minting-error" role="alert">{mintError}</p>}
         </section>
       </div>, document.body)}
     </>
