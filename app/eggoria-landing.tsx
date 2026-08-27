@@ -252,7 +252,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const count = Math.min(minted, 500);
   const progress = Math.min(100, (count / 500) * 100);
   const walletAddress = activeAccount?.address ?? "";
-  const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Connect Wallet";
+  const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Get Your Egg";
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
 
   useEffect(() => {
@@ -493,25 +493,25 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       <section className="hero-new" id="home">
         <div className="hero-copy" data-node-id="316:52">
           <h1>Hatch Your<br />Own Bird</h1>
-          <p>Every Eggoria journey starts with a mystery egg. Connect your wallet, mint on ARC, and check in daily to help it hatch and evolve.</p>
+          <p>Mint a mysterious Egg for free, hatch your Bird, and help it evolve through daily check-ins.</p>
           <div className={`mint-progress${statsLoading ? " is-loading" : ""}`} aria-busy={statsLoading}>
             <img className="progress-frame" src={asset("progress-frame.png")} alt="" />
             <div className="progress-content">
-              <span className="mint-count"><img src={asset("user.svg")} alt="" />{statsLoading ? <span className="mint-count-skeleton" aria-label="Loading mint count" /> : `${count} / 500 eggs minted`}</span>
+              <span className="mint-count">{statsLoading ? <span className="mint-count-skeleton" aria-label="Loading mint count" /> : `${count} / 500 Eggs Minted`}</span>
               <span className="progress-track">{statsLoading ? <span className="progress-skeleton" /> : <><i style={{ width: `${progress}%` }} /><b style={{ left: `${progress}%` }} /></>}</span>
             </div>
           </div>
           <div className="hero-connect-wrap">
             <button className="figma-button hero-connect" type="button" onClick={handleHeroAction}>
-              <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Connect Wallet" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
+              <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
             {hasTestFunds ? <p className="login-note funds-note mint-helper"><img src={asset("funds-shield.svg")} alt="" />One egg per wallet. Fee covered by your test funds</p> : walletAddress ? <>
-              <p className="login-note funds-note"><img src={asset("funds-shield.svg")} alt="" />Covers the small network fee. Totally free, just for testing</p>
+              <p className="login-note funds-note">Covers the small network fee. Totally free, just for testing</p>
               <div className="wallet-balance-card">
                 <img src={asset("funds-balance-frame.png")} alt="" />
-                <span>You have {arcBalance} USDC. You&apos;ll need this to create your egg</span>
+                <span>You have {arcBalance} Test USDC. You&apos;ll need this to create your egg</span>
               </div>
-            </> : <p className="login-note"><img src={asset("lock.svg")} alt="" />{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Sign in with MetaMask or Google"}</p>}
+            </> : <p className="login-note">{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Continue with Google or MetaMask"}</p>}
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div>
         </div>
@@ -566,10 +566,10 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           <div className="wallet-options">
             <div className="wallet-option">
               <button className="wallet-provider wallet-provider-google" type="button" onClick={connectGoogleWallet} disabled={isConnecting}>
-                <img className="wallet-provider-frame" src={asset("wallet-google-button.png")} alt="" />
+                <img className="wallet-provider-frame" src={asset("wallet-metamask-button.png")} alt="" />
                 <span className="wallet-provider-content">
                   <img src={asset("wallet-google.svg")} alt="" />
-                  <strong>Continue With Google</strong>
+                  <strong>Continue with Google</strong>
                   <small>Recommended</small>
                 </span>
               </button>
@@ -582,10 +582,10 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             </div>
             <div className="wallet-option">
               <button className="wallet-provider wallet-provider-metamask" type="button" onClick={connectMetaMask} disabled={isConnecting}>
-                <img className="wallet-provider-frame" src={asset("wallet-metamask-button.png")} alt="" />
+                <img className="wallet-provider-frame" src={asset("wallet-google-button.png")} alt="" />
                 <span className="wallet-provider-content">
                   <img src={asset("wallet-metamask.svg")} alt="" />
-                  <strong>Continue With MetaMask</strong>
+                  <strong>Continue with MetaMask</strong>
                 </span>
               </button>
               <p>Use your existing Web3 wallet.</p>
@@ -593,7 +593,6 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             </div>
           </div>
           {walletError === "thirdweb-config" && <p className="wallet-config-error" role="alert">Wallet login is not configured yet.</p>}
-          <p className="wallet-privacy"><img src={asset("wallet-lock.svg")} alt="" />We only use your Google info to create your wallet.</p>
         </section>
       </div>, document.body)}
 

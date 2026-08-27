@@ -23,7 +23,7 @@
 .mint-progress{position:relative;width:min(36.81vw,530px);height:60px;flex:none}.progress-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}.progress-content{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:20px;padding:0 40px}.mint-count{display:flex;align-items:center;gap:8px;color:#3b2e7a;font-size:clamp(12px,1.11vw,16px);white-space:nowrap}.mint-count img{width:24px;height:24px;animation:mint-user-activate 350ms cubic-bezier(.22,1,.36,1) 1450ms both}.mint-count-text{display:block;animation:mint-text-activate 350ms ease-out 1500ms both}.progress-track{position:relative;width:210px;height:10px;overflow:hidden;border-radius:99px;background:#7152b6;animation:progress-track-enter 350ms cubic-bezier(.22,1,.36,1) 1650ms both}.progress-track::after{position:absolute;z-index:2;top:-4px;bottom:-4px;left:-45%;width:38%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent);content:"";filter:blur(2px);animation:progress-light-sweep 350ms ease-in-out 1650ms both}.progress-track i{position:absolute;inset-block:0;left:0;border-radius:inherit;background:linear-gradient(90deg,#a452ff,#d36cff,#ae4ff5);transition:width 80ms linear}.progress-track b{position:absolute;z-index:3;top:0;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 8px 5px #ffd9ff;transform:translateX(-50%);transition:left 80ms linear}
 .mint-count-skeleton{display:block;width:158px;height:16px;border-radius:8px;background:rgba(113,82,182,.24)}.progress-skeleton{position:absolute;inset:0;border-radius:inherit;background:rgba(255,255,255,.32)}
 .hero-connect-wrap{display:flex;width:100%;flex-direction:column;align-items:center;gap:10px}.hero-connect{width:min(24.42vw,352px);height:70px;font-size:26px;font-weight:500}.login-note{display:flex!important;width:auto!important;align-items:center;justify-content:center;gap:8px;font-size:16px!important;font-weight:400!important;white-space:nowrap}.login-note img{width:24px;height:24px}.connection-notice{max-width:430px;color:#4c2384!important;font-size:12px!important}
-.header-connect-label{display:flex;align-items:center;justify-content:center;gap:8px}.wallet-chevron{width:20px;height:20px;object-fit:contain}.funds-note{margin-top:12px!important;color:#3b2e7a;animation:none}.wallet-balance-card{position:relative;display:flex;width:480px;height:55px;margin-top:24px;overflow:hidden;align-items:center;justify-content:center;padding:0;color:#3b2e7a;font-size:16px;font-weight:400;text-align:center;animation:none}.wallet-balance-card>img{position:absolute;z-index:-1;top:-55.25%;left:-2.8%;width:105.63%;height:210.26%;max-width:none;object-fit:fill}.wallet-balance-card>span{position:relative;z-index:1;white-space:nowrap}
+.header-connect-label{display:flex;align-items:center;justify-content:center;gap:4px}.wallet-chevron{width:20px;height:20px;object-fit:contain}.funds-note{margin-top:12px!important;color:#3b2e7a;animation:none}.wallet-balance-card{position:relative;display:flex;width:500px;height:55px;margin-top:24px;overflow:hidden;align-items:center;justify-content:center;padding:0;color:#3b2e7a;font-size:16px;font-weight:400;text-align:center;animation:none}.wallet-balance-card>img{position:absolute;z-index:-1;top:-55.25%;left:-2.8%;width:105.63%;height:210.26%;max-width:none;object-fit:fill}.wallet-balance-card>span{position:relative;z-index:1;white-space:nowrap}
 .hero-copy h1{animation:headline-enter 650ms cubic-bezier(.22,1,.36,1) 750ms both}
 .hero-copy::before{animation:title-glow-enter 650ms ease-out 750ms both}
 .hero-copy>p{animation:description-enter 500ms cubic-bezier(.22,1,.36,1) 870ms both}
@@ -318,3 +318,59 @@
 @keyframes minting-orbit-counter{to{transform:translate(-50%,-50%) rotate(-360deg)}}
 @media(max-width:560px){.minting-egg-orbit{width:20.26%;height:auto;aspect-ratio:1}.minting-egg-orbit>span{width:53.4%;height:68.18%}.minting-heading h2{font-size:clamp(23px,5.53vw,36px)}.minting-heading p{font-size:clamp(10px,2.46vw,16px)}.minting-status{width:66%;height:16.78%;gap:3%}.minting-status p{font-size:clamp(12px,3.07vw,20px)}.minting-spinner,.minting-check,.minting-fail{width:clamp(28px,6.45vw,42px);height:clamp(28px,6.45vw,42px)}.minting-divider{width:66%}.minting-explorer,.minting-helper,.minting-error{font-size:clamp(10px,2.15vw,14px)}}
 @media(prefers-reduced-motion:reduce){.minting-modal,.minting-egg-orbit,.minting-egg-orbit>span,.minting-spinner,.claim-button-spinner{animation:none;transition:none}.wallet-modal-layer.is-open .minting-modal{transform:none}}
+
+/* Figma hero progress: compact frame after removing the leading user icon. */
+@media(min-width:761px){
+  .mint-progress{width:448px;height:50px}
+  .progress-content{gap:18px;padding-inline:32px}
+  .progress-track{width:190px}
+  .progress-frame{top:-30px;left:-15px;width:480px;height:112px}
+
+  /* Brighter title/subtitle halo to match Figma node 548:2. */
+  .hero-copy::before{
+    top:-92px;
+    width:760px;
+    height:470px;
+    background:radial-gradient(ellipse at 50% 43%,rgba(255,250,255,.7) 0%,rgba(242,225,255,.58) 30%,rgba(218,191,255,.34) 54%,rgba(190,162,255,.12) 72%,rgba(170,145,255,0) 86%);
+    filter:blur(28px);
+  }
+}
+
+/* Figma node 550:193: compact wallet chooser and provider buttons. */
+.wallet-modal{width:min(525px,calc(100vw - 24px),calc((100dvh - 24px)*1.28049));aspect-ratio:525/410}
+.wallet-modal-heading{top:8.8%}
+.wallet-modal-close{right:5%}
+.wallet-options{top:32.7%;left:50%;width:min(445px,calc(100% - 80px));gap:16px;transform:translateX(-50%)}
+.wallet-option{gap:8px}
+.wallet-option>p{font-size:14px}
+.wallet-provider,.wallet-provider-metamask{height:72px;aspect-ratio:auto}
+.wallet-provider-google .wallet-provider-frame{top:-42.53%;left:-5.31%;width:110.57%;height:185.1%}
+.wallet-provider-metamask .wallet-provider-frame{top:-25.59%;left:-1.92%;width:103.94%;height:153.97%}
+.wallet-provider-content{right:34px;left:34px;width:auto;gap:10px}
+.wallet-provider-content>img{width:24px;height:24px}
+.wallet-provider-google .wallet-provider-content>img{width:30px;height:30px;padding:4px;border-radius:50%;background:#fff;object-fit:contain}
+.wallet-provider-metamask .wallet-provider-content>img{width:30px;height:30px;object-fit:contain}
+.wallet-provider-content strong{color:#3b2e7a;font-size:20px;font-weight:500}
+.wallet-provider-google .wallet-provider-content strong{color:#fff}
+.wallet-provider-metamask .wallet-provider-content strong{color:#473b7b}
+.wallet-provider-content small{min-height:24px;margin-left:auto;padding-inline:8px;border-color:#e7ddff;background:#fff;color:#473b7b;font-size:10px;font-weight:600}
+.wallet-divider{height:10px}
+
+@media(max-width:520px){
+  .wallet-provider,.wallet-provider-metamask{height:clamp(54px,16vw,72px)}
+  .wallet-provider-content{right:34px;left:34px;gap:2.5%}
+  .wallet-provider-content>img{width:clamp(18px,5vw,24px);height:clamp(18px,5vw,24px)}
+  .wallet-provider-google .wallet-provider-content>img{width:clamp(22px,6vw,30px);height:clamp(22px,6vw,30px)}
+  .wallet-provider-content strong{font-size:clamp(11px,4vw,20px)}
+  .wallet-provider-content small{min-height:clamp(18px,4.8vw,24px);padding-inline:clamp(4px,1.6vw,8px);font-size:clamp(7px,2vw,10px)}
+}
+
+/* Raise the faucet actions 10px and fit the popup height to the new layout. */
+.funds-modal{width:min(472.668px,calc(100vw - 24px),calc((100dvh - 24px)*1.27748));aspect-ratio:472.668/370}
+.funds-modal-actions{top:290.95px}
+@media(max-width:500px){.funds-modal-actions{top:78.64%}}
+
+/* Success state: raise Done 10px and fit the popup to its shorter layout. */
+.funds-modal:has(.funds-success-action){width:min(472.668px,calc(100vw - 24px),calc((100dvh - 24px)*1.31297));aspect-ratio:472.668/360}
+.funds-success-action{top:280.95px}
+@media(max-width:500px){.funds-success-action{top:78.04%}}
