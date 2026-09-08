@@ -493,7 +493,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       <section className="hero-new" id="home">
         <div className="hero-copy" data-node-id="316:52">
           <h1>Hatch Your<br />Own Bird</h1>
-          <p>Mint a mysterious Egg for free, hatch your Bird, and help it evolve through daily check-ins.</p>
+          <p>Mint a mysterious Egg for free, hatch your Bird,<br />and help it evolve through daily check-ins.</p>
           <div className={`mint-progress${statsLoading ? " is-loading" : ""}`} aria-busy={statsLoading}>
             <img className="progress-frame" src={asset("progress-frame.png")} alt="" />
             <div className="progress-content">
