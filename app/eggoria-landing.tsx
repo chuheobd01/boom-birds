@@ -531,19 +531,19 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           </span>
         </div>
         <div className="spark-field" aria-hidden="true">
+          <img className="orbit-spark orbit-spark-crystal orbit-spark-crystal-left" src={asset("crystal.png")} alt="" />
+          <img className="orbit-spark orbit-spark-crystal orbit-spark-crystal-right" src={asset("crystal.png")} alt="" />
+          <img className="orbit-spark orbit-spark-feather orbit-spark-feather-left" src={asset("feather-a.png")} alt="" />
+          <img className="orbit-spark orbit-spark-feather orbit-spark-feather-right" src={asset("feather-b.png")} alt="" />
+          <img className="orbit-spark orbit-spark-bird" src={asset("bird.png")} alt="" />
+          <i className="orbit-spark orbit-spark-star orbit-spark-star-left">✦</i>
+          <i className="orbit-spark orbit-spark-star orbit-spark-star-top">✦</i>
           <i className="light-spark light-spark-two">✦</i>
           <i className="light-spark light-spark-three">✦</i>
-          <i className="light-spark light-spark-four">✦</i>
-          <i className="light-spark light-spark-five">✦</i>
         </div>
+        <img className="distant-island distant-island-left" src={asset("island-left.png")} alt="" />
+        <img className="distant-island distant-island-right" src={asset("island-right.png")} alt="" />
         <img className="balloon balloon-one" src={asset("balloon.png")} alt="" />
-        <img className="balloon balloon-two" src={asset("balloon.png")} alt="" />
-        <img className="crystal crystal-one" src={asset("crystal.png")} alt="" />
-        <img className="crystal crystal-two" src={asset("crystal.png")} alt="" />
-        <img className="crystal crystal-three" src={asset("crystal.png")} alt="" />
-        <span className="floating-petal floating-petal-one"><img src={asset("bird.png")} alt="" /></span>
-        <span className="floating-petal floating-petal-two"><img src={asset("feather-b.png")} alt="" /></span>
-        <span className="floating-petal floating-petal-three"><img src={asset("feather-a.png")} alt="" /></span>
       </section>
     </main>
 

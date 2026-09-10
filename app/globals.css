@@ -19,7 +19,7 @@
 .main-nav a:nth-child(1){animation-delay:360ms}.main-nav a:nth-child(2){animation-delay:400ms}.main-nav a:nth-child(3){animation-delay:440ms}.main-nav a:nth-child(4){animation-delay:480ms}.main-nav a:nth-child(5){animation-delay:520ms}.main-nav a:nth-child(6){animation-delay:560ms}
 .header-actions{animation:header-actions-enter 400ms cubic-bezier(.22,1,.36,1) 500ms both}
 .figma-button{position:relative;display:grid;padding:0;border:0;background:none;color:#fff;cursor:pointer;place-items:center;isolation:isolate}.figma-button>img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:-1}.figma-button>span:not(.google-hitbox){position:relative;z-index:1;white-space:nowrap;text-shadow:0 1px 2px #230d6b80}.figma-button:hover{filter:brightness(1.08);transform:translateY(-1px)}.figma-button:active{transform:translateY(1px)}.header-connect{width:180px;height:44px;font-size:18px;font-weight:500}.google-hitbox{position:absolute;z-index:3;inset:0;overflow:hidden;border-radius:999px;opacity:.001}.google-hitbox>div,.google-hitbox iframe{width:100%!important;height:100%!important}
-.hero-new{position:relative;z-index:2;min-height:700px}.hero-copy{position:absolute;z-index:8;top:41px;left:9.72%;display:flex;width:33.34%;flex-direction:column;align-items:center;gap:24px;text-align:center}.hero-copy h1{width:100%;margin:0;color:#190a5a;font:700 clamp(52px,5.56vw,80px)/.9 Cormorant,serif;letter-spacing:-1px;text-shadow:0 2px 10px #00000026}.hero-copy>p{width:100%;margin:0;color:#3b2e7a;font-size:clamp(13px,1.25vw,18px);font-weight:500;line-height:1.15;text-shadow:0 1px 2px #00000026}
+.hero-new{position:relative;z-index:2;min-height:700px}.hero-copy{position:absolute;z-index:8;top:41px;left:9.72%;display:flex;width:33.34%;flex-direction:column;align-items:center;gap:24px;text-align:center}.hero-copy h1{width:100%;margin:0;color:#190a5a;font:700 clamp(52px,5.56vw,80px)/.9 Cormorant,serif;letter-spacing:-1px;text-shadow:0 2px 10px #00000026}.hero-copy>p{width:100%;margin:0;color:#3b2e7a;font-size:clamp(13px,1.25vw,18px);font-weight:500;line-height:1.15;text-shadow:none}
 .mint-progress{position:relative;width:min(36.81vw,530px);height:60px;flex:none}.progress-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}.progress-content{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:20px;padding:0 40px}.mint-count{display:flex;align-items:center;gap:8px;color:#3b2e7a;font-size:clamp(12px,1.11vw,16px);white-space:nowrap}.mint-count img{width:24px;height:24px;animation:mint-user-activate 350ms cubic-bezier(.22,1,.36,1) 1450ms both}.mint-count-text{display:block;animation:mint-text-activate 350ms ease-out 1500ms both}.progress-track{position:relative;width:210px;height:10px;overflow:hidden;border-radius:99px;background:#7152b6;animation:progress-track-enter 350ms cubic-bezier(.22,1,.36,1) 1650ms both}.progress-track::after{position:absolute;z-index:2;top:-4px;bottom:-4px;left:-45%;width:38%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),transparent);content:"";filter:blur(2px);animation:progress-light-sweep 350ms ease-in-out 1650ms both}.progress-track i{position:absolute;inset-block:0;left:0;border-radius:inherit;background:linear-gradient(90deg,#a452ff,#d36cff,#ae4ff5);transition:width 80ms linear}.progress-track b{position:absolute;z-index:3;top:0;width:10px;height:10px;border-radius:50%;background:#fff;box-shadow:0 0 8px 5px #ffd9ff;transform:translateX(-50%);transition:left 80ms linear}
 .mint-count-skeleton{display:block;width:158px;height:16px;border-radius:8px;background:rgba(113,82,182,.24)}.progress-skeleton{position:absolute;inset:0;border-radius:inherit;background:rgba(255,255,255,.32)}
 .hero-connect-wrap{display:flex;width:100%;flex-direction:column;align-items:center;gap:10px}.hero-connect{width:min(24.42vw,352px);height:70px;font-size:26px;font-weight:500}.login-note{display:flex!important;width:auto!important;align-items:center;justify-content:center;gap:8px;font-size:16px!important;font-weight:400!important;white-space:nowrap}.login-note img{width:24px;height:24px}.connection-notice{max-width:430px;color:#4c2384!important;font-size:12px!important}
@@ -35,10 +35,11 @@
 .island-new{animation:island-enter 900ms cubic-bezier(.22,1,.36,1) 400ms both}
 .egg-new{animation:egg-enter 850ms cubic-bezier(.22,1,.36,1) 700ms both}
 .egg-glow-new{animation:egg-glow-enter 850ms ease-out 700ms both}
-.balloon,.crystal,.floating-gem,.floating-bird,.floating-feather,.floating-petal{position:absolute;z-index:3;pointer-events:none;animation:egg-decor-reveal 550ms ease-out 700ms both}.balloon-one{top:25px;left:49.5%;width:5.47%;transform:rotate(-15deg);animation:egg-decor-reveal 550ms ease-out 700ms both,balloon-left-float 7.2s ease-in-out -1.4s infinite}.balloon-two{top:-7px;right:.8%;width:3.17%;transform:rotate(19deg);animation:egg-decor-reveal 550ms ease-out 700ms both,balloon-right-float 8.6s ease-in-out -4.1s infinite}.crystal-one{top:196px;left:4.4%;width:2.65%;transform:rotate(-34deg)}.crystal-two{top:336px;left:46.6%;width:1.33%;transform:rotate(49deg)}.floating-gem{top:310px;left:65%;width:1.45%;transform:rotate(-72deg)}.floating-bird{top:98px;right:11.5%;width:1.2%}.floating-feather{top:328px;right:9.1%;width:1.8%;transform:rotate(15deg)}.floating-petal img{display:block;width:100%;height:100%;object-fit:contain}
-.spark-field{position:absolute;z-index:7;inset:0;overflow:hidden;pointer-events:none;animation:egg-decor-reveal 550ms ease-out 700ms both}.spark-field img,.light-spark{position:absolute}.gold-spark{width:58px;height:58px;object-fit:contain;animation:decor-float 4.8s ease-in-out infinite}.gold-spark-one{top:148px;left:808px;transform:rotate(-12deg)}.gold-spark-two{top:172px;right:32px;width:46px;height:46px;animation-delay:-2.1s}.spark-crystal{object-fit:contain;filter:drop-shadow(0 0 5px rgba(255,224,255,.7));animation:decor-float 5.4s ease-in-out infinite}.spark-crystal-one{top:68px;left:900px;width:34px;height:34px;transform:rotate(24deg);animation-delay:-1.2s}.spark-crystal-two{top:302px;right:94px;width:30px;height:30px;transform:rotate(-18deg);animation-delay:-3s}.spark-feather{top:82px;right:112px;width:23px;height:23px;object-fit:contain;opacity:.8;transform:rotate(16deg);animation:decor-float 6s ease-in-out -2.6s infinite}.light-spark{margin:0;color:#fff;font-style:normal;line-height:1;text-shadow:0 0 9px #fff,0 0 15px #ddb7ff;animation:spark-twinkle 2.8s ease-in-out infinite}.light-spark-one{top:28px;left:1090px;font-size:15px}.light-spark-two{top:105px;left:1288px;font-size:11px;animation-delay:-.7s}.light-spark-three{top:210px;left:850px;font-size:18px;animation-delay:-1.5s}.light-spark-four{top:225px;right:34px;font-size:10px;animation-delay:-2.1s}.light-spark-five{top:368px;left:900px;font-size:9px;animation-delay:-.4s}.light-spark-six{top:382px;right:132px;font-size:13px;animation-delay:-1.1s}
+.balloon,.floating-gem,.floating-bird,.floating-feather{position:absolute;z-index:3;pointer-events:none;animation:egg-decor-reveal 550ms ease-out 700ms both}.balloon-one{top:25px;left:49.5%;width:5.47%;transform:rotate(-15deg);animation:egg-decor-reveal 550ms ease-out 700ms both,balloon-left-float 7.2s ease-in-out -1.4s infinite}.floating-gem{top:310px;left:65%;width:1.45%;transform:rotate(-72deg)}.floating-bird{top:98px;right:11.5%;width:1.2%}.floating-feather{top:328px;right:9.1%;width:1.8%;transform:rotate(15deg)}
+.spark-field{position:absolute;z-index:7;inset:0;overflow:hidden;pointer-events:none;animation:egg-decor-reveal 550ms ease-out 700ms both}.spark-field img,.light-spark{position:absolute}.gold-spark{width:58px;height:58px;object-fit:contain;animation:decor-float 4.8s ease-in-out infinite}.gold-spark-one{top:148px;left:808px;transform:rotate(-12deg)}.gold-spark-two{top:172px;right:32px;width:46px;height:46px;animation-delay:-2.1s}.spark-crystal{object-fit:contain;filter:drop-shadow(0 0 5px rgba(255,224,255,.7));animation:decor-float 5.4s ease-in-out infinite}.spark-crystal-one{top:68px;left:900px;width:34px;height:34px;transform:rotate(24deg);animation-delay:-1.2s}.spark-crystal-two{top:302px;right:94px;width:30px;height:30px;transform:rotate(-18deg);animation-delay:-3s}.spark-feather{top:82px;right:112px;width:23px;height:23px;object-fit:contain;opacity:.8;transform:rotate(16deg);animation:decor-float 6s ease-in-out -2.6s infinite}.light-spark{margin:0;color:#fff;font-style:normal;line-height:1;text-shadow:0 0 9px #fff,0 0 15px #ddb7ff;animation:spark-twinkle 2.8s ease-in-out infinite}.light-spark-one{top:28px;left:1090px;font-size:15px}.light-spark-two{top:105px;left:1288px;font-size:11px;animation-delay:-.7s}.light-spark-three{top:210px;left:850px;font-size:18px;animation-delay:-1.5s}.light-spark-six{top:382px;right:132px;font-size:13px;animation-delay:-1.1s}
+@media(min-width:761px){.orbit-spark{position:absolute;z-index:4;pointer-events:none}.orbit-spark-crystal{object-fit:contain;filter:drop-shadow(0 0 5px rgba(235,210,255,.58));animation:decor-float 7s ease-in-out infinite}.orbit-spark-crystal-left{top:325px;left:590px;width:28px;transform:rotate(-28deg);animation-delay:-2.1s}.orbit-spark-crystal-right{top:245px;left:1385px;width:29px;transform:rotate(24deg);animation-delay:-4.4s}.orbit-spark-feather{object-fit:contain;filter:drop-shadow(0 0 4px rgba(255,220,255,.5));animation:decor-float 7.4s ease-in-out infinite}.orbit-spark-feather-left{top:116px;left:720px;width:23px;opacity:.58;transform:rotate(-28deg);animation-delay:-3.2s}.orbit-spark-feather-right{top:138px;left:1405px;width:24px;opacity:.58;transform:rotate(22deg);animation-delay:-5.1s}.orbit-spark-bird{top:104px;left:680px;width:18px;opacity:.5;transform:rotate(-12deg);animation:decor-float 8s ease-in-out -4.2s infinite}.orbit-spark-star{color:#fff;font:700 16px/1 Georgia,serif;font-style:normal;text-shadow:0 0 5px #fff,0 0 12px #d7adff;animation:spark-twinkle 3.2s ease-in-out infinite}.orbit-spark-star-left{top:112px;left:745px;font-size:12px}.orbit-spark-star-top{top:72px;left:1110px;font-size:14px;animation-delay:-1.5s}.floating-gem,.floating-bird,.floating-feather{display:none}}
 @media(max-width:1100px){.landing-header{gap:14px;padding-inline:2%}.brand-new{min-width:190px}.brand-new img{width:52px;height:68px}.brand-new span{font-size:42px}.header-actions{min-width:250px}.social-links{gap:6px}.social-links a{width:36px;height:36px}.social-glyph{inset:7px;width:22px;height:22px}.header-connect{width:145px;font-size:15px}.main-nav>div{gap:16px;padding-inline:20px}.hero-copy{left:6%;width:39%}.hero-art{width:62%}}
-@media(max-width:760px){.landing{min-height:1050px;background-size:auto 900px;background-position:52% top}.landing-header{height:82px;padding:8px 16px;justify-content:space-between}.brand-new{min-width:0;height:66px}.brand-new img{width:43px;height:56px}.brand-new span{font-size:34px}.main-nav,.social-links{display:none}.header-actions{min-width:0}.header-connect{width:145px;height:42px}.hero-new{min-height:930px}.hero-copy{top:28px;left:5%;width:90%;gap:16px}.hero-copy h1{font-size:58px;line-height:.92}.hero-copy>p{max-width:480px;font-size:14px;line-height:1.3}.mint-progress{width:min(94vw,530px)}.progress-content{padding-inline:34px}.progress-track{width:42%}.hero-connect{width:310px}.hero-art{top:340px;right:-9%;width:105%;height:530px}.egg-glow-new{top:-85px;left:2%;width:92%}.island-new{top:260px;left:2%;width:94%}.egg-new{top:0;left:33%;width:37%}.balloon-one{top:325px;left:7%;width:11%}.balloon-two{top:350px;right:3%;width:8%}.crystal-one,.crystal-two,.crystal-three,.floating-gem,.floating-bird,.floating-feather,.floating-petal{display:none}}
+@media(max-width:760px){.landing{min-height:1050px;background-size:auto 900px;background-position:52% top}.landing-header{height:82px;padding:8px 16px;justify-content:space-between}.brand-new{min-width:0;height:66px}.brand-new img{width:43px;height:56px}.brand-new span{font-size:34px}.main-nav,.social-links{display:none}.header-actions{min-width:0}.header-connect{width:145px;height:42px}.hero-new{min-height:930px}.hero-copy{top:28px;left:5%;width:90%;gap:16px}.hero-copy h1{font-size:58px;line-height:.92}.hero-copy>p{max-width:480px;font-size:14px;line-height:1.3}.mint-progress{width:min(94vw,530px)}.progress-content{padding-inline:34px}.progress-track{width:42%}.hero-connect{width:310px}.hero-art{top:340px;right:-9%;width:105%;height:530px}.egg-glow-new{top:-85px;left:2%;width:92%}.island-new{top:260px;left:2%;width:94%}.egg-new{top:0;left:33%;width:37%}.balloon-one{top:325px;left:7%;width:11%}.floating-gem,.floating-bird,.floating-feather{display:none}}
 @media(max-width:760px){.landing::before{background-size:auto 900px;background-position:52% top}}
 @media(max-width:440px){.brand-new span{display:none}.header-connect{width:160px}.hero-copy h1{font-size:50px}.mint-progress{height:54px}.progress-content{gap:10px;padding-inline:26px}.mint-count{font-size:11px}.mint-count img{width:19px;height:19px}.hero-connect{width:290px;height:62px;font-size:22px}.login-note{font-size:13px!important}.hero-art{top:350px}}
 
@@ -59,8 +60,7 @@
   .egg-glow-new{top:-25px;left:780px;width:680px;height:638px}
   .island-new{top:337px;left:767px;width:678px}
   .egg-new{top:18px;left:949px;width:313px}
-  .balloon-one{top:25px;left:713px;width:79px}.balloon-two{top:-7px;right:11px;width:46px}
-  .crystal-one{top:196px;left:63px;width:38px}.crystal-two{top:336px;left:671px;width:19px}
+  .balloon-one{top:25px;left:713px;width:79px}
   .floating-gem{top:310px;left:913px;width:21px}.floating-bird{top:98px;right:164px;width:17px}.floating-feather{top:328px;right:131px;width:26px}
 
   /* Match Figma image-crop settings; exported PNGs include transparent padding. */
@@ -209,7 +209,7 @@
   .header-connect{width:170px;height:42px;font-size:16px}
   .hero-connect-wrap{gap:0}
   .hero-connect{width:340px;height:66px;font-size:24px}
-  .login-note{margin:8px 0 0;text-shadow:0 2px 5px rgba(40,18,96,.32)}
+  .login-note{margin:8px 0 0;text-shadow:none}
   .funds-note{margin-top:12px!important;text-shadow:none}.wallet-balance-card{margin-top:24px}
   .landing-header .main-nav a:hover,.landing-header .social-links a:hover,.landing-header .figma-button:hover,.landing-header .figma-button:active{transform:none}
   .hero-copy::before{top:-105px;width:780px;height:620px;background:radial-gradient(ellipse at center,rgba(242,231,255,.64) 0%,rgba(225,204,255,.4) 44%,rgba(190,162,255,.16) 68%,rgba(170,145,255,0) 86%);filter:blur(18px)}
@@ -238,26 +238,34 @@
 
 @media(min-width:761px){
   .balloon-one{top:48px;left:770px;width:72px}
-  .balloon-two{top:5px;right:8px;width:46px}
-  .crystal-one{top:270px;left:805px;width:36px;animation:egg-decor-reveal 550ms ease-out 700ms both,crystal-left-float 5.8s ease-in-out -.8s infinite}
-  .crystal-two{top:410px;left:1020px;width:21px;animation:egg-decor-reveal 550ms ease-out 700ms both,crystal-bottom-float 7.1s ease-in-out -3.2s infinite}
-  .crystal-three{top:290px;right:54px;width:30px;transform:rotate(-18deg);animation:egg-decor-reveal 550ms ease-out 700ms both,crystal-right-float 6.4s ease-in-out -4.7s infinite}
   .floating-gem{top:118px;left:850px;width:20px}
-  .floating-petal-one{top:52px;right:176px;width:18px;height:18px}
-  .floating-petal-two{top:148px;right:48px;width:25px;height:25px}
-  .floating-petal-three{top:92px;left:920px;width:20px;height:20px}
-  .floating-petal-one img{animation:petal-one-float 6.8s ease-in-out -1.1s infinite}
-  .floating-petal-two img{animation:petal-two-float 7.6s ease-in-out -3.4s infinite}
-  .floating-petal-three img{animation:petal-three-float 7.2s ease-in-out -5.2s infinite}
 }
 
-@media(prefers-reduced-motion:reduce){.spark-field,.balloon,.crystal,.floating-gem,.floating-bird,.floating-feather,.floating-petal,.floating-petal img{animation:none;opacity:1;filter:none;transform:none}}
+@media(prefers-reduced-motion:reduce){.spark-field,.balloon,.floating-gem,.floating-bird,.floating-feather{animation:none;opacity:1;filter:none;transform:none}}
 @media(prefers-reduced-motion:reduce){.hero-art{animation:none;translate:0 0}}
 @media(prefers-reduced-motion:reduce){.egg-burst-field{display:none}}
 
 /* Keep the portaled wallet dialog centered and fully visible in the viewport. */
 .wallet-modal{width:min(601.18px,calc(100vw - 24px),calc((100dvh - 24px)*1.09305))}
 .wallet-provider-content strong,.wallet-provider-content small{font-weight:500}
+
+@media(max-width:760px){
+  .spark-field{display:block;z-index:8}
+  .orbit-spark{position:absolute;pointer-events:none}
+  .orbit-spark-crystal{width:7vw;filter:drop-shadow(0 0 5px rgba(235,210,255,.72));animation:decor-float 6.8s ease-in-out infinite}
+  .orbit-spark-crystal-left{top:475px;left:2%;transform:rotate(-28deg)}
+  .orbit-spark-crystal-right{top:500px;left:91%;width:8vw;transform:rotate(24deg);animation-delay:-4.4s}
+  .orbit-spark-feather{width:8vw;filter:drop-shadow(0 0 5px rgba(255,220,255,.65));animation:decor-float 7.4s ease-in-out infinite}
+  .orbit-spark-feather-left{top:370px;left:5%;transform:rotate(-28deg);animation-delay:-3.2s}
+  .orbit-spark-feather-right{top:410px;left:88%;width:9vw;transform:rotate(22deg);animation-delay:-5.1s}
+  .orbit-spark-bird{top:340px;left:2%;width:6vw;opacity:.62;transform:rotate(-12deg);animation-delay:-4.2s}
+  .orbit-spark-star{color:#fff;font:700 5vw/1 Georgia,serif;text-shadow:0 0 6px #fff,0 0 16px #d7adff;animation:spark-twinkle 3.2s ease-in-out infinite}
+  .orbit-spark-star-left{top:350px;left:12%;font-size:4vw}
+  .orbit-spark-star-top{top:338px;left:64%;font-size:5vw;animation-delay:-1.5s}
+  .light-spark-three{display:none}
+  .distant-island{display:none}
+}
+
 .wallet-modal-close{right:5.25%}
 .wallet-divider{width:100%;justify-content:center}
 .wallet-divider .wallet-divider-side{position:relative;display:block;width:200px;height:12px;max-width:43.44%;flex:0 1 200px;background:none}
@@ -274,8 +282,6 @@
   .light-spark{color:#fff;font-family:Georgia,serif;font-style:normal;font-weight:700;line-height:1;text-shadow:0 0 6px #fff,0 0 14px #fff,0 0 24px #c995ff;filter:drop-shadow(0 0 3px rgba(255,255,255,.95))}
   .light-spark-two{top:78px;left:1248px;font-size:14px;animation-duration:2.8s;animation-delay:0s}
   .light-spark-three{top:142px;left:900px;font-size:18px;animation-duration:3.4s;animation-delay:-1.3s}
-  .light-spark-four{top:172px;left:1330px;font-size:13px;animation-duration:4.1s;animation-delay:-2.6s}
-  .light-spark-five{top:254px;left:862px;font-size:24px;animation-duration:3.7s;animation-delay:-.7s}
 }
 
 /* Landing typography — Figma node 316:5 */
@@ -346,7 +352,7 @@
 .wallet-provider,.wallet-provider-metamask{height:72px;aspect-ratio:auto}
 .wallet-provider-google .wallet-provider-frame{top:-42.53%;left:-5.31%;width:110.57%;height:185.1%}
 .wallet-provider-metamask .wallet-provider-frame{top:-25.59%;left:-1.92%;width:103.94%;height:153.97%}
-.wallet-provider-content{right:34px;left:34px;width:auto;gap:10px}
+.wallet-provider-content{right:34px;left:34px;width:auto;gap:14px}
 .wallet-provider-content>img{width:24px;height:24px}
 .wallet-provider-google .wallet-provider-content>img{width:30px;height:30px;padding:4px;border-radius:50%;background:#fff;object-fit:contain}
 .wallet-provider-metamask .wallet-provider-content>img{width:30px;height:30px;object-fit:contain}
@@ -396,19 +402,12 @@
   .distant-island-leaf{top:158px;left:728px;width:136px;animation:distant-island-left 8s ease-in-out -2s infinite}
   .distant-island-water{top:116px;right:-18px;width:126px;animation:distant-island-right 9s ease-in-out -4s infinite}
 
-  .balloon-one{top:82px;left:785px;width:66px}
-  .balloon-two{top:36px;right:18px;width:42px}
-  .crystal-one{top:245px;left:842px;width:34px}
-  .crystal-two{top:420px;left:1018px;width:20px}
-  .crystal-three{top:280px;right:48px;width:28px}
-  .floating-petal-one{top:80px;left:904px;width:18px;height:18px}
-  .floating-petal-two{top:126px;right:54px;width:24px;height:24px}
-  .floating-petal-three{top:360px;right:118px;left:auto;width:20px;height:20px}
+  .balloon-one{top:52px;left:735px;width:62px}
+  .spark-field{z-index:4}
+  .egg-burst-field{display:none}
 
-  .light-spark-two{top:94px;left:1250px}
-  .light-spark-three{top:182px;left:880px}
-  .light-spark-four{top:230px;left:1340px}
-  .light-spark-five{top:350px;left:905px}
+  .light-spark-two{top:132px;left:1430px;opacity:.36}
+  .light-spark-three{display:none}
 }
 @keyframes distant-island-left{0%,100%{transform:translate(0,0) rotate(-2deg)}50%{transform:translate(4px,-7px) rotate(0deg)}}
 @keyframes distant-island-right{0%,100%{transform:translate(0,0) rotate(2deg)}50%{transform:translate(-4px,-6px) rotate(0deg)}}
@@ -477,14 +476,164 @@
 @media(min-width:761px){
   .distant-island{z-index:2;filter:blur(.45px) drop-shadow(0 12px 18px rgba(64,34,145,.16))}
   .distant-island-leaf{top:188px;left:728px;width:132px;opacity:.36;animation:distant-island-left 9s ease-in-out -2s infinite}
-  .distant-island-castle{top:104px;right:-34px;width:158px;opacity:.28;animation:distant-island-right 10s ease-in-out -4s infinite}
 }
 
 @media(max-width:760px){
   .egg-orbit{display:none}
-  .distant-island-castle{display:none}
 }
 
 @media(prefers-reduced-motion:reduce){
   .orbit-detail{animation:none}
+}
+
+/* Eggoria Design System v1.0 — semantic color mapping. */
+:root{
+  --text-primary:#211052;
+  --text-default:#40356b;
+  --text-secondary:#51466f;
+  --text-muted:#665b84;
+  --text-secondary-strong:#40356b;
+  --text-on-dark-primary:#fff9f3;
+  --text-on-dark-default:#d8cff0;
+  --text-on-dark-secondary:#b7a9d8;
+  --text-on-dark-muted:#8f82b3;
+  --brand-purple-50:#a061f0;
+  --brand-purple-60:#853de7;
+  --brand-purple-70:#6a2cd7;
+  --brand-purple-80:#541db8;
+  --accent-gold-40:#ffd978;
+  --accent-gold-50:#f0b84a;
+  --surface-cream:#fff8ee;
+  --surface-lavender:#f5eefa;
+  --surface-soft-purple:#f7f2ff;
+  --surface-dark:#1b1246;
+  --surface-dark-2:#17103d;
+  --progress-container:#eee8f8;
+  --progress-track:#6a58a7;
+  --progress-fill-start:#c156f3;
+  --progress-fill-end:#823dda;
+}
+
+body{color:var(--text-primary)}
+.hero-copy h1{color:var(--text-primary)}
+.hero-copy>p,
+.mint-count,
+.wallet-balance-card{color:var(--text-default)}
+.login-note,
+.funds-note{color:var(--text-secondary-strong)}
+.connection-notice{color:var(--brand-purple-80)!important}
+
+.main-nav a{color:var(--text-default)}
+.main-nav a:hover,
+.main-nav a.is-active{color:var(--brand-purple-70)}
+
+.progress-track{background:var(--progress-track)}
+.progress-track i{background:linear-gradient(90deg,var(--progress-fill-start),var(--progress-fill-end))}
+.progress-track b{box-shadow:0 0 8px 5px rgba(193,86,243,.42)}
+
+.wallet-modal,
+.funds-modal,
+.claim-modal,
+.minting-modal{color:var(--text-on-dark-primary)}
+.wallet-modal-heading h2,
+.funds-modal-copy h2,
+.claim-modal-heading h2,
+.minting-heading h2{color:var(--text-on-dark-primary)}
+.wallet-modal-heading p,
+.funds-modal-copy p,
+.claim-modal-heading p,
+.minting-heading p{color:var(--text-on-dark-default)}
+.wallet-option>p,
+.wallet-privacy,
+.claim-limit,
+.minting-status p,
+.minting-explorer,
+.minting-helper{color:var(--text-on-dark-secondary)}
+.wallet-divider b,
+.claim-details dt,
+.claim-details dd,
+.minting-status strong{color:var(--text-on-dark-primary)}
+.wallet-nav-menu{border-color:var(--brand-purple-60);background:rgba(27,18,70,.97)}
+.wallet-nav-menu a,
+.wallet-nav-menu button,
+.funds-cancel,
+.funds-confirm,
+.claim-cancel,
+.claim-confirm,
+.funds-done{color:var(--text-on-dark-primary)}
+.funds-cancel,
+.claim-cancel{border-color:var(--brand-purple-60);background:linear-gradient(180deg,#3d2b73 0%,var(--surface-dark) 52%,var(--surface-dark-2) 100%)}
+.wallet-provider-metamask .wallet-provider-content strong{color:var(--text-default)}
+
+/* Final desktop-only decoration placement around the egg. */
+@media(min-width:761px){
+  .balloon-one{top:45px;left:730px;width:60px}
+  .orbit-spark-crystal-left{top:235px;left:790px;width:26px}
+  .orbit-spark-crystal-right{top:235px;left:1410px;width:26px}
+  .orbit-spark-feather-left{top:105px;left:760px;width:22px;opacity:.52}
+  .orbit-spark-feather-right{top:130px;left:1430px;width:23px;opacity:.52}
+  .orbit-spark-bird{top:95px;left:690px;width:17px;opacity:.45}
+  .orbit-spark-star-left{top:92px;left:750px;font-size:11px}
+  .orbit-spark-star-top{top:65px;left:1110px;font-size:13px}
+  .light-spark-two{top:125px;left:1460px;opacity:.3}
+  .light-spark-three{display:none}
+}
+
+/* Figma decoration alignment: keep the center gap clear and cluster accents around the egg. */
+@media(min-width:761px){
+  .balloon-one{top:70px;left:750px;width:60px}
+  .orbit-spark-crystal-left{top:175px;left:900px;width:25px}
+  .orbit-spark-crystal-right{top:300px;left:1345px;width:27px}
+  .orbit-spark-feather-left{top:110px;left:700px;width:21px;opacity:.48}
+  .orbit-spark-feather-right{top:135px;left:1290px;width:23px;opacity:.5}
+  .orbit-spark-bird{top:95px;left:650px;width:17px;opacity:.44}
+  .orbit-spark-star-left{top:125px;left:860px;font-size:11px}
+  .orbit-spark-star-top{top:70px;left:1010px;font-size:13px}
+  .light-spark-two{top:135px;left:1415px;opacity:.3}
+  .light-spark-three{top:220px;left:920px;display:block;opacity:.22}
+}
+
+/* Final Figma-aligned decoration orbit. */
+@media(min-width:761px){
+  .balloon-one{top:35px;left:730px;width:60px}
+  .orbit-spark-feather-left{top:28px;left:650px;width:21px;opacity:.5}
+  .orbit-spark-feather-right{top:92px;left:1280px;width:23px;opacity:.52}
+  .orbit-spark-crystal-left{top:300px;left:690px;width:25px}
+  .orbit-spark-crystal-right{top:290px;left:1315px;width:27px}
+  .orbit-spark-star-left{top:112px;left:870px;font-size:11px}
+  .orbit-spark-star-top{top:45px;left:990px;font-size:13px}
+  .light-spark-two{top:82px;left:1390px;opacity:.32}
+  .light-spark-three{top:210px;left:850px;display:block;opacity:.2}
+}
+
+@media(max-width:760px){
+  .orbit-spark-bird{display:none}
+}
+
+/* Figma side islands: the transparent PNGs are intentionally cropped by the viewport. */
+@media(min-width:761px){
+  .distant-island-left,
+  .distant-island-right{
+    display:block;
+    position:absolute;
+    z-index:2;
+    width:130px;
+    opacity:.88;
+    filter:drop-shadow(0 18px 22px rgba(56,32,137,.24));
+  }
+  .distant-island-left{
+    top:100px;
+    left:-25px;
+    animation:distant-island-left 9s ease-in-out -2.5s infinite;
+  }
+  .distant-island-right{
+    top:25px;
+    right:-33px;
+    animation:distant-island-right 10s ease-in-out -4.5s infinite;
+  }
+}
+
+@media(max-width:760px){
+  .distant-island-left,
+  .distant-island-right{display:none}
 }
