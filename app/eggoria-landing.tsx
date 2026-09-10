@@ -98,6 +98,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; balance: string; address: string } | null>(null);
   const [mintReadyAddress, setMintReadyAddress] = useState("");
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [fundsGuideOpen, setFundsGuideOpen] = useState(false);
   const [arcBalance, setArcBalance] = useState("0.00");
   const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
   const portalReady = useSyncExternalStore(subscribeToClient, () => true, () => false);
@@ -256,6 +257,10 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
 
   useEffect(() => {
+    Promise.resolve().then(() => setFundsGuideOpen(Boolean(walletAddress) && !hasTestFunds));
+  }, [hasTestFunds, walletAddress]);
+
+  useEffect(() => {
     if (!walletAddress) {
       Promise.resolve().then(() => setWalletKind(""));
       return;
@@ -348,6 +353,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     setWalletKind("");
     setMintReadyAddress("");
     setWalletMenuOpen(false);
+    setFundsGuideOpen(false);
     setNotice("");
   };
 
@@ -366,6 +372,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       }
       return;
     }
+    setFundsGuideOpen(false);
     setFundsError("");
     setFundsSuccess(null);
     setFundsModalOpen(true);
@@ -505,11 +512,20 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             <button className="figma-button hero-connect" type="button" onClick={handleHeroAction}>
               <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
+            {walletAddress && !hasTestFunds && fundsGuideOpen && <aside className="funds-guide" aria-label="Get free test funds guide">
+              <i className="funds-guide-pointer" aria-hidden="true" />
+              <div className="funds-guide-header">
+                <span>Step 1 of 3</span>
+                <button type="button" aria-label="Close test funds guide" onClick={() => setFundsGuideOpen(false)}>{"\u00D7"}</button>
+              </div>
+              <h2>Get Free Test Funds</h2>
+              <p>You need free test funds to create your Egg.<br />They only work here for testing.</p>
+            </aside>}
             {hasTestFunds ? <p className="login-note funds-note mint-helper"><img src={asset("funds-shield.svg")} alt="" />One egg per wallet. Fee covered by your test funds</p> : walletAddress ? <>
-              <p className="login-note funds-note">Covers the small network fee. Totally free, just for testing</p>
+              <p className="login-note funds-note">This free test balance is used to create your Egg.</p>
               <div className="wallet-balance-card">
                 <img src={asset("funds-balance-frame.png")} alt="" />
-                <span>You have {arcBalance} Test USDC. You&apos;ll need this to create your egg</span>
+                <span>You have {arcBalance} Test USDC. You&apos;ll need this to create your Egg</span>
               </div>
             </> : <p className="login-note">{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Continue with Google or MetaMask"}</p>}
             {notice && <p className="connection-notice" role="status">{notice}</p>}
