@@ -525,23 +525,37 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             <button className="figma-button hero-connect" type="button" onClick={handleHeroAction}>
               <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
-            {walletAddress && !hasTestFunds && <button
+            {walletAddress && <button
               className={`funds-guide-backdrop${fundsGuideOpen ? " is-open" : ""}`}
               type="button"
               tabIndex={-1}
               aria-label="Close test funds guide"
               onClick={() => setFundsGuideOpen(false)}
             />}
-            {walletAddress && !hasTestFunds && <aside id="funds-guide" className={`funds-guide${fundsGuideOpen ? " is-open" : ""}`} aria-label="Get free test funds guide" aria-hidden={!fundsGuideOpen}>
+            {walletAddress && <aside id="funds-guide" className={`funds-guide${fundsGuideOpen ? " is-open" : ""}`} aria-label={hasTestFunds ? "Mint your Egg guide" : "Get free test funds guide"} aria-hidden={!fundsGuideOpen}>
               <i className="funds-guide-pointer" aria-hidden="true" />
               <div className="funds-guide-header">
-                <span>Step 1 of 3</span>
+                <span>Step {hasTestFunds ? 2 : 1} of 3</span>
                 <button type="button" aria-label="Close test funds guide" onClick={() => setFundsGuideOpen(false)} />
               </div>
-              <h2>Get Free Test Funds</h2>
-              <p>You need free test funds to create your Egg.<br />They only work here for testing.</p>
+              <h2>{hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</h2>
+              {hasTestFunds
+                ? <p>You&apos;ll confirm a small network fee (covered by<br />your Test USDC) and receive 1 Mystery Egg.</p>
+                : <p>You need free test funds to create your Egg.<br />They only work here for testing.</p>}
             </aside>}
-            {hasTestFunds ? <p className="login-note funds-note mint-helper"><img src={asset("funds-shield.svg")} alt="" />One egg per wallet. Fee covered by your test funds</p> : walletAddress ? <>
+            {hasTestFunds ? <p className="login-note funds-note mint-helper">
+              <span className="funds-note-content">
+                <span>You&apos;re ready to mint. One Egg per wallet.</span>
+                <button
+                  className="funds-guide-help"
+                  type="button"
+                  aria-label="Show mint guide"
+                  aria-controls="funds-guide"
+                  aria-expanded={fundsGuideOpen}
+                  onClick={() => setFundsGuideOpen(true)}
+                >?</button>
+              </span>
+            </p> : walletAddress ? <>
               <p className="login-note funds-note">
                 <span className="funds-note-content">
                   <span>This free test balance is used to create your Egg.</span>

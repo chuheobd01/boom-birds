@@ -224,7 +224,7 @@
 .wallet-provider:hover,.wallet-provider:active{transform:none!important}
 .wallet-provider-content strong,.wallet-provider-content small{font-family:"Be Vietnam Pro",sans-serif;font-weight:500}
 .funds-modal-copy h2{font-size:36px}
-.funds-cancel:not(:disabled):hover,.funds-cancel:not(:disabled):active,.figma-button.funds-confirm:not(:disabled):hover,.figma-button.funds-confirm:not(:disabled):active{transform:none}
+.funds-cancel:not(:disabled):hover,.funds-cancel:not(:disabled):active,.figma-button.funds-confirm:not(:disabled):hover,.figma-button.funds-confirm:not(:disabled):active,.figma-button.funds-done:not(:disabled):hover,.figma-button.funds-done:not(:disabled):active{transform:none}
 .claim-details dt{font-weight:400}
 .claim-details dd{font-weight:500}
 .figma-button.claim-confirm:not(:disabled):hover,.figma-button.claim-confirm:not(:disabled):active{transform:none}
