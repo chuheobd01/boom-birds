@@ -512,7 +512,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             <button className="figma-button hero-connect" type="button" onClick={handleHeroAction}>
               <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
-            {walletAddress && !hasTestFunds && fundsGuideOpen && <aside className="funds-guide" aria-label="Get free test funds guide">
+            {walletAddress && !hasTestFunds && fundsGuideOpen && <aside id="funds-guide" className="funds-guide" aria-label="Get free test funds guide">
               <i className="funds-guide-pointer" aria-hidden="true" />
               <div className="funds-guide-header">
                 <span>Step 1 of 3</span>
@@ -522,7 +522,19 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
               <p>You need free test funds to create your Egg.<br />They only work here for testing.</p>
             </aside>}
             {hasTestFunds ? <p className="login-note funds-note mint-helper"><img src={asset("funds-shield.svg")} alt="" />One egg per wallet. Fee covered by your test funds</p> : walletAddress ? <>
-              <p className="login-note funds-note">This free test balance is used to create your Egg.</p>
+              <p className="login-note funds-note">
+                <span className="funds-note-content">
+                  <span>This free test balance is used to create your Egg.</span>
+                  <button
+                    className="funds-guide-help"
+                    type="button"
+                    aria-label="Show test funds guide"
+                    aria-controls="funds-guide"
+                    aria-expanded={fundsGuideOpen}
+                    onClick={() => setFundsGuideOpen(true)}
+                  >?</button>
+                </span>
+              </p>
               <div className="wallet-balance-card">
                 <img src={asset("funds-balance-frame.png")} alt="" />
                 <span>You have {arcBalance} Test USDC. You&apos;ll need this to create your Egg</span>
