@@ -103,6 +103,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
   const portalReady = useSyncExternalStore(subscribeToClient, () => true, () => false);
   const closeWalletRef = useRef<HTMLButtonElement>(null);
+  const autoShownFundsGuideRef = useRef(new Set<string>());
   const thirdwebClient = useMemo(
     () => thirdwebClientId ? createThirdwebClient({ clientId: thirdwebClientId }) : null,
     [thirdwebClientId],
@@ -257,7 +258,19 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
 
   useEffect(() => {
-    Promise.resolve().then(() => setFundsGuideOpen(Boolean(walletAddress) && !hasTestFunds));
+    if (!walletAddress || hasTestFunds) {
+      Promise.resolve().then(() => setFundsGuideOpen(false));
+      return;
+    }
+
+    const normalizedAddress = walletAddress.toLowerCase();
+    if (autoShownFundsGuideRef.current.has(normalizedAddress)) return;
+    autoShownFundsGuideRef.current.add(normalizedAddress);
+
+    const storageKey = `eggoria-funds-guide-seen:${normalizedAddress}`;
+    const shouldShowGuide = window.localStorage.getItem(storageKey) !== "1";
+    if (shouldShowGuide) window.localStorage.setItem(storageKey, "1");
+    Promise.resolve().then(() => setFundsGuideOpen(shouldShowGuide));
   }, [hasTestFunds, walletAddress]);
 
   useEffect(() => {
@@ -512,11 +525,18 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             <button className="figma-button hero-connect" type="button" onClick={handleHeroAction}>
               <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
-            {walletAddress && !hasTestFunds && fundsGuideOpen && <aside id="funds-guide" className="funds-guide" aria-label="Get free test funds guide">
+            {walletAddress && !hasTestFunds && <button
+              className={`funds-guide-backdrop${fundsGuideOpen ? " is-open" : ""}`}
+              type="button"
+              tabIndex={-1}
+              aria-label="Close test funds guide"
+              onClick={() => setFundsGuideOpen(false)}
+            />}
+            {walletAddress && !hasTestFunds && <aside id="funds-guide" className={`funds-guide${fundsGuideOpen ? " is-open" : ""}`} aria-label="Get free test funds guide" aria-hidden={!fundsGuideOpen}>
               <i className="funds-guide-pointer" aria-hidden="true" />
               <div className="funds-guide-header">
                 <span>Step 1 of 3</span>
-                <button type="button" aria-label="Close test funds guide" onClick={() => setFundsGuideOpen(false)}>{"\u00D7"}</button>
+                <button type="button" aria-label="Close test funds guide" onClick={() => setFundsGuideOpen(false)} />
               </div>
               <h2>Get Free Test Funds</h2>
               <p>You need free test funds to create your Egg.<br />They only work here for testing.</p>
