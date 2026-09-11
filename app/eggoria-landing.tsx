@@ -92,7 +92,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [mintError, setMintError] = useState("");
   const [mintTransactionHash, setMintTransactionHash] = useState("");
   const [networkFee, setNetworkFee] = useState("Estimating...");
-  const [walletKind, setWalletKind] = useState<WalletKind>("");
+  const [, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
   const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; balance: string; address: string } | null>(null);
@@ -376,13 +376,9 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       return;
     }
     if (hasTestFunds) {
-      if (walletKind === "google") {
-        setClaimError("");
-        setNetworkFee("Estimating...");
-        setClaimModalOpen(true);
-      } else {
-        setNotice("Egg minting will be available in the next step.");
-      }
+      setClaimError("");
+      setNetworkFee("Estimating...");
+      setClaimModalOpen(true);
       return;
     }
     setFundsGuideOpen(false);
@@ -712,21 +708,23 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           </button>
           <span className="claim-egg"><img src={asset("claim-egg.png")} alt="" /></span>
           <header className="claim-modal-heading">
-            <h2 id="claim-modal-title">Claim You Egg</h2>
+            <h2 id="claim-modal-title">Claim Your Egg</h2>
             <p>Your Eggoria journey begins here.</p>
           </header>
-          <dl className="claim-details">
-            <div><dt><img src={asset("claim-wallet.svg")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
-            <div><dt><img src={asset("claim-network.svg")} alt="" />Network</dt><dd>{ARC_TESTNET.name}</dd></div>
-            <div><dt><img src={asset("claim-price.svg")} alt="" />Mint price</dt><dd>Free</dd></div>
-            <div><dt><img src={asset("claim-fee.svg")} alt="" />Network fee</dt><dd>{networkFee === "Unavailable" || networkFee === "Estimating..." ? networkFee : `~${networkFee} USDC`}</dd></div>
-          </dl>
-          <p className="claim-limit"><img src={asset("claim-shield.svg")} alt="" />Each wallet can claim one egg only</p>
-          <div className="claim-actions">
-            <button className="funds-cancel claim-cancel" type="button" onClick={() => setClaimModalOpen(false)} disabled={claimSubmitting}>Close</button>
-            <button className="figma-button claim-confirm" type="button" onClick={mintEgg} disabled={claimSubmitting}>
-              <img src={asset("button.png")} alt="" /><span>{claimSubmitting && <i className="claim-button-spinner" aria-hidden="true" />}{claimSubmitting ? "Minting..." : "Confirm"}</span>
-            </button>
+          <div className="claim-panel">
+            <dl className="claim-details">
+              <div><dt><img src={asset("claim-wallet.png")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
+              <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{ARC_TESTNET.name}</dd></div>
+              <div><dt><img src={asset("claim-price.png")} alt="" />Mint price</dt><dd>Free</dd></div>
+              <div><dt><img src={asset("claim-receive.png")} alt="" />You receive</dt><dd>1 Mystery Egg</dd></div>
+              <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{networkFee === "Unavailable" || networkFee === "Estimating..." ? networkFee : `~${networkFee} USDC`}</dd></div>
+            </dl>
+            <div className="claim-actions">
+              <button className="funds-cancel claim-cancel" type="button" onClick={() => setClaimModalOpen(false)} disabled={claimSubmitting}>Close</button>
+              <button className="figma-button claim-confirm" type="button" onClick={mintEgg} disabled={claimSubmitting}>
+                <img src={asset("button.png")} alt="" /><span>{claimSubmitting && <i className="claim-button-spinner" aria-hidden="true" />}{claimSubmitting ? "Minting..." : "Confirm"}</span>
+              </button>
+            </div>
           </div>
           {claimError && <p className="claim-error" role="alert">{claimError}</p>}
         </section>
