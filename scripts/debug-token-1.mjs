@@ -49,17 +49,36 @@ async function main() {
     ethers.provider,
   );
 
-  const [owner, bird, tokenUri, totalSupply, mintingEnabled] = await Promise.all([
+  const [owner, tokenUri, totalSupply, mintingEnabled] = await Promise.all([
     eggoriaBirds.ownerOf(TOKEN_ID),
-    eggoriaBirds.birds(TOKEN_ID),
     eggoriaBirds.tokenURI(TOKEN_ID),
     eggoriaBirds.totalSupply(),
     eggoriaBirds.mintingEnabled(),
   ]);
 
-  const [lastCheckInDay, land, checkIns, stage, rarity, rarityAssigned] = bird;
+  let lastCheckInDay;
+  let land;
+  let checkIns;
+  let stage;
+  let rarity;
+  let landAssigned = true;
+  let rarityAssigned;
+
+  try {
+    const state = await eggoriaBirds.tokenState(TOKEN_ID);
+    [, land, landAssigned, stage, rarity, rarityAssigned, checkIns, lastCheckInDay] = state;
+  } catch {
+    const legacyContract = new ethers.Contract(
+      contractAddress,
+      ["function birds(uint256) view returns (uint64,uint8,uint8,uint8,uint8,bool)"],
+      ethers.provider,
+    );
+    [lastCheckInDay, land, checkIns, stage, rarity, rarityAssigned] =
+      await legacyContract.birds(TOKEN_ID);
+  }
+
   const ownerHasMinted = await eggoriaBirds.hasMinted(owner);
-  const landMinted = await eggoriaBirds.landMinted(land);
+  const landMinted = landAssigned ? await eggoriaBirds.landMinted(land) : null;
 
   console.log("Chain ID:", currentNetwork.chainId.toString());
   console.log("Contract:", contractAddress);
@@ -68,8 +87,9 @@ async function main() {
   console.log("Owner has minted:", ownerHasMinted);
   console.log("Total supply:", totalSupply.toString());
   console.log("Minting enabled:", mintingEnabled);
-  console.log("Land:", `${enumName(LAND_NAMES, land)} (${land})`);
-  console.log("Land minted count:", landMinted.toString());
+  console.log("Land:", landAssigned ? `${enumName(LAND_NAMES, land)} (${land})` : "Pending");
+  console.log("Land assigned:", landAssigned);
+  console.log("Land minted count:", landMinted?.toString() ?? "Pending");
   console.log("Stage:", `${enumName(STAGE_NAMES, stage)} (${stage})`);
   console.log("Check-ins:", checkIns.toString());
   console.log("Last check-in day:", lastCheckInDay.toString());

@@ -5,7 +5,9 @@
 ## Collection rules
 
 - Maximum supply: 500; one mint per wallet.
-- Five numeric lands (`0` through `4`). Round-robin assignment guarantees 100 birds per land when the collection sells out.
+- Five numeric lands (`0` through `4`), each with exactly 100 inventory slots.
+- `mint()` creates the NFT with a pending land and emits `LandRequested`.
+- `fulfillLand()` uses secure randomness to select one of all remaining land slots, then emits `BirdMinted`.
 - One check-in per UTC day.
 - Check-in 10 changes the token to `Intermediate`.
 - Check-in 20 emits `RarityRequested`. The bird remains `Intermediate` while randomness is pending.
@@ -26,7 +28,7 @@ Each URI must point to NFT metadata JSON. Change the JSON `image` field to chang
 
 ## Randomness
 
-Do not generate rarity from `block.timestamp`, `blockhash`, or user input. Grant `RANDOMIZER_ROLE` to a reviewed VRF/oracle adapter. The adapter watches `RarityRequested` and calls `fulfillRarity(tokenId, randomWord)` with a verified random word. Revoke this role from the deployer after the adapter is configured.
+Do not generate land or rarity from `block.timestamp`, `blockhash`, or user input. Grant `RANDOMIZER_ROLE` to a reviewed VRF/oracle adapter. The adapter watches `LandRequested` and `RarityRequested`, then calls `fulfillLand(tokenId, randomWord)` or `fulfillRarity(tokenId, randomWord)` with a verified random word. Revoke this role from the deployer after the adapter is configured.
 
 ## Compile
 

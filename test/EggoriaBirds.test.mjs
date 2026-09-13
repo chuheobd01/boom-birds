@@ -36,6 +36,7 @@ test("assigns lands from weighted remaining inventory and preserves rarity quota
     await (await birds.connect(minter).mint()).wait();
     const tokenId = BigInt(index + 1);
 
+    assert.equal(await birds.mintedTokenOf(address), tokenId);
     assert.equal(await birds.tokenURI(tokenId), "");
     await expectRevert(
       () => birds.tokenLand(tokenId),

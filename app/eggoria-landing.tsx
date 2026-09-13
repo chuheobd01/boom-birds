@@ -15,6 +15,18 @@ type EggoriaUser = { id: string; name: string; position: number };
 type GoogleCredential = { credential: string };
 type WalletKind = "google" | "metamask" | "";
 type MintPhase = "submitting" | "confirming" | "success" | "error";
+type OwnedBird = {
+  tokenId: bigint;
+  owner: string;
+  land: number;
+  landAssigned: boolean;
+  stage: number;
+  rarity: number;
+  rarityAssigned: boolean;
+  checkIns: number;
+  lastCheckInDay: bigint;
+  image: string;
+};
 type EthereumProvider = {
   isMetaMask?: boolean;
   providers?: EthereumProvider[];
@@ -48,6 +60,12 @@ const navItems = [
   ["home", "Home"], ["how-it-works", "How It Works"], ["lands", "Lands"],
   ["rarity", "Rarity"], ["roadmap", "Roadmap"], ["faq", "FAQ"],
 ] as const;
+const landNames = ["Forest", "Wind/Pilot", "Wizard", "Artist", "King"] as const;
+const landClassNames = ["forest", "wind", "wizard", "artist", "king"] as const;
+const landBirdAssets = ["forest-primary.png", "wind-primary.png", "wizard-primary.png", "artist-primary.png", "king-primary.png"] as const;
+const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png", "land-artist.png", "land-king.png"] as const;
+const stageNames = ["Hatchling", "Fledgling", "Advanced"] as const;
+const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 
 const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 const toBrowserUri = (uri: string) => uri.startsWith("ipfs://")
@@ -122,6 +140,9 @@ export default function EggoriaLanding({
   const [mintedTokenId, setMintedTokenId] = useState<bigint | null>(null);
   const [mintedNftImage, setMintedNftImage] = useState("");
   const [walletAlreadyMinted, setWalletAlreadyMinted] = useState(false);
+  const [ownedBird, setOwnedBird] = useState<OwnedBird | null>(null);
+  const [checkInSubmitting, setCheckInSubmitting] = useState(false);
+  const [checkInError, setCheckInError] = useState("");
   const [networkFee, setNetworkFee] = useState("Estimating...");
   const [, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
@@ -281,6 +302,92 @@ export default function EggoriaLanding({
   const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Get Your Egg";
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
 
+  const findOwnedTokenId = useCallback(async (address: string, supply: number) => {
+    if (!eggoriaContract || !isAddress(address)) return null;
+
+    try {
+      const tokenId = await readContract({
+        contract: eggoriaContract,
+        method: "mintedTokenOf",
+        params: [address],
+      });
+      if (tokenId > BigInt(0)) {
+        const owner = await readContract({ contract: eggoriaContract, method: "ownerOf", params: [tokenId] });
+        if (owner.toLowerCase() === address.toLowerCase()) return tokenId;
+      }
+    } catch {
+      // Older deployments do not expose mintedTokenOf; scan their small supply below.
+    }
+
+    for (let start = 1; start <= supply; start += 25) {
+      const end = Math.min(supply, start + 24);
+      const owners = await Promise.all(
+        Array.from({ length: end - start + 1 }, (_, offset) => {
+          const tokenId = BigInt(start + offset);
+          return readContract({
+            contract: eggoriaContract,
+            method: "ownerOf",
+            params: [tokenId],
+          }).then((owner) => ({ owner, tokenId })).catch(() => null);
+        }),
+      );
+      const match = owners.find((entry) => entry?.owner.toLowerCase() === address.toLowerCase());
+      if (match) return match.tokenId;
+    }
+
+    return null;
+  }, [eggoriaContract]);
+
+  const readOwnedBird = useCallback(async (tokenId: bigint): Promise<OwnedBird | null> => {
+    if (!eggoriaContract) return null;
+
+    let owner = "";
+    let land = 0;
+    let landAssigned = true;
+    let stage = 0;
+    let rarity = 0;
+    let rarityAssigned = false;
+    let checkIns = 0;
+    let lastCheckInDay = BigInt(0);
+
+    try {
+      const state = await readContract({
+        contract: eggoriaContract,
+        method: "tokenState",
+        params: [tokenId],
+      });
+      [owner, land, landAssigned, stage, rarity, rarityAssigned, checkIns, lastCheckInDay] = [
+        state[0], Number(state[1]), state[2], Number(state[3]), Number(state[4]),
+        state[5], Number(state[6]), state[7],
+      ];
+    } catch {
+      owner = await readContract({ contract: eggoriaContract, method: "ownerOf", params: [tokenId] });
+      const legacyState = await readContract({
+        contract: eggoriaContract,
+        method: "birds",
+        params: [tokenId],
+      });
+      lastCheckInDay = legacyState[0];
+      land = Number(legacyState[1]);
+      checkIns = Number(legacyState[2]);
+      stage = Number(legacyState[3]);
+      rarity = Number(legacyState[4]);
+      rarityAssigned = legacyState[5];
+    }
+
+    let image = "";
+    if (landAssigned) {
+      try {
+        const tokenUri = await readContract({ contract: eggoriaContract, method: "tokenURI", params: [tokenId] });
+        image = await readNftImage(tokenUri);
+      } catch {
+        // The owner view remains available while an IPFS gateway is unavailable.
+      }
+    }
+
+    return { tokenId, owner, land, landAssigned, stage, rarity, rarityAssigned, checkIns, lastCheckInDay, image };
+  }, [eggoriaContract]);
+
   const readEggoriaState = useCallback(async (address = walletAddress) => {
     if (!eggoriaContract) throw new Error("Eggoria Birds contract is not configured.");
     const accountAddress = isAddress(address) ? address : null;
@@ -290,13 +397,19 @@ export default function EggoriaLanding({
         ? readContract({ contract: eggoriaContract, method: "hasMinted", params: [accountAddress] })
         : Promise.resolve(false),
     ]);
-    return { totalSupply: Number(supply), alreadyMinted };
-  }, [eggoriaContract, walletAddress]);
+    const totalSupply = Number(supply);
+    const tokenId = accountAddress
+      ? await findOwnedTokenId(accountAddress, totalSupply)
+      : null;
+    const bird = tokenId ? await readOwnedBird(tokenId) : null;
+    return { totalSupply, alreadyMinted, bird };
+  }, [eggoriaContract, findOwnedTokenId, readOwnedBird, walletAddress]);
 
   const refreshEggoriaState = useCallback(async (address = walletAddress) => {
     const state = await readEggoriaState(address);
     setMinted(state.totalSupply);
     setWalletAlreadyMinted(state.alreadyMinted);
+    setOwnedBird(state.bird);
     return state;
   }, [readEggoriaState, walletAddress]);
 
@@ -308,11 +421,13 @@ export default function EggoriaLanding({
         if (!active) return;
         setMinted(state.totalSupply);
         setWalletAlreadyMinted(state.alreadyMinted);
+        setOwnedBird(state.bird);
       })
       .catch(() => {
         if (!active) return;
         setMinted(0);
         setWalletAlreadyMinted(false);
+        setOwnedBird(null);
       })
       .finally(() => {
         if (active) setStatsLoading(false);
@@ -320,6 +435,16 @@ export default function EggoriaLanding({
 
     return () => { active = false; };
   }, [readEggoriaState, walletAddress]);
+
+  useEffect(() => {
+    if (!walletAddress || ownedBird?.landAssigned !== false) return;
+
+    const interval = window.setInterval(() => {
+      refreshEggoriaState(walletAddress).catch(() => undefined);
+    }, 4_000);
+
+    return () => window.clearInterval(interval);
+  }, [ownedBird?.landAssigned, refreshEggoriaState, walletAddress]);
 
   useEffect(() => {
     if (!walletAddress || hasTestFunds) {
@@ -431,6 +556,7 @@ export default function EggoriaLanding({
     setMintReadyAddress("");
     setWalletMenuOpen(false);
     setFundsGuideOpen(false);
+    setOwnedBird(null);
     setNotice("");
   };
 
@@ -541,7 +667,8 @@ export default function EggoriaLanding({
         if (log.address.toLowerCase() !== eggoriaBirdsAddress.toLowerCase()) continue;
         try {
           const event = decodeEventLog({ abi: eggoriaBirdsAbi, data: log.data, topics: log.topics });
-          if (event.eventName === "BirdMinted" && event.args.owner.toLowerCase() === walletAddress.toLowerCase()) {
+          if ((event.eventName === "BirdMinted" || event.eventName === "LandRequested")
+            && event.args.owner.toLowerCase() === walletAddress.toLowerCase()) {
             tokenId = event.args.tokenId;
             break;
           }
@@ -588,6 +715,56 @@ export default function EggoriaLanding({
       setClaimSubmitting(false);
     }
   };
+
+  const checkInBird = async () => {
+    if (!activeAccount || !eggoriaContract || !ownedBird || checkInSubmitting) return;
+    if (!ownedBird.landAssigned) {
+      setCheckInError("Your land is still being assigned.");
+      return;
+    }
+
+    setCheckInSubmitting(true);
+    setCheckInError("");
+    try {
+      const transaction = prepareContractCall({
+        contract: eggoriaContract,
+        method: "checkIn",
+        params: [ownedBird.tokenId],
+      });
+      const result = await sendTransaction({ transaction, account: activeAccount });
+      await waitForReceipt(result);
+      await refreshEggoriaState(walletAddress);
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : "";
+      setCheckInError(
+        message.includes("alreadycheckedintoday") || message.includes("already checked")
+          ? "You have already checked in today. Come back tomorrow."
+          : "Check-in could not be completed. Please try again.",
+      );
+    } finally {
+      setCheckInSubmitting(false);
+    }
+  };
+
+  const currentStage = ownedBird ? stageNames[ownedBird.stage] ?? "Unknown" : "";
+  const nextStage = !ownedBird || ownedBird.stage === 0
+    ? "Fledgling"
+    : ownedBird.stage === 1
+      ? "Advanced"
+      : ownedBird.rarityAssigned
+        ? rarityNames[ownedBird.rarity] ?? "Complete"
+        : "Rarity pending";
+  const stageProgress = ownedBird
+    ? ownedBird.stage === 0
+      ? Math.min(10, ownedBird.checkIns)
+      : ownedBird.stage === 1
+        ? Math.min(10, ownedBird.checkIns - 10)
+        : 10
+    : 0;
+  const checkInsRemaining = Math.max(0, 10 - stageProgress);
+  const ownedLandClass = ownedBird?.landAssigned
+    ? landClassNames[ownedBird.land] ?? "wizard"
+    : "pending";
 
   return (
     <>
@@ -636,7 +813,68 @@ export default function EggoriaLanding({
               <span className="progress-track">{statsLoading ? <span className="progress-skeleton" /> : <><i style={{ width: `${progress}%` }} /><b style={{ left: `${progress}%` }} /></>}</span>
             </div>
           </div>
-          <div className="hero-connect-wrap">
+          {ownedBird ? <div className="bird-owner-wrap">
+            <section className={`bird-evolution-card land-${ownedLandClass}`} aria-label={`Evolution progress for Eggoria Bird #${ownedBird.tokenId}`}>
+              <img className="bird-evolution-frame" src={asset("checkin-frame.png")} alt="" />
+              <div className="bird-stage-heading">
+                <div><strong>{ownedBird.landAssigned ? currentStage : "Mystery Egg"}</strong><span>Current Stage</span></div>
+                <div><strong>{ownedBird.landAssigned ? nextStage : "Land reveal"}</strong><span>Next Stage</span></div>
+              </div>
+              <div className="bird-checkin-track" aria-label={`${stageProgress} of 10 check-ins completed in this stage`}>
+                {Array.from({ length: 10 }, (_, index) => <span className={`bird-checkin-step${index === 0 ? " is-first" : ""}`} key={index}>
+                  {index > 0 && <img className="bird-checkin-line" src={asset(index < stageProgress ? "checkin-line-complete.png" : "checkin-line-pending.png")} alt="" />}
+                  <img className="bird-checkin-marker" src={asset(index < stageProgress ? "checkin-complete.png" : "checkin-pending.png")} alt="" />
+                </span>)}
+              </div>
+              <p><img src={asset("checkin-helper.png")} alt="" />{ownedBird.landAssigned
+                ? ownedBird.stage >= 2
+                  ? `${rarityNames[ownedBird.rarity] ?? "Advanced"} evolution complete.`
+                  : `${checkInsRemaining} more check-in${checkInsRemaining === 1 ? "" : "s"} to reach ${nextStage}.`
+                : "Your land is being assigned securely."}</p>
+            </section>
+            <button
+              className="figma-button hero-connect bird-checkin-button"
+              type="button"
+              onClick={checkInBird}
+              disabled={checkInSubmitting || !ownedBird.landAssigned || ownedBird.stage >= 2}
+            >
+              <img src={asset("button.png")} alt="" />
+              <span>{checkInSubmitting ? "Checking In..." : !ownedBird.landAssigned ? "Assigning Land..." : ownedBird.stage >= 2 ? "Evolution Complete" : "Check In"}</span>
+            </button>
+            <button
+              className={`funds-guide-backdrop${fundsGuideOpen ? " is-open" : ""}`}
+              type="button"
+              tabIndex={-1}
+              aria-label="Close check-in guide"
+              onClick={() => setFundsGuideOpen(false)}
+            />
+            <aside id="bird-guide" className={`funds-guide bird-checkin-guide${fundsGuideOpen ? " is-open" : ""}`} aria-label="Daily check-in guide" aria-hidden={!fundsGuideOpen}>
+              <i className="funds-guide-pointer" aria-hidden="true" />
+              <div className="funds-guide-header">
+                <span>Step 3 of 3</span>
+                <button type="button" aria-label="Close check-in guide" onClick={() => setFundsGuideOpen(false)} />
+              </div>
+              <h2>Daily Check-ins</h2>
+              <p>Check in once each day. Your bird evolves after every 10 successful check-ins.</p>
+            </aside>
+            <p className="login-note bird-checkin-helper">
+              <span className="funds-note-content">
+                <span>{ownedBird.landAssigned
+                  ? `Come back daily to help your ${landNames[ownedBird.land] ?? "Eggoria"} bird evolve.`
+                  : "Your bird will appear as soon as randomness is fulfilled."}</span>
+                <button
+                  className="funds-guide-help"
+                  type="button"
+                  aria-label="Show check-in guide"
+                  aria-controls="bird-guide"
+                  aria-expanded={fundsGuideOpen}
+                  onClick={() => setFundsGuideOpen(true)}
+                >?</button>
+              </span>
+            </p>
+            {checkInError && <p className="bird-checkin-error" role="alert">{checkInError}</p>}
+            {notice && <p className="connection-notice" role="status">{notice}</p>}
+          </div> : <div className="hero-connect-wrap">
             <button className="figma-button hero-connect" type="button" onClick={handleHeroAction}>
               <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
@@ -690,14 +928,16 @@ export default function EggoriaLanding({
               </div>
             </> : <p className="login-note">{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Continue with Google or MetaMask"}</p>}
             {notice && <p className="connection-notice" role="status">{notice}</p>}
-          </div>
+          </div>}
         </div>
-        <div className="hero-art" aria-hidden="true">
+        <div className={`hero-art${ownedBird ? ` bird-owned land-${ownedLandClass}` : ""}`} aria-label={ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : undefined} aria-hidden={ownedBird ? undefined : "true"}>
           <span className="egg-glow-new">
             <img src={asset("glow.svg")} alt="" />
           </span>
-          <img className="island-new" src={asset("island.png")} alt="" />
-          <img className="egg-new" src={asset("egg.png")} alt="" />
+          <img className="island-new" src={ownedBird?.landAssigned ? asset(landIslandAssets[ownedBird.land] ?? "land-wizard.png") : asset("island.png")} alt="" />
+          {ownedBird
+            ? <img className={`bird-new${ownedBird.landAssigned ? "" : " is-metadata-pending"}`} src={ownedBird.landAssigned ? ownedBird.stage === 0 ? asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : ownedBird.image || asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : asset("claim-egg.png")} alt={ownedBird.landAssigned ? `${landNames[ownedBird.land]} bird` : "Mystery Egg awaiting land assignment"} />
+            : <img className="egg-new" src={asset("egg.png")} alt="" />}
           <span className="egg-burst-field">
             <i className="egg-burst egg-burst-one">✦</i>
             <i className="egg-burst egg-burst-two">✦</i>

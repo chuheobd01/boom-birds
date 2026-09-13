@@ -47,6 +47,7 @@ contract EggoriaBirds is ERC721, AccessControl {
     bool public mintingEnabled;
 
     mapping(address account => bool minted) public hasMinted;
+    mapping(address account => uint256 tokenId) public mintedTokenOf;
     mapping(uint256 tokenId => Bird bird) public birds;
     uint16[LAND_COUNT] public landMinted;
 
@@ -98,6 +99,7 @@ contract EggoriaBirds is ERC721, AccessControl {
 
         tokenId = ++totalMinted;
         hasMinted[msg.sender] = true;
+        mintedTokenOf[msg.sender] = tokenId;
 
         _safeMint(msg.sender, tokenId);
         emit LandRequested(tokenId, msg.sender);
@@ -220,35 +222,6 @@ contract EggoriaBirds is ERC721, AccessControl {
     }
 
     /// @notice Returns the owner and complete evolution state for one token.
-    function tokenState(uint256 tokenId)
-        external
-        view
-        returns (
-            address owner,
-            uint8 land,
-            bool landAssigned,
-            Stage stage,
-            Rarity rarity,
-            bool rarityAssigned,
-            uint8 checkIns,
-            uint64 lastCheckInDay
-        )
-    {
-        owner = ownerOf(tokenId);
-        Bird memory bird = birds[tokenId];
-        return (
-            owner,
-            bird.land,
-            bird.landAssigned,
-            bird.stage,
-            bird.rarity,
-            bird.rarityAssigned,
-            bird.checkIns,
-            bird.lastCheckInDay
-        );
-    }
-
-    /// @notice Returns all state needed to display a bird in the app or admin dashboard.
     function tokenState(uint256 tokenId)
         external
         view
