@@ -1,0 +1,19 @@
+{
+  "name": "Wizard Bird - Primary",
+  "description": "A Primary Wizard Bird from Eggoria.",
+  "image": "ipfs://bafybeihxrpek3j7i4h7dsp27eqsqhxntp2pi4vj27rturzfrczrjcc3u2e",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Wizard"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Primary"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}

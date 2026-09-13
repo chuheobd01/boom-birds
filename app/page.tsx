@@ -9,6 +9,7 @@ export default function HomePage() {
       <EggoriaLanding
         googleClientId={process.env.GOOGLE_CLIENT_ID ?? ""}
         thirdwebClientId={process.env.NEXT_PUBLIC_THIRDWEB_CLIENT_ID ?? ""}
+        eggoriaBirdsAddress={process.env.NEXT_PUBLIC_EGGORIA_BIRDS_ADDRESS ?? ""}
       />
     </>
   );

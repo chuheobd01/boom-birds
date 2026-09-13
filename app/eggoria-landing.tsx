@@ -4,10 +4,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { createThirdwebClient, defineChain, getContract, readContract, sendTransaction, waitForReceipt } from "thirdweb";
-import { claimTo } from "thirdweb/extensions/erc721";
+import { createThirdwebClient, defineChain, getContract, prepareContractCall, readContract, sendTransaction, waitForReceipt } from "thirdweb";
 import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
 import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
+import { decodeEventLog, isAddress } from "viem";
+
+import { EGGORIA_MAX_SUPPLY, eggoriaBirdsAbi } from "@/lib/eggoria-birds";
 
 type EggoriaUser = { id: string; name: string; position: number };
 type GoogleCredential = { credential: string };
@@ -31,7 +33,6 @@ declare global {
 
 const asset = (name: string) => `/assets/landing/${name}`;
 const subscribeToClient = () => () => undefined;
-const EGGORIA_CONTRACT_ADDRESS = "0x0Dda12D074D42D0B0728fed721eE7548C8cAa501";
 const ARC_TESTNET = defineChain({
   id: 5_042_002,
   name: "Arc Testnet",
@@ -49,6 +50,30 @@ const navItems = [
 ] as const;
 
 const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
+const toBrowserUri = (uri: string) => uri.startsWith("ipfs://")
+  ? `https://ipfs.io/ipfs/${uri.slice("ipfs://".length)}`
+  : uri;
+
+const readNftImage = async (tokenUri: string) => {
+  if (!tokenUri) return "";
+
+  let metadata: unknown;
+  if (tokenUri.startsWith("data:application/json")) {
+    const separator = tokenUri.indexOf(",");
+    if (separator === -1) return "";
+    const header = tokenUri.slice(0, separator);
+    const payload = tokenUri.slice(separator + 1);
+    metadata = JSON.parse(header.includes(";base64") ? window.atob(payload) : decodeURIComponent(payload));
+  } else {
+    const response = await fetch(toBrowserUri(tokenUri));
+    if (!response.ok) return "";
+    metadata = await response.json();
+  }
+
+  if (!metadata || typeof metadata !== "object" || !("image" in metadata) || typeof metadata.image !== "string") return "";
+  return toBrowserUri(metadata.image);
+};
+
 const readProviderErrorCode = (error: unknown): number | undefined => {
   if (!error || typeof error !== "object") return undefined;
   if ("code" in error && typeof error.code === "number") return error.code;
@@ -60,22 +85,25 @@ const readMintError = (error: unknown) => {
   if (readProviderErrorCode(error) === 4001) return "Transaction cancelled.";
   const raw = error instanceof Error ? error.message : String(error ?? "");
   const message = raw.toLowerCase();
-  if (message.includes("already") && (message.includes("claim") || message.includes("mint"))) {
-    return "This wallet has already claimed its egg.";
+  if (message.includes("walletalreadyminted") || (message.includes("already") && (message.includes("claim") || message.includes("mint")))) {
+    return "You have already claimed your Egg.";
   }
   if (message.includes("insufficient") || message.includes("funds")) {
     return "Not enough test USDC to cover the network fee.";
   }
-  if (message.includes("claimcondition") || message.includes("no active claim") || message.includes("not started")) {
-    return "Egg claiming is not available yet.";
-  }
-  if (message.includes("max supply") || message.includes("maxsupply") || message.includes("not enough minted")) {
-    return "All available eggs have already been claimed.";
-  }
+  if (message.includes("mintingdisabled")) return "Egg minting is not available yet.";
   return "Your egg could not be minted. Please try again.";
 };
 
-export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { googleClientId: string; thirdwebClientId: string }) {
+export default function EggoriaLanding({
+  googleClientId,
+  thirdwebClientId,
+  eggoriaBirdsAddress,
+}: {
+  googleClientId: string;
+  thirdwebClientId: string;
+  eggoriaBirdsAddress: string;
+}) {
   const [minted, setMinted] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
   const [user, setUser] = useState<EggoriaUser | null>(null);
@@ -91,6 +119,9 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   const [mintPhase, setMintPhase] = useState<MintPhase>("submitting");
   const [mintError, setMintError] = useState("");
   const [mintTransactionHash, setMintTransactionHash] = useState("");
+  const [mintedTokenId, setMintedTokenId] = useState<bigint | null>(null);
+  const [mintedNftImage, setMintedNftImage] = useState("");
+  const [walletAlreadyMinted, setWalletAlreadyMinted] = useState(false);
   const [networkFee, setNetworkFee] = useState("Estimating...");
   const [, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
@@ -109,8 +140,10 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     [thirdwebClientId],
   );
   const eggoriaContract = useMemo(
-    () => thirdwebClient ? getContract({ client: thirdwebClient, chain: ARC_TESTNET, address: EGGORIA_CONTRACT_ADDRESS }) : null,
-    [thirdwebClient],
+    () => thirdwebClient && isAddress(eggoriaBirdsAddress)
+      ? getContract({ client: thirdwebClient, chain: ARC_TESTNET, address: eggoriaBirdsAddress, abi: eggoriaBirdsAbi })
+      : null,
+    [eggoriaBirdsAddress, thirdwebClient],
   );
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
@@ -138,7 +171,6 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       const result = await response.json();
       if (!response.ok) throw new Error(result.message);
       setUser(result.user);
-      setMinted((value) => Math.max(value, Number(result.user.position) || 0));
       setNotice(`Welcome to Eggoria, ${result.user.name}.`);
       setWalletModalOpen(false);
     } catch (error) {
@@ -147,14 +179,6 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   }, []);
 
   useEffect(() => {
-    const statsRequest = fetch("/api/public-stats")
-      .then((response) => response.json())
-      .then((result) => setMinted(Number(result.total) || 0))
-      .catch(() => setMinted(0));
-    Promise.allSettled([
-      statsRequest,
-      new Promise((resolve) => window.setTimeout(resolve, 400)),
-    ]).then(() => setStatsLoading(false));
     fetch("/api/session", { credentials: "same-origin" })
       .then((response) => response.ok ? response.json() : null)
       .then((result) => result?.user && setUser(result.user))
@@ -251,11 +275,51 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
     }
   };
 
-  const count = Math.min(minted, 500);
-  const progress = Math.min(100, (count / 500) * 100);
+  const count = Math.min(minted, EGGORIA_MAX_SUPPLY);
+  const progress = Math.min(100, (count / EGGORIA_MAX_SUPPLY) * 100);
   const walletAddress = activeAccount?.address ?? "";
   const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Get Your Egg";
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
+
+  const readEggoriaState = useCallback(async (address = walletAddress) => {
+    if (!eggoriaContract) throw new Error("Eggoria Birds contract is not configured.");
+    const accountAddress = isAddress(address) ? address : null;
+    const [supply, alreadyMinted] = await Promise.all([
+      readContract({ contract: eggoriaContract, method: "totalSupply" }),
+      accountAddress
+        ? readContract({ contract: eggoriaContract, method: "hasMinted", params: [accountAddress] })
+        : Promise.resolve(false),
+    ]);
+    return { totalSupply: Number(supply), alreadyMinted };
+  }, [eggoriaContract, walletAddress]);
+
+  const refreshEggoriaState = useCallback(async (address = walletAddress) => {
+    const state = await readEggoriaState(address);
+    setMinted(state.totalSupply);
+    setWalletAlreadyMinted(state.alreadyMinted);
+    return state;
+  }, [readEggoriaState, walletAddress]);
+
+  useEffect(() => {
+    let active = true;
+
+    readEggoriaState(walletAddress)
+      .then((state) => {
+        if (!active) return;
+        setMinted(state.totalSupply);
+        setWalletAlreadyMinted(state.alreadyMinted);
+      })
+      .catch(() => {
+        if (!active) return;
+        setMinted(0);
+        setWalletAlreadyMinted(false);
+      })
+      .finally(() => {
+        if (active) setStatsLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [readEggoriaState, walletAddress]);
 
   useEffect(() => {
     if (!walletAddress || hasTestFunds) {
@@ -376,7 +440,13 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       return;
     }
     if (hasTestFunds) {
-      setClaimError("");
+      setClaimError(
+        minted >= EGGORIA_MAX_SUPPLY
+          ? "All available eggs have already been claimed."
+          : walletAlreadyMinted
+            ? "You have already claimed your Egg."
+            : "",
+      );
       setNetworkFee("Estimating...");
       setClaimModalOpen(true);
       return;
@@ -421,26 +491,37 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
   };
 
   const mintEgg = async () => {
-    if (!activeAccount || !walletAddress || !eggoriaContract || claimSubmitting) return;
+    if (claimSubmitting) return;
+    if (!activeAccount || !walletAddress) {
+      setClaimError("Connect your wallet before minting.");
+      return;
+    }
+    if (!eggoriaContract) {
+      setClaimError("Eggoria Birds contract is not configured.");
+      return;
+    }
     setClaimSubmitting(true);
     setClaimError("");
     setMintError("");
     setMintTransactionHash("");
+    setMintedTokenId(null);
+    setMintedNftImage("");
     let submitted = false;
     try {
-      const [nextTokenIdToClaim, nextTokenIdToMint] = await Promise.all([
-        readContract({ contract: eggoriaContract, method: "function nextTokenIdToClaim() view returns (uint256)" }),
-        readContract({ contract: eggoriaContract, method: "function nextTokenIdToMint() view returns (uint256)" }),
-      ]);
-      if (nextTokenIdToClaim >= nextTokenIdToMint) {
+      const contractState = await refreshEggoriaState(walletAddress);
+      if (contractState.totalSupply >= EGGORIA_MAX_SUPPLY) {
         setClaimError("All available eggs have already been claimed.");
         return;
       }
-      const transaction = claimTo({
+      if (contractState.alreadyMinted) {
+        setClaimError("You have already claimed your Egg.");
+        return;
+      }
+
+      const transaction = prepareContractCall({
         contract: eggoriaContract,
-        to: walletAddress,
-        from: walletAddress,
-        quantity: BigInt(1),
+        method: "mint",
+        params: [],
       });
       const transactionResult = await sendTransaction({ transaction, account: activeAccount });
       submitted = true;
@@ -453,11 +534,49 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
       const receiptPromise = waitForReceipt(transactionResult);
       await new Promise((resolve) => window.setTimeout(resolve, 450));
       setMintPhase("confirming");
-      await receiptPromise;
+      const receipt = await receiptPromise;
+
+      let tokenId: bigint | null = null;
+      for (const log of receipt.logs) {
+        if (log.address.toLowerCase() !== eggoriaBirdsAddress.toLowerCase()) continue;
+        try {
+          const event = decodeEventLog({ abi: eggoriaBirdsAbi, data: log.data, topics: log.topics });
+          if (event.eventName === "BirdMinted" && event.args.owner.toLowerCase() === walletAddress.toLowerCase()) {
+            tokenId = event.args.tokenId;
+            break;
+          }
+        } catch {
+          // Ignore unrelated logs emitted during the mint transaction.
+        }
+      }
+
+      const refreshedState = await refreshEggoriaState(walletAddress);
+      tokenId ??= BigInt(refreshedState.totalSupply);
+      let nftImage = "";
+      if (tokenId > BigInt(0)) {
+        try {
+          const tokenUri = await readContract({ contract: eggoriaContract, method: "tokenURI", params: [tokenId] });
+          nftImage = await readNftImage(tokenUri);
+        } catch {
+          // Keep the current egg artwork when token metadata is temporarily unavailable.
+        }
+      }
+
+      setMintedTokenId(tokenId);
+      setMintedNftImage(nftImage);
       setMintPhase("success");
-      setMinted((value) => Math.min(500, value + 1));
     } catch (error) {
-      const message = readMintError(error);
+      let message = readMintError(error);
+      try {
+        const state = await refreshEggoriaState(walletAddress);
+        if (state.totalSupply >= EGGORIA_MAX_SUPPLY) {
+          message = "All available eggs have already been claimed.";
+        } else if (state.alreadyMinted) {
+          message = "You have already claimed your Egg.";
+        }
+      } catch {
+        // Preserve the transaction error when the follow-up contract read is unavailable.
+      }
       if (submitted) {
         setMintError(message);
         setMintPhase("error");
@@ -513,7 +632,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           <div className={`mint-progress${statsLoading ? " is-loading" : ""}`} aria-busy={statsLoading}>
             <img className="progress-frame" src={asset("progress-frame.png")} alt="" />
             <div className="progress-content">
-              <span className="mint-count">{statsLoading ? <span className="mint-count-skeleton" aria-label="Loading mint count" /> : `${count} / 500 Eggs Minted`}</span>
+              <span className="mint-count">{statsLoading ? <span className="mint-count-skeleton" aria-label="Loading mint count" /> : `${count} / ${EGGORIA_MAX_SUPPLY} Eggs Minted`}</span>
               <span className="progress-track">{statsLoading ? <span className="progress-skeleton" /> : <><i style={{ width: `${progress}%` }} /><b style={{ left: `${progress}%` }} /></>}</span>
             </div>
           </div>
@@ -743,7 +862,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
             <img src={asset("claim-close.svg")} alt="" />
           </button>
           <div className={`minting-egg-orbit phase-${mintPhase}`} aria-hidden="true">
-            <span><img src={asset("claim-egg.png")} alt="" /></span>
+            <span><img src={mintPhase === "success" && mintedNftImage ? mintedNftImage : asset("claim-egg.png")} alt="" /></span>
             <i /><i />
           </div>
           <header className="minting-heading">
@@ -752,7 +871,7 @@ export default function EggoriaLanding({ googleClientId, thirdwebClientId }: { g
           </header>
           <div className={`minting-status phase-${mintPhase}`} aria-live="polite">
             {mintPhase === "success" ? <span className="minting-check">✓</span> : mintPhase === "error" ? <span className="minting-fail">!</span> : <span className="minting-spinner" aria-hidden="true" />}
-            <p>Status: <strong>{mintPhase === "submitting" ? "Submitting..." : mintPhase === "confirming" ? "Confirming on-chain..." : mintPhase === "success" ? "Minted successfully" : "Transaction failed"}</strong></p>
+            <p>Status: <strong>{mintPhase === "submitting" ? "Submitting..." : mintPhase === "confirming" ? "Confirming on-chain..." : mintPhase === "success" ? `Minted successfully${mintedTokenId !== null ? ` · Egg #${mintedTokenId}` : ""}` : "Transaction failed"}</strong></p>
           </div>
           <div className="minting-divider" aria-hidden="true"><span /><i>✦</i><span /></div>
           {mintTransactionHash && <a className="minting-explorer" href={`https://testnet.arcscan.app/tx/${mintTransactionHash}`} target="_blank" rel="noreferrer">View on Explorer</a>}

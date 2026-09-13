@@ -2,11 +2,14 @@
   "name": "eggoria",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test test/*.test.mjs",
+    "contract:compile": "node scripts/compile-contract.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -22,11 +25,18 @@
     "viem": "^2.47.0"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^4.0.15",
+    "@openzeppelin/contracts": "^5.6.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "typescript": "^5"
+    "ethers": "^6.17.0",
+    "hardhat": "^3.16.0",
+    "solc": "^0.8.37",
+    "typescript": "^5",
+    "zod": "^3.25.76"
   }
 }

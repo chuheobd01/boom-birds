@@ -1,0 +1,19 @@
+{
+  "name": "Artist Bird - Primary",
+  "description": "A Primary Artist Bird from Eggoria.",
+  "image": "ipfs://bafybeidujbgg6j2w5qy67xkblal3pasqgzgfwygnyjghuwwyd2bb2vl24a",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Artist"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Primary"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}

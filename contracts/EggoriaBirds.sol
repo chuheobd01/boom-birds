@@ -1,0 +1,327 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.24;
+
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+/// @title Eggoria Birds
+/// @notice A 500-item evolving ERC-721 collection distributed evenly across five lands.
+/// @dev Rarity randomness is fulfilled by a dedicated role. Assign RANDOMIZER_ROLE to a
+///      verifiable-randomness adapter before using this contract in production.
+contract EggoriaBirds is ERC721, AccessControl {
+    uint256 public constant MAX_SUPPLY = 500;
+    uint8 public constant LAND_COUNT = 5;
+    uint16 public constant LAND_MAX_SUPPLY = 100;
+    uint8 public constant INTERMEDIATE_CHECK_INS = 10;
+    uint8 public constant ADVANCED_CHECK_INS = 20;
+
+    bytes32 public constant METADATA_ROLE = keccak256("METADATA_ROLE");
+    bytes32 public constant RANDOMIZER_ROLE = keccak256("RANDOMIZER_ROLE");
+
+    enum Stage {
+        Primary,
+        Intermediate,
+        Advanced
+    }
+
+    enum Rarity {
+        Common,
+        Rare,
+        Epic,
+        Legendary,
+        Mythic
+    }
+
+    struct Bird {
+        uint64 lastCheckInDay;
+        uint8 land;
+        uint8 checkIns;
+        Stage stage;
+        Rarity rarity;
+        bool landAssigned;
+        bool rarityAssigned;
+    }
+
+    uint256 public totalMinted;
+    uint16 public totalLandsAssigned;
+    bool public mintingEnabled;
+
+    mapping(address account => bool minted) public hasMinted;
+    mapping(uint256 tokenId => Bird bird) public birds;
+    uint16[LAND_COUNT] public landMinted;
+
+    // Exact full-collection quotas: 60%, 25%, 10%, 4%, 1% of 500.
+    uint16[5] private _rarityRemaining = [uint16(300), 125, 50, 20, 5];
+    uint16 private _rarityPoolRemaining = 500;
+
+    string[LAND_COUNT] private _primaryUris;
+    string[LAND_COUNT] private _intermediateUris;
+    mapping(uint8 land => mapping(uint8 rarity => string uri)) private _advancedUris;
+    string private _contractUri;
+
+    error MintingDisabled();
+    error MaxSupplyReached();
+    error WalletAlreadyMinted();
+    error InvalidLand();
+    error InvalidStage();
+    error NotTokenOwner();
+    error LandNotAssigned();
+    error LandAlreadyAssigned();
+    error LandPoolEmpty();
+    error AlreadyCheckedInToday();
+    error EvolutionAlreadyComplete();
+    error RarityNotRequested();
+    error RarityAlreadyAssigned();
+    error RarityPoolEmpty();
+
+    event LandRequested(uint256 indexed tokenId, address indexed owner);
+    event BirdMinted(uint256 indexed tokenId, address indexed owner, uint8 indexed land);
+    event BirdCheckedIn(uint256 indexed tokenId, uint8 checkIns, uint64 day);
+    event BirdEvolved(uint256 indexed tokenId, Stage stage);
+    event RarityRequested(uint256 indexed tokenId, address indexed owner);
+    event RarityAssigned(uint256 indexed tokenId, Rarity rarity, uint256 randomWord);
+    event MintingStatusChanged(bool enabled);
+    event MetadataUpdate(uint256 indexed tokenId);
+    event BatchMetadataUpdate(uint256 indexed fromTokenId, uint256 indexed toTokenId);
+
+    constructor(address initialAdmin) ERC721("Eggoria Birds", "EGBIRD") {
+        _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
+        _grantRole(METADATA_ROLE, initialAdmin);
+        _grantRole(RANDOMIZER_ROLE, initialAdmin);
+    }
+
+    /// @notice Mints one bird with its land pending secure random fulfillment.
+    function mint() external returns (uint256 tokenId) {
+        if (!mintingEnabled) revert MintingDisabled();
+        if (totalMinted >= MAX_SUPPLY) revert MaxSupplyReached();
+        if (hasMinted[msg.sender]) revert WalletAlreadyMinted();
+
+        tokenId = ++totalMinted;
+        hasMinted[msg.sender] = true;
+
+        _safeMint(msg.sender, tokenId);
+        emit LandRequested(tokenId, msg.sender);
+    }
+
+    /// @notice Assigns a land by selecting one of all remaining land inventory slots.
+    /// @dev The caller must be a trusted secure-randomness adapter with RANDOMIZER_ROLE.
+    function fulfillLand(uint256 tokenId, uint256 randomWord) external onlyRole(RANDOMIZER_ROLE) {
+        address owner = ownerOf(tokenId);
+        Bird storage bird = birds[tokenId];
+        if (bird.landAssigned) revert LandAlreadyAssigned();
+
+        uint256 slotsRemaining = MAX_SUPPLY - totalLandsAssigned;
+        if (slotsRemaining == 0) revert LandPoolEmpty();
+
+        uint256 pick = randomWord % slotsRemaining;
+        uint256 cumulative;
+        uint8 selected;
+
+        for (uint8 i; i < LAND_COUNT; ++i) {
+            cumulative += LAND_MAX_SUPPLY - landMinted[i];
+            if (pick < cumulative) {
+                selected = i;
+                break;
+            }
+        }
+
+        bird.land = selected;
+        bird.landAssigned = true;
+        landMinted[selected] += 1;
+        totalLandsAssigned += 1;
+
+        emit BirdMinted(tokenId, owner, selected);
+        emit MetadataUpdate(tokenId);
+    }
+
+    /// @notice Records one check-in per UTC day and evolves at check-ins 10 and 20.
+    function checkIn(uint256 tokenId) external {
+        if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+
+        Bird storage bird = birds[tokenId];
+        if (!bird.landAssigned) revert LandNotAssigned();
+        if (bird.checkIns >= ADVANCED_CHECK_INS) revert EvolutionAlreadyComplete();
+
+        uint64 today = uint64(block.timestamp / 1 days);
+        if (bird.lastCheckInDay == today) revert AlreadyCheckedInToday();
+
+        bird.lastCheckInDay = today;
+        bird.checkIns += 1;
+        emit BirdCheckedIn(tokenId, bird.checkIns, today);
+
+        if (bird.checkIns == INTERMEDIATE_CHECK_INS) {
+            bird.stage = Stage.Intermediate;
+            emit BirdEvolved(tokenId, Stage.Intermediate);
+            emit MetadataUpdate(tokenId);
+        } else if (bird.checkIns == ADVANCED_CHECK_INS) {
+            emit RarityRequested(tokenId, msg.sender);
+        }
+    }
+
+    /// @notice Assigns rarity and atomically completes the bird's final evolution.
+    /// @dev The shrinking weighted pool guarantees final quotas of 300/125/50/20/5.
+    function fulfillRarity(uint256 tokenId, uint256 randomWord) external onlyRole(RANDOMIZER_ROLE) {
+        ownerOf(tokenId);
+        Bird storage bird = birds[tokenId];
+        if (bird.rarityAssigned) revert RarityAlreadyAssigned();
+        if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
+        if (_rarityPoolRemaining == 0) revert RarityPoolEmpty();
+
+        uint256 pick = randomWord % _rarityPoolRemaining;
+        uint256 cumulative;
+        uint8 selected;
+
+        for (uint8 i; i < 5; ++i) {
+            cumulative += _rarityRemaining[i];
+            if (pick < cumulative) {
+                selected = i;
+                _rarityRemaining[i] -= 1;
+                break;
+            }
+        }
+
+        _rarityPoolRemaining -= 1;
+        bird.rarity = Rarity(selected);
+        bird.rarityAssigned = true;
+        bird.stage = Stage.Advanced;
+
+        emit BirdEvolved(tokenId, Stage.Advanced);
+        emit RarityAssigned(tokenId, bird.rarity, randomWord);
+        emit MetadataUpdate(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        ownerOf(tokenId);
+        Bird memory bird = birds[tokenId];
+        if (!bird.landAssigned) return "";
+
+        if (bird.stage == Stage.Primary) return _primaryUris[bird.land];
+        if (bird.stage == Stage.Intermediate) return _intermediateUris[bird.land];
+        return _advancedUris[bird.land][uint8(bird.rarity)];
+    }
+
+    /// @notice Returns the number of Eggoria Birds minted so far.
+    function totalSupply() external view returns (uint256) {
+        return totalMinted;
+    }
+
+    /// @notice Returns the remaining mint inventory for one land.
+    function landRemaining(uint8 land) external view returns (uint16) {
+        _validateLand(land);
+        return LAND_MAX_SUPPLY - landMinted[land];
+    }
+
+    /// @notice Returns a token's assigned land and reverts while assignment is pending.
+    function tokenLand(uint256 tokenId) external view returns (uint8) {
+        ownerOf(tokenId);
+        Bird memory bird = birds[tokenId];
+        if (!bird.landAssigned) revert LandNotAssigned();
+        return bird.land;
+    }
+
+    /// @notice Returns the owner and complete evolution state for one token.
+    function tokenState(uint256 tokenId)
+        external
+        view
+        returns (
+            address owner,
+            uint8 land,
+            bool landAssigned,
+            Stage stage,
+            Rarity rarity,
+            bool rarityAssigned,
+            uint8 checkIns,
+            uint64 lastCheckInDay
+        )
+    {
+        owner = ownerOf(tokenId);
+        Bird memory bird = birds[tokenId];
+        return (
+            owner,
+            bird.land,
+            bird.landAssigned,
+            bird.stage,
+            bird.rarity,
+            bird.rarityAssigned,
+            bird.checkIns,
+            bird.lastCheckInDay
+        );
+    }
+
+    /// @notice Returns all state needed to display a bird in the app or admin dashboard.
+    function tokenState(uint256 tokenId)
+        external
+        view
+        returns (
+            address owner,
+            uint8 land,
+            bool landAssigned,
+            Stage stage,
+            Rarity rarity,
+            bool rarityAssigned,
+            uint8 checkIns,
+            uint64 lastCheckInDay
+        )
+    {
+        owner = ownerOf(tokenId);
+        Bird memory bird = birds[tokenId];
+        return (
+            owner,
+            bird.land,
+            bird.landAssigned,
+            bird.stage,
+            bird.rarity,
+            bird.rarityAssigned,
+            bird.checkIns,
+            bird.lastCheckInDay
+        );
+    }
+
+    function setMintingEnabled(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        mintingEnabled = enabled;
+        emit MintingStatusChanged(enabled);
+    }
+
+    function setStageURI(uint8 land, Stage stage, string calldata uri) external onlyRole(METADATA_ROLE) {
+        _validateLand(land);
+        if (stage == Stage.Advanced) revert InvalidStage();
+
+        if (stage == Stage.Primary) _primaryUris[land] = uri;
+        else _intermediateUris[land] = uri;
+        _emitMetadataRefresh();
+    }
+
+    function setAdvancedURI(uint8 land, Rarity rarity, string calldata uri) external onlyRole(METADATA_ROLE) {
+        _validateLand(land);
+        _advancedUris[land][uint8(rarity)] = uri;
+        _emitMetadataRefresh();
+    }
+
+    function setContractURI(string calldata uri) external onlyRole(METADATA_ROLE) {
+        _contractUri = uri;
+    }
+
+    function contractURI() external view returns (string memory) {
+        return _contractUri;
+    }
+
+    function rarityRemaining(Rarity rarity) external view returns (uint16) {
+        return _rarityRemaining[uint8(rarity)];
+    }
+
+    function rarityPoolRemaining() external view returns (uint16) {
+        return _rarityPoolRemaining;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, AccessControl) returns (bool) {
+        return interfaceId == 0x49064906 || super.supportsInterface(interfaceId);
+    }
+
+    function _validateLand(uint8 land) private pure {
+        if (land >= LAND_COUNT) revert InvalidLand();
+    }
+
+    function _emitMetadataRefresh() private {
+        if (totalMinted > 0) emit BatchMetadataUpdate(1, totalMinted);
+    }
+}

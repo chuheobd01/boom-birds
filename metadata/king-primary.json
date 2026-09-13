@@ -1,0 +1,19 @@
+{
+  "name": "King Bird - Primary",
+  "description": "A Primary King Bird from Eggoria.",
+  "image": "ipfs://bafybeigmmjur7ezysutvjz46ni7wgkdeabe4dv5xs5v7f535kijza6m65m",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "King"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Primary"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}

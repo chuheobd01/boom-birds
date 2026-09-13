@@ -1,0 +1,19 @@
+{
+  "name": "Wind Bird - Primary",
+  "description": "A Primary Wind Bird from Eggoria.",
+  "image": "ipfs://bafybeicfxrz7d6vdyydqinwz244dsmejmupoxttmfv4oeiomkkptejj32y",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Wind"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Primary"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}
