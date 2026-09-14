@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { createThirdwebClient, defineChain, getContract, prepareContractCall, readContract, sendTransaction, waitForReceipt } from "thirdweb";
+import { createThirdwebClient, defineChain, eth_getBlockByNumber, getContract, getContractEvents, getRpcClient, prepareContractCall, prepareEvent, readContract, sendTransaction, waitForReceipt } from "thirdweb";
 import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
 import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
 import { decodeEventLog, isAddress } from "viem";
@@ -25,6 +25,7 @@ type OwnedBird = {
   rarityAssigned: boolean;
   checkIns: number;
   lastCheckInDay: bigint;
+  lastCheckInAtMs: number | null;
   image: string;
 };
 type EthereumProvider = {
@@ -66,6 +67,7 @@ const landBirdAssets = ["forest-primary.png", "wind-primary.png", "wizard-primar
 const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png", "land-artist.png", "land-king.png"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Advanced"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
+const MILLISECONDS_PER_DAY = 86_400_000;
 
 const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 const toBrowserUri = (uri: string) => uri.startsWith("ipfs://")
@@ -152,10 +154,11 @@ export default function EggoriaLanding({
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [fundsGuideOpen, setFundsGuideOpen] = useState(false);
   const [arcBalance, setArcBalance] = useState("0.00");
+  const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
   const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
   const portalReady = useSyncExternalStore(subscribeToClient, () => true, () => false);
   const closeWalletRef = useRef<HTMLButtonElement>(null);
-  const autoShownFundsGuideRef = useRef(new Set<string>());
+  const autoShownGuideStepsRef = useRef(new Set<string>());
   const thirdwebClient = useMemo(
     () => thirdwebClientId ? createThirdwebClient({ clientId: thirdwebClientId }) : null,
     [thirdwebClientId],
@@ -166,6 +169,36 @@ export default function EggoriaLanding({
       : null,
     [eggoriaBirdsAddress, thirdwebClient],
   );
+  const readLastCheckInAt = useCallback(async (tokenId: bigint) => {
+    if (!eggoriaContract || !thirdwebClient) return null;
+    const storageKey = `eggoria-last-check-in:${eggoriaBirdsAddress.toLowerCase()}:${tokenId}`;
+    const cachedTimestamp = Number(window.localStorage.getItem(storageKey));
+    if (Number.isFinite(cachedTimestamp) && cachedTimestamp > 0) return cachedTimestamp;
+
+    try {
+      const checkInEvent = prepareEvent({
+        signature: "event BirdCheckedIn(uint256 indexed tokenId, uint8 checkIns, uint64 day)",
+        filters: { tokenId },
+      });
+      const events = await getContractEvents({
+        contract: eggoriaContract,
+        events: [checkInEvent],
+        fromBlock: BigInt(0),
+        toBlock: "latest",
+        useIndexer: false,
+      });
+      const latestEvent = events.at(-1);
+      if (!latestEvent?.blockNumber) return null;
+      const block = await eth_getBlockByNumber(getRpcClient({ client: thirdwebClient, chain: ARC_TESTNET }), {
+        blockNumber: latestEvent.blockNumber,
+      });
+      const timestamp = Number(block.timestamp) * 1_000;
+      window.localStorage.setItem(storageKey, String(timestamp));
+      return timestamp;
+    } catch {
+      return null;
+    }
+  }, [eggoriaBirdsAddress, eggoriaContract, thirdwebClient]);
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
   const { connect, isConnecting } = useConnect();
@@ -301,6 +334,7 @@ export default function EggoriaLanding({
   const walletAddress = activeAccount?.address ?? "";
   const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Get Your Egg";
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
+  const activeGuideStep = !walletAddress ? "" : ownedBird ? "check-in" : hasTestFunds ? "mint" : "funds";
 
   const findOwnedTokenId = useCallback(async (address: string, supply: number) => {
     if (!eggoriaContract || !isAddress(address)) return null;
@@ -375,6 +409,7 @@ export default function EggoriaLanding({
       rarityAssigned = legacyState[5];
     }
 
+    const lastCheckInAtMs = lastCheckInDay > BigInt(0) ? await readLastCheckInAt(tokenId) : null;
     let image = "";
     if (landAssigned) {
       try {
@@ -385,8 +420,8 @@ export default function EggoriaLanding({
       }
     }
 
-    return { tokenId, owner, land, landAssigned, stage, rarity, rarityAssigned, checkIns, lastCheckInDay, image };
-  }, [eggoriaContract]);
+    return { tokenId, owner, land, landAssigned, stage, rarity, rarityAssigned, checkIns, lastCheckInDay, lastCheckInAtMs, image };
+  }, [eggoriaContract, readLastCheckInAt]);
 
   const readEggoriaState = useCallback(async (address = walletAddress) => {
     if (!eggoriaContract) throw new Error("Eggoria Birds contract is not configured.");
@@ -447,20 +482,25 @@ export default function EggoriaLanding({
   }, [ownedBird?.landAssigned, refreshEggoriaState, walletAddress]);
 
   useEffect(() => {
-    if (!walletAddress || hasTestFunds) {
+    const interval = window.setInterval(() => setCurrentTimeMs(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!walletAddress || !activeGuideStep) {
       Promise.resolve().then(() => setFundsGuideOpen(false));
       return;
     }
 
-    const normalizedAddress = walletAddress.toLowerCase();
-    if (autoShownFundsGuideRef.current.has(normalizedAddress)) return;
-    autoShownFundsGuideRef.current.add(normalizedAddress);
+    const guideKey = `${walletAddress.toLowerCase()}:${activeGuideStep}`;
+    if (autoShownGuideStepsRef.current.has(guideKey)) return;
+    autoShownGuideStepsRef.current.add(guideKey);
 
-    const storageKey = `eggoria-funds-guide-seen:${normalizedAddress}`;
-    const shouldShowGuide = window.localStorage.getItem(storageKey) !== "1";
-    if (shouldShowGuide) window.localStorage.setItem(storageKey, "1");
-    Promise.resolve().then(() => setFundsGuideOpen(shouldShowGuide));
-  }, [hasTestFunds, walletAddress]);
+    const storageKey = `eggoria-guide-seen:${guideKey}`;
+    if (window.localStorage.getItem(storageKey) === "1") return;
+    window.localStorage.setItem(storageKey, "1");
+    Promise.resolve().then(() => setFundsGuideOpen(true));
+  }, [activeGuideStep, walletAddress]);
 
   useEffect(() => {
     if (!walletAddress) {
@@ -552,6 +592,7 @@ export default function EggoriaLanding({
   const disconnectWallet = () => {
     if (activeWallet) disconnect(activeWallet);
     window.localStorage.removeItem("eggoria-wallet-kind");
+    autoShownGuideStepsRef.current.clear();
     setWalletKind("");
     setMintReadyAddress("");
     setWalletMenuOpen(false);
@@ -717,7 +758,7 @@ export default function EggoriaLanding({
   };
 
   const checkInBird = async () => {
-    if (!activeAccount || !eggoriaContract || !ownedBird || checkInSubmitting) return;
+    if (!activeAccount || !eggoriaContract || !ownedBird || checkInSubmitting || checkInLocked) return;
     if (!ownedBird.landAssigned) {
       setCheckInError("Your land is still being assigned.");
       return;
@@ -732,7 +773,18 @@ export default function EggoriaLanding({
         params: [ownedBird.tokenId],
       });
       const result = await sendTransaction({ transaction, account: activeAccount });
-      await waitForReceipt(result);
+      const receipt = await waitForReceipt(result);
+      if (thirdwebClient) {
+        try {
+          const block = await eth_getBlockByNumber(getRpcClient({ client: thirdwebClient, chain: ARC_TESTNET }), {
+            blockNumber: receipt.blockNumber,
+          });
+          const storageKey = `eggoria-last-check-in:${eggoriaBirdsAddress.toLowerCase()}:${ownedBird.tokenId}`;
+          window.localStorage.setItem(storageKey, String(Number(block.timestamp) * 1_000));
+        } catch {
+          // lastCheckInDay still keeps the button disabled if timestamp lookup is unavailable.
+        }
+      }
       await refreshEggoriaState(walletAddress);
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : "";
@@ -762,6 +814,13 @@ export default function EggoriaLanding({
         : 10
     : 0;
   const checkInsRemaining = Math.max(0, 10 - stageProgress);
+  const currentUtcDay = BigInt(Math.floor(currentTimeMs / MILLISECONDS_PER_DAY));
+  const checkedInToday = Boolean(ownedBird && ownedBird.lastCheckInDay > BigInt(0) && ownedBird.lastCheckInDay === currentUtcDay);
+  const nextCheckInAtMs = ownedBird?.lastCheckInAtMs ? ownedBird.lastCheckInAtMs + MILLISECONDS_PER_DAY : null;
+  const checkInLocked = checkedInToday || Boolean(nextCheckInAtMs && currentTimeMs < nextCheckInAtMs);
+  const nextCheckInTime = nextCheckInAtMs
+    ? new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(nextCheckInAtMs))
+    : "the same time";
   const ownedLandClass = ownedBird?.landAssigned
     ? landClassNames[ownedBird.land] ?? "wizard"
     : "pending";
@@ -816,27 +875,32 @@ export default function EggoriaLanding({
           {ownedBird ? <div className="bird-owner-wrap">
             <section className={`bird-evolution-card land-${ownedLandClass}`} aria-label={`Evolution progress for Eggoria Bird #${ownedBird.tokenId}`}>
               <img className="bird-evolution-frame" src={asset("checkin-frame.png")} alt="" />
-              <div className="bird-stage-heading">
-                <div><strong>{ownedBird.landAssigned ? currentStage : "Mystery Egg"}</strong><span>Current Stage</span></div>
-                <div><strong>{ownedBird.landAssigned ? nextStage : "Land reveal"}</strong><span>Next Stage</span></div>
+              <div className="bird-evolution-content">
+                <div className="bird-stage-heading">
+                  <div><strong>{ownedBird.landAssigned ? currentStage : "Mystery Egg"}</strong><span>Current Stage</span></div>
+                  <div><strong>{ownedBird.landAssigned ? nextStage : "Land reveal"}</strong><span>Next Stage</span></div>
+                </div>
+                <div className="bird-checkin-track" aria-label={`${stageProgress} of 10 check-ins completed in this stage`}>
+                  {Array.from({ length: 10 }, (_, index) => <span className={`bird-checkin-step${index === 0 ? " is-first" : ""}`} key={index}>
+                    {index > 0 && <img className="bird-checkin-line" src={asset(index < stageProgress ? "checkin-line-complete.png" : "checkin-line-pending.png")} alt="" />}
+                    <img className="bird-checkin-marker" src={asset(index < stageProgress ? "checkin-complete.png" : "checkin-pending.png")} alt="" />
+                  </span>)}
+                </div>
+                <div className="bird-checkin-message">
+                  <img src={asset("checkin-helper.png")} alt="" />
+                  <p>{ownedBird.landAssigned
+                    ? ownedBird.stage >= 2
+                      ? `${rarityNames[ownedBird.rarity] ?? "Advanced"} evolution complete.`
+                      : `${checkInsRemaining} more check-in${checkInsRemaining === 1 ? "" : "s"} to reach ${nextStage}.`
+                    : "Your land is being assigned securely."}</p>
+                </div>
               </div>
-              <div className="bird-checkin-track" aria-label={`${stageProgress} of 10 check-ins completed in this stage`}>
-                {Array.from({ length: 10 }, (_, index) => <span className={`bird-checkin-step${index === 0 ? " is-first" : ""}`} key={index}>
-                  {index > 0 && <img className="bird-checkin-line" src={asset(index < stageProgress ? "checkin-line-complete.png" : "checkin-line-pending.png")} alt="" />}
-                  <img className="bird-checkin-marker" src={asset(index < stageProgress ? "checkin-complete.png" : "checkin-pending.png")} alt="" />
-                </span>)}
-              </div>
-              <p><img src={asset("checkin-helper.png")} alt="" />{ownedBird.landAssigned
-                ? ownedBird.stage >= 2
-                  ? `${rarityNames[ownedBird.rarity] ?? "Advanced"} evolution complete.`
-                  : `${checkInsRemaining} more check-in${checkInsRemaining === 1 ? "" : "s"} to reach ${nextStage}.`
-                : "Your land is being assigned securely."}</p>
             </section>
             <button
               className="figma-button hero-connect bird-checkin-button"
               type="button"
               onClick={checkInBird}
-              disabled={checkInSubmitting || !ownedBird.landAssigned || ownedBird.stage >= 2}
+              disabled={checkInSubmitting || checkInLocked || !ownedBird.landAssigned || ownedBird.stage >= 2}
             >
               <img src={asset("button.png")} alt="" />
               <span>{checkInSubmitting ? "Checking In..." : !ownedBird.landAssigned ? "Assigning Land..." : ownedBird.stage >= 2 ? "Evolution Complete" : "Check In"}</span>
@@ -860,7 +924,9 @@ export default function EggoriaLanding({
             <p className="login-note bird-checkin-helper">
               <span className="funds-note-content">
                 <span>{ownedBird.landAssigned
-                  ? `Come back daily to help your ${landNames[ownedBird.land] ?? "Eggoria"} bird evolve.`
+                  ? checkInLocked
+                    ? `Come back at ${nextCheckInTime} tomorrow.`
+                    : `Come back daily to help your ${landNames[ownedBird.land] ?? "Eggoria"} bird evolve.`
                   : "Your bird will appear as soon as randomness is fulfilled."}</span>
                 <button
                   className="funds-guide-help"
