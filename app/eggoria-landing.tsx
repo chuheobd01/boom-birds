@@ -5,9 +5,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { createThirdwebClient, defineChain, eth_getBlockByNumber, getContract, getContractEvents, getRpcClient, prepareContractCall, prepareEvent, readContract, sendTransaction, waitForReceipt } from "thirdweb";
-import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect } from "thirdweb/react";
+import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect, useIsAutoConnecting } from "thirdweb/react";
 import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
-import { decodeEventLog, isAddress } from "viem";
+import { decodeEventLog, encodeFunctionData, isAddress } from "viem";
 
 import { EGGORIA_MAX_SUPPLY, eggoriaBirdsAbi } from "@/lib/eggoria-birds";
 
@@ -65,6 +65,7 @@ const landNames = ["Forest", "Wind/Pilot", "Wizard", "Artist", "King"] as const;
 const landClassNames = ["forest", "wind", "wizard", "artist", "king"] as const;
 const landBirdAssets = ["forest-primary.png", "wind-primary.png", "wizard-primary.png", "artist-primary.png", "king-primary.png"] as const;
 const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png", "land-artist.png", "land-king.png"] as const;
+const landHatchlingAssets = ["hatchling-forest.png", "hatchling-wind.png", "hatchling-wizard.png", "hatchling-artist.png", "hatchling-king.png"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Advanced"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 const MILLISECONDS_PER_DAY = 86_400_000;
@@ -155,10 +156,14 @@ export default function EggoriaLanding({
   const [fundsGuideOpen, setFundsGuideOpen] = useState(false);
   const [arcBalance, setArcBalance] = useState("0.00");
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
+  const [eggoriaStateAddress, setEggoriaStateAddress] = useState("");
+  const [balanceStateAddress, setBalanceStateAddress] = useState("");
   const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
   const portalReady = useSyncExternalStore(subscribeToClient, () => true, () => false);
   const closeWalletRef = useRef<HTMLButtonElement>(null);
   const autoShownGuideStepsRef = useRef(new Set<string>());
+  const lastNetworkFeeRef = useRef("");
+  const networkFeeRequestRef = useRef(false);
   const thirdwebClient = useMemo(
     () => thirdwebClientId ? createThirdwebClient({ clientId: thirdwebClientId }) : null,
     [thirdwebClientId],
@@ -201,6 +206,7 @@ export default function EggoriaLanding({
   }, [eggoriaBirdsAddress, eggoriaContract, thirdwebClient]);
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
+  const isAutoConnecting = useIsAutoConnecting();
   const { connect, isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
   const closeFundsModal = useCallback(() => {
@@ -332,9 +338,13 @@ export default function EggoriaLanding({
   const count = Math.min(minted, EGGORIA_MAX_SUPPLY);
   const progress = Math.min(100, (count / EGGORIA_MAX_SUPPLY) * 100);
   const walletAddress = activeAccount?.address ?? "";
+  const normalizedWalletAddress = walletAddress.toLowerCase();
   const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Get Your Egg";
   const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
-  const activeGuideStep = !walletAddress ? "" : ownedBird ? "check-in" : hasTestFunds ? "mint" : "funds";
+  const eggoriaStateLoading = Boolean(walletAddress) && eggoriaStateAddress !== normalizedWalletAddress;
+  const balanceStateLoading = Boolean(walletAddress) && balanceStateAddress !== normalizedWalletAddress;
+  const walletViewLoading = isAutoConnecting || eggoriaStateLoading || (!ownedBird && balanceStateLoading);
+  const activeGuideStep = !walletAddress || walletViewLoading ? "" : ownedBird ? "check-in" : hasTestFunds ? "mint" : "funds";
 
   const findOwnedTokenId = useCallback(async (address: string, supply: number) => {
     if (!eggoriaContract || !isAddress(address)) return null;
@@ -450,6 +460,7 @@ export default function EggoriaLanding({
 
   useEffect(() => {
     let active = true;
+    const requestedAddress = walletAddress.toLowerCase();
 
     readEggoriaState(walletAddress)
       .then((state) => {
@@ -465,7 +476,10 @@ export default function EggoriaLanding({
         setOwnedBird(null);
       })
       .finally(() => {
-        if (active) setStatsLoading(false);
+        if (active) {
+          setStatsLoading(false);
+          setEggoriaStateAddress(requestedAddress);
+        }
       });
 
     return () => { active = false; };
@@ -514,41 +528,73 @@ export default function EggoriaLanding({
   useEffect(() => {
     if (!walletAddress || !thirdwebClient) return;
     let active = true;
+    const requestedAddress = walletAddress.toLowerCase();
     getWalletBalance({ client: thirdwebClient, chain: ARC_TESTNET, address: walletAddress })
       .then((balance) => {
         if (active) setArcBalance(Number(balance.displayValue).toFixed(2));
       })
       .catch(() => {
         if (active) setArcBalance("0.00");
+      })
+      .finally(() => {
+        if (active) setBalanceStateAddress(requestedAddress);
       });
     return () => { active = false; };
   }, [thirdwebClient, walletAddress]);
 
   useEffect(() => {
-    if (!claimModalOpen || !walletAddress) return;
-    const controller = new AbortController();
-    fetch(ARC_TESTNET.rpc, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_gasPrice", params: [] }),
-      signal: controller.signal,
-    })
-      .then((response) => response.ok ? response.json() : Promise.reject(new Error("RPC unavailable")))
-      .then((result: { result?: string }) => {
-        if (!result.result) throw new Error("Gas price unavailable");
-        // Until the mint contract is wired, use a representative 1,000,000 gas mint.
-        const weiPerUsdc = BigInt("1000000000000000000");
-        const feeWei = BigInt(result.result) * BigInt("1000000");
-        const whole = feeWei / weiPerUsdc;
-        const fraction = feeWei % weiPerUsdc;
-        const fee = Number(whole) + Number(fraction) / 1e18;
-        setNetworkFee(fee < 0.01 ? fee.toFixed(4) : fee.toFixed(2));
-      })
-      .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === "AbortError")) setNetworkFee("Unavailable");
-      });
-    return () => controller.abort();
-  }, [claimModalOpen, walletAddress]);
+    if (!claimModalOpen || claimSubmitting || !walletAddress || !isAddress(eggoriaBirdsAddress)) return;
+    let active = true;
+
+    const updateNetworkFee = async () => {
+      if (networkFeeRequestRef.current) return;
+      networkFeeRequestRef.current = true;
+      const provider = getMetaMaskProvider();
+      if (!provider) {
+        if (active && !lastNetworkFeeRef.current) setNetworkFee("Unavailable");
+        networkFeeRequestRef.current = false;
+        return;
+      }
+
+      try {
+        const chainId = await provider.request({ method: "eth_chainId" });
+        if (chainId !== "0x4cef52") throw new Error("MetaMask is not connected to ARC Testnet");
+
+        const data = encodeFunctionData({ abi: eggoriaBirdsAbi, functionName: "mint", args: [] });
+        const transaction = { from: walletAddress, to: eggoriaBirdsAddress, data };
+        const [gasLimitResult, gasPriceResult] = await Promise.all([
+          provider.request({ method: "eth_estimateGas", params: [transaction] }),
+          provider.request({ method: "eth_gasPrice" }),
+        ]);
+        if (typeof gasLimitResult !== "string" || typeof gasPriceResult !== "string") {
+          throw new Error("MetaMask fee estimate is unavailable");
+        }
+
+        const fee = Number(BigInt(gasLimitResult) * BigInt(gasPriceResult)) / 1e18;
+        const formattedFee = fee < 0.0001
+          ? fee.toFixed(6)
+          : fee < 0.01
+            ? fee.toFixed(4)
+            : fee.toFixed(2);
+        lastNetworkFeeRef.current = formattedFee;
+        if (active) setNetworkFee(formattedFee);
+      } catch {
+        // MetaMask can temporarily reject parallel RPC requests while its
+        // transaction confirmation window is open. Keep the last valid live
+        // estimate instead of replacing it with a misleading error state.
+        if (active && !lastNetworkFeeRef.current) setNetworkFee("Unavailable");
+      } finally {
+        networkFeeRequestRef.current = false;
+      }
+    };
+
+    void updateNetworkFee();
+    const interval = window.setInterval(updateNetworkFee, 3_000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [claimModalOpen, claimSubmitting, eggoriaBirdsAddress, walletAddress]);
   const openWallet = () => {
     if (walletAddress) {
       setWalletMenuOpen((open) => !open);
@@ -595,6 +641,9 @@ export default function EggoriaLanding({
     autoShownGuideStepsRef.current.clear();
     setWalletKind("");
     setMintReadyAddress("");
+    setArcBalance("0.00");
+    setEggoriaStateAddress("");
+    setBalanceStateAddress("");
     setWalletMenuOpen(false);
     setFundsGuideOpen(false);
     setOwnedBird(null);
@@ -614,6 +663,7 @@ export default function EggoriaLanding({
             ? "You have already claimed your Egg."
             : "",
       );
+      lastNetworkFeeRef.current = "";
       setNetworkFee("Estimating...");
       setClaimModalOpen(true);
       return;
@@ -872,7 +922,7 @@ export default function EggoriaLanding({
               <span className="progress-track">{statsLoading ? <span className="progress-skeleton" /> : <><i style={{ width: `${progress}%` }} /><b style={{ left: `${progress}%` }} /></>}</span>
             </div>
           </div>
-          {ownedBird ? <div className="bird-owner-wrap">
+          {walletViewLoading ? <div className="hero-wallet-state-loading" aria-label="Loading your Eggoria progress" aria-busy="true" /> : ownedBird ? <div className="bird-owner-wrap">
             <section className={`bird-evolution-card land-${ownedLandClass}`} aria-label={`Evolution progress for Eggoria Bird #${ownedBird.tokenId}`}>
               <img className="bird-evolution-frame" src={asset("checkin-frame.png")} alt="" />
               <div className="bird-evolution-content">
@@ -996,14 +1046,18 @@ export default function EggoriaLanding({
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div>}
         </div>
-        <div className={`hero-art${ownedBird ? ` bird-owned land-${ownedLandClass}` : ""}`} aria-label={ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : undefined} aria-hidden={ownedBird ? undefined : "true"}>
+        <div className={`hero-art${walletViewLoading ? " is-state-loading" : ownedBird ? ` bird-owned land-${ownedLandClass}` : ""}`} aria-label={!walletViewLoading && ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : undefined} aria-hidden={!walletViewLoading && ownedBird ? undefined : "true"}>
           <span className="egg-glow-new">
             <img src={asset("glow.svg")} alt="" />
           </span>
-          <img className="island-new" src={ownedBird?.landAssigned ? asset(landIslandAssets[ownedBird.land] ?? "land-wizard.png") : asset("island.png")} alt="" />
-          {ownedBird
-            ? <img className={`bird-new${ownedBird.landAssigned ? "" : " is-metadata-pending"}`} src={ownedBird.landAssigned ? ownedBird.stage === 0 ? asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : ownedBird.image || asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : asset("claim-egg.png")} alt={ownedBird.landAssigned ? `${landNames[ownedBird.land]} bird` : "Mystery Egg awaiting land assignment"} />
-            : <img className="egg-new" src={asset("egg.png")} alt="" />}
+          {ownedBird?.landAssigned && ownedBird.stage === 0
+            ? <img className="bird-land-composite" src={asset(landHatchlingAssets[ownedBird.land] ?? "hatchling-wizard.png")} alt={`${landNames[ownedBird.land]} Hatchling on its island`} />
+            : <>
+              <img className="island-new" src={ownedBird?.landAssigned ? asset(landIslandAssets[ownedBird.land] ?? "land-wizard.png") : asset("island.png")} alt="" />
+              {ownedBird
+                ? <img className={`bird-new${ownedBird.landAssigned ? "" : " is-metadata-pending"}`} src={ownedBird.landAssigned ? ownedBird.image || asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : asset("claim-egg.png")} alt={ownedBird.landAssigned ? `${landNames[ownedBird.land]} bird` : "Mystery Egg awaiting land assignment"} />
+                : <img className="egg-new" src={asset("egg.png")} alt="" />}
+            </>}
           <span className="egg-burst-field">
             <i className="egg-burst egg-burst-one">✦</i>
             <i className="egg-burst egg-burst-two">✦</i>
