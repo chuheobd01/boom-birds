@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { createThirdwebClient, defineChain, eth_getBlockByNumber, getContract, getContractEvents, getRpcClient, prepareContractCall, prepareEvent, readContract, sendTransaction, waitForReceipt } from "thirdweb";
+import { createThirdwebClient, defineChain, eth_estimateGas, eth_gasPrice, eth_getBlockByNumber, getContract, getContractEvents, getRpcClient, prepareContractCall, prepareEvent, readContract, sendTransaction, waitForReceipt } from "thirdweb";
 import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect, useIsAutoConnecting } from "thirdweb/react";
 import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
 import { decodeEventLog, encodeFunctionData, isAddress } from "viem";
@@ -14,7 +14,7 @@ import { EGGORIA_MAX_SUPPLY, eggoriaBirdsAbi } from "@/lib/eggoria-birds";
 type EggoriaUser = { id: string; name: string; position: number };
 type GoogleCredential = { credential: string };
 type WalletKind = "google" | "metamask" | "";
-type HatchPhase = "idle" | "charge" | "shake" | "crack" | "flash" | "reveal";
+type HatchPhase = "idle" | "charge" | "shake" | "reveal";
 type OwnedBird = {
   tokenId: bigint;
   owner: string;
@@ -62,36 +62,68 @@ const navItems = [
   ["rarity", "Rarity"], ["roadmap", "Roadmap"], ["faq", "FAQ"],
 ] as const;
 const landNames = ["Forest", "Wind", "Wizard", "Artist", "King"] as const;
+const landRevealNames = ["Whisper Forest", "Sky Port", "Crystal Academy", "Volcano Peak", "Golden Castle"] as const;
+const landRevealIcons = ["hatch-land-forest.png", "hatch-land-wind.png", "hatch-land-wizard.png", "hatch-land-fire.png", "hatch-land-king.png"] as const;
 const landClassNames = ["forest", "wind", "wizard", "artist", "king"] as const;
 const landBirdAssets = ["forest-primary.png", "wind-primary.png", "wizard-primary.png", "artist-primary.png", "king-primary.png"] as const;
 const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png", "land-artist.png", "land-king.png"] as const;
 const landHatchlingAssets = ["hatchling-forest.png", "hatchling-wind.png", "hatchling-wizard.png", "hatchling-artist.png", "hatchling-king.png"] as const;
+const landHatchPopupAssets = ["hatch-popup-forest.png", "hatch-popup-wind.png", "hatch-popup-wizard.png", "hatch-popup-artist.png", "hatch-popup-king.png"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Advanced"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 const MILLISECONDS_PER_DAY = 86_400_000;
+const FALLBACK_MINT_FEE_USDC = 0.01;
+const MINT_FEE_BUFFER = 1.25;
+const HATCH_CHARGE_MIN_MS = 2_200;
+const HATCH_SHAKE_MS = 1_400;
+const HATCH_REVEAL_MS = 1_400;
 const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+const toBrowserUri = (uri: string) => uri.startsWith("ipfs://")
+  ? `https://gateway.pinata.cloud/ipfs/${uri.slice("ipfs://".length)}`
+  : uri;
+const primaryArtworkUris = landHatchPopupAssets.map(asset);
+const artworkDecodeCache = new Map<string, Promise<void>>();
 const decodeImage = async (src: string) => {
-  const image = new Image();
-  image.src = src;
+  const cachedDecode = artworkDecodeCache.get(src);
+  if (cachedDecode) return cachedDecode;
 
-  try {
-    await image.decode();
-  } catch {
-    await new Promise<void>((resolve) => {
-      if (image.complete) {
-        resolve();
-        return;
-      }
-      image.onload = () => resolve();
-      image.onerror = () => resolve();
-    });
-  }
+  const decode = (async () => {
+    const image = new Image();
+    image.src = src;
+
+    try {
+      await image.decode();
+    } catch {
+      await new Promise<void>((resolve) => {
+        if (image.complete) {
+          resolve();
+          return;
+        }
+        image.onload = () => resolve();
+        image.onerror = () => resolve();
+      });
+    }
+  })();
+
+  artworkDecodeCache.set(src, decode);
+  return decode;
+};
+
+const preloadPotentialHatchArtwork = () => Promise.all(primaryArtworkUris.map(decodeImage));
+
+const prepareBirdArtwork = async (bird: OwnedBird) => {
+  await decodeImage(
+    asset(landHatchPopupAssets[bird.land] ?? "hatch-popup-wizard.png"),
+  );
+  return bird;
 };
 
 const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
-const toBrowserUri = (uri: string) => uri.startsWith("ipfs://")
-  ? `https://ipfs.io/ipfs/${uri.slice("ipfs://".length)}`
-  : uri;
+const formatUsdcBalance = (value: string | number) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "0";
+  return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
+};
 
 const readNftImage = async (tokenUri: string) => {
   if (!tokenUri) return "";
@@ -156,6 +188,7 @@ export default function EggoriaLanding({
   const [claimSubmitting, setClaimSubmitting] = useState(false);
   const [hatchPhase, setHatchPhase] = useState<HatchPhase>("idle");
   const [hatchingBird, setHatchingBird] = useState<OwnedBird | null>(null);
+  const [hatchResult, setHatchResult] = useState<{ bird: OwnedBird; address: string } | null>(null);
   const [postHatchOwnedAddress, setPostHatchOwnedAddress] = useState("");
   const [walletAlreadyMinted, setWalletAlreadyMinted] = useState(false);
   const [ownedBird, setOwnedBird] = useState<OwnedBird | null>(null);
@@ -166,16 +199,17 @@ export default function EggoriaLanding({
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
   const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; balance: string; address: string } | null>(null);
-  const [mintReadyAddress, setMintReadyAddress] = useState("");
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [fundsGuideOpen, setFundsGuideOpen] = useState(false);
   const [arcBalance, setArcBalance] = useState("0.00");
+  const [requiredMintBalance, setRequiredMintBalance] = useState(FALLBACK_MINT_FEE_USDC);
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
   const [eggoriaStateAddress, setEggoriaStateAddress] = useState("");
   const [balanceStateAddress, setBalanceStateAddress] = useState("");
   const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
   const portalReady = useSyncExternalStore(subscribeToClient, () => true, () => false);
   const closeWalletRef = useRef<HTMLButtonElement>(null);
+  const hatchCompleteCloseRef = useRef<HTMLButtonElement>(null);
   const heroEggRef = useRef<HTMLImageElement>(null);
   const activeGuideRef = useRef<HTMLElement>(null);
   const autoShownGuideStepsRef = useRef(new Set<string>());
@@ -229,10 +263,22 @@ export default function EggoriaLanding({
   const closeFundsModal = useCallback(() => {
     if (fundsSuccess && activeAccount?.address.toLowerCase() === fundsSuccess.address.toLowerCase()) {
       setArcBalance(fundsSuccess.balance);
-      setMintReadyAddress(fundsSuccess.address);
     }
     setFundsModalOpen(false);
   }, [activeAccount?.address, fundsSuccess]);
+
+  const completeHatch = useCallback(() => {
+    if (!hatchResult) return;
+    const checkInGuideKey = `${hatchResult.address}:check-in`;
+    autoShownGuideStepsRef.current.add(checkInGuideKey);
+    window.localStorage.setItem(`eggoria-guide-seen:${checkInGuideKey}`, "1");
+    setFundsGuideOpen(false);
+    setPostHatchOwnedAddress(hatchResult.address);
+    setOwnedBird(hatchResult.bird);
+    setHatchingBird(null);
+    setHatchPhase("idle");
+    setHatchResult(null);
+  }, [hatchResult]);
 
   const connectGoogle = useCallback(async ({ credential }: GoogleCredential) => {
     setNotice("Verifying your account…");
@@ -292,12 +338,17 @@ export default function EggoriaLanding({
   }, [connectGoogle, googleClientId, portalReady]);
 
   useEffect(() => {
-    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen) return;
+    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen && !hatchResult) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    closeWalletRef.current?.focus();
+    if (hatchResult) hatchCompleteCloseRef.current?.focus();
+    else closeWalletRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (hatchResult) {
+          completeHatch();
+          return;
+        }
         setWalletModalOpen(false);
         closeFundsModal();
         setClaimModalOpen(false);
@@ -308,7 +359,7 @@ export default function EggoriaLanding({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [claimModalOpen, closeFundsModal, fundsModalOpen, walletModalOpen]);
+  }, [claimModalOpen, closeFundsModal, completeHatch, fundsModalOpen, hatchResult, walletModalOpen]);
 
   const connectGoogleWallet = async () => {
     if (!thirdwebClient) {
@@ -356,7 +407,7 @@ export default function EggoriaLanding({
   const walletAddress = activeAccount?.address ?? "";
   const normalizedWalletAddress = walletAddress.toLowerCase();
   const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Get Your Egg";
-  const hasTestFunds = Boolean(walletAddress) && (Number(arcBalance) >= 1 || mintReadyAddress.toLowerCase() === walletAddress.toLowerCase());
+  const hasTestFunds = Boolean(walletAddress) && Number(arcBalance) >= requiredMintBalance;
   const eggoriaStateLoading = Boolean(walletAddress) && eggoriaStateAddress !== normalizedWalletAddress;
   const balanceStateLoading = Boolean(walletAddress) && balanceStateAddress !== normalizedWalletAddress;
   const walletViewLoading = isAutoConnecting || eggoriaStateLoading || (!ownedBird && balanceStateLoading);
@@ -459,7 +510,7 @@ export default function EggoriaLanding({
         : Promise.resolve(false),
     ]);
     const totalSupply = Number(supply);
-    const tokenId = accountAddress
+    const tokenId = accountAddress && alreadyMinted
       ? await findOwnedTokenId(accountAddress, totalSupply)
       : null;
     const bird = tokenId ? await readOwnedBird(tokenId) : null;
@@ -564,9 +615,11 @@ export default function EggoriaLanding({
     if (!walletAddress || !thirdwebClient) return;
     let active = true;
     const requestedAddress = walletAddress.toLowerCase();
+    const rpcRequest = getRpcClient({ client: thirdwebClient, chain: ARC_TESTNET });
+    const mintData = encodeFunctionData({ abi: eggoriaBirdsAbi, functionName: "mint", args: [] });
     getWalletBalance({ client: thirdwebClient, chain: ARC_TESTNET, address: walletAddress })
       .then((balance) => {
-        if (active) setArcBalance(Number(balance.displayValue).toFixed(2));
+        if (active) setArcBalance(Number(balance.displayValue).toFixed(6));
       })
       .catch(() => {
         if (active) setArcBalance("0.00");
@@ -574,8 +627,25 @@ export default function EggoriaLanding({
       .finally(() => {
         if (active) setBalanceStateAddress(requestedAddress);
       });
+
+    Promise.all([
+      eth_estimateGas(rpcRequest, {
+        from: walletAddress as `0x${string}`,
+        to: eggoriaBirdsAddress as `0x${string}`,
+        data: mintData,
+      }),
+      eth_gasPrice(rpcRequest),
+    ])
+      .then(([gasLimit, gasPrice]) => Number(gasLimit * gasPrice) / 1e18 * MINT_FEE_BUFFER)
+      .then((bufferedMintFee) => {
+        if (active) setRequiredMintBalance(Math.max(bufferedMintFee, Number.EPSILON));
+      })
+      .catch(() => {
+        if (active) setRequiredMintBalance(FALLBACK_MINT_FEE_USDC);
+      });
+
     return () => { active = false; };
-  }, [thirdwebClient, walletAddress]);
+  }, [eggoriaBirdsAddress, thirdwebClient, walletAddress]);
 
   useEffect(() => {
     if (!claimModalOpen || claimSubmitting || !walletAddress || !isAddress(eggoriaBirdsAddress)) return;
@@ -675,8 +745,8 @@ export default function EggoriaLanding({
     window.localStorage.removeItem("eggoria-wallet-kind");
     autoShownGuideStepsRef.current.clear();
     setWalletKind("");
-    setMintReadyAddress("");
     setArcBalance("0.00");
+    setRequiredMintBalance(FALLBACK_MINT_FEE_USDC);
     setEggoriaStateAddress("");
     setBalanceStateAddress("");
     setWalletMenuOpen(false);
@@ -774,6 +844,9 @@ export default function EggoriaLanding({
         params: [],
       });
       const transactionResult = await sendTransaction({ transaction, account: activeAccount });
+      // The random land is not known yet, so warm all five Primary images while
+      // the receipt and oracle assignment are still being confirmed.
+      void preloadPotentialHatchArtwork();
       const receipt = await waitForReceipt(transactionResult);
       if (receipt.status !== "success") throw new Error("The mint transaction was reverted on-chain.");
       confirmedOnChain = true;
@@ -794,9 +867,9 @@ export default function EggoriaLanding({
       }
 
       setClaimModalOpen(false);
-      await wait(280);
       heroEggRef.current?.focus({ preventScroll: true });
       setHatchPhase("charge");
+      const minimumChargePromise = wait(HATCH_CHARGE_MIN_MS);
 
       let refreshedState: Awaited<ReturnType<typeof readEggoriaState>> | null = null;
 
@@ -808,13 +881,15 @@ export default function EggoriaLanding({
             setMinted(refreshedState.totalSupply);
             setWalletAlreadyMinted(refreshedState.alreadyMinted);
             setHatchingBird(refreshedState.bird);
-            if (refreshedState.bird?.landAssigned) return refreshedState.bird;
+            if (refreshedState.bird?.landAssigned) {
+              return prepareBirdArtwork(refreshedState.bird);
+            }
           } catch {
             if (tokenId && tokenId > BigInt(0)) {
               const bird = await readOwnedBird(tokenId).catch(() => null);
               if (bird) {
                 setHatchingBird(bird);
-                if (bird.landAssigned) return bird;
+                if (bird.landAssigned) return prepareBirdArtwork(bird);
               }
             }
           }
@@ -823,11 +898,7 @@ export default function EggoriaLanding({
         return refreshedState?.bird ?? null;
       })();
 
-      await wait(800);
-      setHatchPhase("shake");
-      await wait(1_100);
-
-      const mintedBird = await assignedBirdPromise;
+      const [mintedBird] = await Promise.all([assignedBirdPromise, minimumChargePromise]);
       if (!mintedBird?.landAssigned) {
         setOwnedBird(mintedBird);
         setHatchingBird(null);
@@ -836,22 +907,16 @@ export default function EggoriaLanding({
         return;
       }
 
+      // Pulse for as long as data needs, then run the fixed shake and reveal.
+      await prepareBirdArtwork(mintedBird);
       setHatchingBird(mintedBird);
-      const ownedCompositeReady = decodeImage(asset(landHatchlingAssets[mintedBird.land] ?? "hatchling-wizard.png"));
-      setHatchPhase("crack");
-      await wait(420);
-      setHatchPhase("flash");
-      await Promise.all([wait(900), ownedCompositeReady]);
+      setHatchPhase("shake");
+      await wait(HATCH_SHAKE_MS);
       setHatchPhase("reveal");
-      await wait(900);
-      const checkInGuideKey = `${walletAddress.toLowerCase()}:check-in`;
-      autoShownGuideStepsRef.current.add(checkInGuideKey);
-      window.localStorage.setItem(`eggoria-guide-seen:${checkInGuideKey}`, "1");
-      setFundsGuideOpen(false);
-      setPostHatchOwnedAddress(walletAddress.toLowerCase());
-      setOwnedBird(mintedBird);
+      await wait(HATCH_REVEAL_MS);
       setHatchingBird(null);
       setHatchPhase("idle");
+      setHatchResult({ bird: mintedBird, address: walletAddress.toLowerCase() });
     } catch (error) {
       let message = readMintError(error);
       try {
@@ -954,11 +1019,7 @@ export default function EggoriaLanding({
   const hatchRarityClass = hatchingBird?.rarityAssigned
     ? ` rarity-${rarityNames[hatchingBird.rarity]?.toLowerCase() ?? "common"}`
     : "";
-  const compositeBird = ownedBird?.landAssigned && ownedBird.stage === 0
-    ? ownedBird
-    : hatchPhase === "reveal" && hatchingBird?.landAssigned
-      ? hatchingBird
-      : null;
+  const compositeBird = ownedBird?.landAssigned && ownedBird.stage <= 1 ? ownedBird : null;
 
   return (
     <>
@@ -1056,7 +1117,7 @@ export default function EggoriaLanding({
               <h2>Daily Check-ins</h2>
               <p>Check in once each day. Your bird evolves after every 10 successful check-ins.</p>
             </aside>
-            <p className="login-note bird-checkin-helper">
+            <p key={`checkin-helper-${ownedBird.tokenId}`} className="login-note bird-checkin-helper hero-state-helper">
               <span className="funds-note-content">
                 <span>{ownedBird.landAssigned
                   ? checkInLocked
@@ -1097,7 +1158,7 @@ export default function EggoriaLanding({
                 ? <p>You&apos;ll confirm a small network fee (covered by<br />your Test USDC) and receive 1 Mystery Egg.</p>
                 : <p>You need free test funds to create your Egg.<br />They only work here for testing.</p>}
             </aside>}
-            {hasTestFunds ? <p className="login-note funds-note mint-helper">
+            {hasTestFunds ? <p key="mint-helper" className="login-note funds-note mint-helper hero-state-helper">
               <span className="funds-note-content">
                 <span>You&apos;re ready to mint. One Egg per wallet.</span>
                 <button
@@ -1110,7 +1171,7 @@ export default function EggoriaLanding({
                 >?</button>
               </span>
             </p> : walletAddress ? <>
-              <p className="login-note funds-note">
+              <p key="funds-helper" className="login-note funds-note hero-state-helper">
                 <span className="funds-note-content">
                   <span>This free test balance is used to create your Egg.</span>
                   <button
@@ -1125,9 +1186,9 @@ export default function EggoriaLanding({
               </p>
               <div className="wallet-balance-card">
                 <img src={asset("funds-balance-frame.png")} alt="" />
-                <span>You have {arcBalance} Test USDC. You&apos;ll need this to create your Egg</span>
+                <span>You have {formatUsdcBalance(arcBalance)} Test USDC. You&apos;ll need this to create your Egg</span>
               </div>
-            </> : <p className="login-note">{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Continue with Google or MetaMask"}</p>}
+            </> : <p key="connect-helper" className="login-note hero-state-helper">{user ? `Keeper #${user.position.toLocaleString("en-US")}` : "Continue with Google or MetaMask"}</p>}
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div>}
         </div>
@@ -1138,10 +1199,12 @@ export default function EggoriaLanding({
           {compositeBird && <img
             key={`owned-composite-${compositeBird.tokenId}`}
             className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
-            src={asset(landHatchlingAssets[compositeBird.land] ?? "hatchling-wizard.png")}
+            src={compositeBird.stage === 0
+              ? asset(landHatchPopupAssets[compositeBird.land] ?? "hatch-popup-wizard.png")
+              : compositeBird.image || asset(landHatchlingAssets[compositeBird.land] ?? "hatchling-wizard.png")}
             alt={`${landNames[compositeBird.land]} Hatchling on its island`}
           />}
-          {ownedBird?.landAssigned && ownedBird.stage === 0
+          {ownedBird?.landAssigned && ownedBird.stage <= 1
             ? null
             : <>
               <img className="island-new" src={ownedBird?.landAssigned ? asset(landIslandAssets[ownedBird.land] ?? "land-wizard.png") : asset("island.png")} alt="" />
@@ -1149,12 +1212,9 @@ export default function EggoriaLanding({
                 ? <img className={`bird-new${ownedBird.landAssigned ? "" : " is-metadata-pending"}`} src={ownedBird.landAssigned ? ownedBird.image || asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : asset("claim-egg.png")} alt={ownedBird.landAssigned ? `${landNames[ownedBird.land]} bird` : "Mystery Egg awaiting land assignment"} />
                 : isHatching ? <>
                   <img ref={heroEggRef} className="egg-new hatch-egg-main" src={asset("egg.png")} alt="Your Egg is hatching" tabIndex={-1} />
-                  <img className="egg-new hatch-shell hatch-shell-left" src={asset("egg.png")} alt="" />
-                  <img className="egg-new hatch-shell hatch-shell-right" src={asset("egg.png")} alt="" />
-                  <span className="hatch-cracks" aria-hidden="true"><i /><i /><i /><i /></span>
                   <span className="hatch-aura" aria-hidden="true" />
                   <span className="hatch-flash" aria-hidden="true" />
-                  <span className="hatch-status" role="status" aria-live="polite">{hatchPhase === "charge" ? "Your Egg is gathering magic" : hatchPhase === "shake" ? "Magic is stirring inside the Egg" : hatchPhase === "crack" ? "The shell is cracking" : hatchPhase === "flash" ? "The shell is opening" : "Your Bird has hatched"}</span>
+                  <span className="hatch-status" role="status" aria-live="polite">{hatchPhase === "charge" ? "Your Egg is gathering magic" : hatchPhase === "shake" ? "Your Bird is ready to hatch" : "Your Bird has hatched"}</span>
                 </> : <img ref={heroEggRef} className="egg-new" src={asset("egg.png")} alt="" tabIndex={-1} />}
             </>}
           <span className="egg-burst-field">
@@ -1305,6 +1365,49 @@ export default function EggoriaLanding({
             </div>
           </div>
           {claimError && <p className="claim-error" role="alert">{claimError}</p>}
+        </section>
+      </div>, document.body)}
+
+      {portalReady && hatchResult && createPortal(<div
+        className="wallet-modal-layer hatch-complete-layer is-open"
+        aria-hidden="false"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) completeHatch();
+        }}
+      >
+        <section
+          className={`hatch-complete-modal land-${landClassNames[hatchResult.bird.land] ?? "wizard"}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="hatch-complete-title"
+        >
+          <img className="hatch-complete-frame" src={asset("funds-modal-frame.png")} alt="" />
+          <button ref={hatchCompleteCloseRef} className="hatch-complete-close" type="button" aria-label="Close hatch result" onClick={completeHatch}>
+            <img src={asset("claim-close.svg")} alt="" />
+          </button>
+          <header className="hatch-complete-heading">
+            <h2 id="hatch-complete-title">Hatch Complete</h2>
+            <p>Your Mystery Egg has hatched into a new bird!</p>
+          </header>
+          <div className="hatch-complete-artwork">
+            <img
+              src={asset(landHatchPopupAssets[hatchResult.bird.land] ?? "hatch-popup-wizard.png")}
+              alt={`${landNames[hatchResult.bird.land]} bird on its island`}
+            />
+            <span className="hatch-land-badge">
+              <img src={asset(landRevealIcons[hatchResult.bird.land] ?? "hatch-land-wizard.png")} alt="" />
+              {landRevealNames[hatchResult.bird.land] ?? "Crystal Academy"}
+            </span>
+          </div>
+          <dl className="hatch-complete-details">
+            <div><dt>Token ID</dt><dd><img src={asset("hatch-token-icon.png")} alt="" />#{hatchResult.bird.tokenId.toString()}</dd></div>
+            <div><dt>Stage</dt><dd><img src={asset("hatch-stage-icon.png")} alt="" />Primary</dd></div>
+            <div><dt>Rarity</dt><dd><img src={asset("hatch-lock-icon.png")} alt="" />{hatchResult.bird.rarityAssigned ? rarityNames[hatchResult.bird.rarity] ?? "Assigned" : "Locked"}</dd></div>
+          </dl>
+          <p className="hatch-complete-tip">Complete 10 daily check-ins to evolve to Intermediate Stage!</p>
+          <button className="figma-button hatch-complete-action" type="button" onClick={completeHatch}>
+            <img src={asset("button.png")} alt="" /><span>Start Check In</span>
+          </button>
         </section>
       </div>, document.body)}
 

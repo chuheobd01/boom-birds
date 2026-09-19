@@ -1,7 +1,13 @@
+import { readFile } from "node:fs/promises";
+
 import { network } from "hardhat";
 
 const ARC_TESTNET_CHAIN_ID = 5_042_002n;
 const PLACEHOLDER_PREFIX = "REPLACE_WITH_";
+const IPFS_GATEWAYS = [
+  "https://gateway.pinata.cloud/ipfs/",
+  "https://ipfs.io/ipfs/",
+];
 
 const STAGE = Object.freeze({
   Primary: 0,
@@ -22,8 +28,8 @@ const METADATA_BY_LAND = [
   {
     index: 0,
     name: "Forest",
-    primary: "ipfs://bafkreigefspgbbhv6kithuavppytwd5xnuakfrlh3llnyakh76zcyajl4u",
-    intermediate: "REPLACE_WITH_FOREST_INTERMEDIATE_METADATA_URI",
+    primary: "ipfs://bafkreieepdc6obx6kxpzbxdwbfdxn3cm6lx46capngykl32nlbmfuhcskm",
+    intermediate: "ipfs://bafkreiclk6wlkklrbdrkjmkswisduyhqcbexfmi2t7fuhh64csjifvcjui",
     advanced: {
       Common: "REPLACE_WITH_FOREST_ADVANCED_COMMON_METADATA_URI",
       Rare: "REPLACE_WITH_FOREST_ADVANCED_RARE_METADATA_URI",
@@ -34,9 +40,9 @@ const METADATA_BY_LAND = [
   },
   {
     index: 1,
-    name: "Wind/Pilot",
-    primary: "ipfs://bafkreidmh5j63xef7ouy776vijt36tcqwgwt4uq47a5otiy7i72h6yz6ri",
-    intermediate: "REPLACE_WITH_WIND_PILOT_INTERMEDIATE_METADATA_URI",
+    name: "Wind",
+    primary: "ipfs://bafkreia3kzlmumbwzdy6hcjq64di4gd6onqjyiuvqrnerr6wqh5j7fyufy",
+    intermediate: "ipfs://bafkreidbdao2ownynjaisznddvehld3quoheetbdze7i2cwj5f4balvcw4",
     advanced: {
       Common: "REPLACE_WITH_WIND_PILOT_ADVANCED_COMMON_METADATA_URI",
       Rare: "REPLACE_WITH_WIND_PILOT_ADVANCED_RARE_METADATA_URI",
@@ -48,8 +54,8 @@ const METADATA_BY_LAND = [
   {
     index: 2,
     name: "Wizard",
-    primary: "ipfs://bafkreifllk3t6phkkuiuth7enzvaoh72t6tlmmun2x3znbufvs6x77ixsu",
-    intermediate: "REPLACE_WITH_WIZARD_INTERMEDIATE_METADATA_URI",
+    primary: "ipfs://bafkreifr3st42sgcrcjasi2mf4vix3hx5pgvrnodl6kquvaqpypx6o2hdy",
+    intermediate: "ipfs://bafkreighjj6zo5ig6qnbsoynqrxmj247azfdv6vjq55mz2ur6h4355axvi",
     advanced: {
       Common: "REPLACE_WITH_WIZARD_ADVANCED_COMMON_METADATA_URI",
       Rare: "REPLACE_WITH_WIZARD_ADVANCED_RARE_METADATA_URI",
@@ -61,8 +67,8 @@ const METADATA_BY_LAND = [
   {
     index: 3,
     name: "Artist",
-    primary: "ipfs://bafkreidaxorl5gpoagc22jydonc4ihir2ahz7irdi4uly3qklix2cpbgpa",
-    intermediate: "REPLACE_WITH_ARTIST_INTERMEDIATE_METADATA_URI",
+    primary: "ipfs://bafkreia6k55e7qcjgs7lma4suxt2qioon2dmv26rkxbfoxwqnwp5yqcboi",
+    intermediate: "ipfs://bafkreidqolitzhbseuqnud4yxrusj6d4oyipz57ueabk32etqwuv67b47q",
     advanced: {
       Common: "REPLACE_WITH_ARTIST_ADVANCED_COMMON_METADATA_URI",
       Rare: "REPLACE_WITH_ARTIST_ADVANCED_RARE_METADATA_URI",
@@ -74,8 +80,8 @@ const METADATA_BY_LAND = [
   {
     index: 4,
     name: "King",
-    primary: "ipfs://bafkreigreiimilepwqsugpwzgv6ksheb4qmr2bjskru7dshuzpccpogha4",
-    intermediate: "REPLACE_WITH_KING_INTERMEDIATE_METADATA_URI",
+    primary: "ipfs://bafkreiaaa5lmqvbi5mijpnlaqobp32vg5xdzqdskxadshw6cakp7iis2xq",
+    intermediate: "ipfs://bafkreie4eevue3zecmfnvina5toxrhdob7svxi47mohgfdfmjhchwda6mq",
     advanced: {
       Common: "REPLACE_WITH_KING_ADVANCED_COMMON_METADATA_URI",
       Rare: "REPLACE_WITH_KING_ADVANCED_RARE_METADATA_URI",
@@ -118,6 +124,81 @@ function assertMetadataIsReady() {
       `Metadata URIs must start with ipfs:// or https://:\n- ${invalid.join("\n- ")}`,
     );
   }
+}
+
+function toHttpUris(uri) {
+  return uri.startsWith("ipfs://")
+    ? IPFS_GATEWAYS.map((gateway) => `${gateway}${uri.slice("ipfs://".length)}`)
+    : [uri];
+}
+
+async function fetchMetadataResource(uri, options = {}) {
+  let lastError;
+  let lastResponse;
+
+  for (const url of toHttpUris(uri)) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (response.ok) return response;
+      lastResponse = response;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  if (lastResponse) return lastResponse;
+  throw lastError ?? new Error(`Unable to fetch ${uri}.`);
+}
+
+async function validateMetadataDocument(label, uri, expectedImage) {
+  const response = await fetchMetadataResource(uri);
+  if (!response.ok) {
+    throw new Error(`${label} metadata returned HTTP ${response.status}.`);
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    throw new Error(
+      `${label} must point to metadata JSON, but resolved to ${contentType || "an unknown content type"}.`,
+    );
+  }
+
+  const metadata = await response.json();
+  if (!metadata || typeof metadata !== "object" || typeof metadata.image !== "string") {
+    throw new Error(`${label} metadata is missing a valid image URI.`);
+  }
+  if (!metadata.image.startsWith("ipfs://") && !metadata.image.startsWith("https://")) {
+    throw new Error(`${label} metadata image must use an IPFS or HTTPS URI.`);
+  }
+  if (metadata.image !== expectedImage) {
+    throw new Error(
+      `${label} points to stale metadata. Expected image ${expectedImage}, received ${metadata.image}.`,
+    );
+  }
+
+  if (process.env.SKIP_IPFS_IMAGE_PROBE === "YES") {
+    console.warn(`${label} metadata verified; image availability probe skipped by explicit override.`);
+    return;
+  }
+
+  const imageResponse = await fetchMetadataResource(metadata.image, {
+    method: "HEAD",
+  });
+  if (!imageResponse.ok) {
+    throw new Error(`${label} image returned HTTP ${imageResponse.status}.`);
+  }
+
+  const imageContentType = imageResponse.headers.get("content-type") || "";
+  if (!imageContentType.toLowerCase().startsWith("image/")) {
+    throw new Error(
+      `${label} metadata image resolved to ${imageContentType || "an unknown content type"}, not an image.`,
+    );
+  }
+
+  console.log(`${label} metadata verified (${imageContentType}).`);
 }
 
 async function verifyAdminContext() {
@@ -206,6 +287,78 @@ async function configureMetadata(eggoriaBirds) {
   console.log("Minting remains disabled.");
 }
 
+async function configurePrimaryMetadata(eggoriaBirds) {
+  for (const land of METADATA_BY_LAND) {
+    if (!land.primary.startsWith("ipfs://") && !land.primary.startsWith("https://")) {
+      throw new Error(`${land.name}.primary must be an IPFS or HTTPS metadata JSON URI.`);
+    }
+  }
+
+  const expectedMetadata = await Promise.all(
+    METADATA_BY_LAND.map(async (land) =>
+      JSON.parse(
+        await readFile(
+          new URL(`../metadata/${land.name.toLowerCase()}-primary.json`, import.meta.url),
+          "utf8",
+        ),
+      ),
+    ),
+  );
+
+  for (const [index, land] of METADATA_BY_LAND.entries()) {
+    await validateMetadataDocument(
+      `${land.name}.primary`,
+      land.primary,
+      expectedMetadata[index].image,
+    );
+  }
+
+  for (const land of METADATA_BY_LAND) {
+    await sendAndConfirm(
+      `${land.name} Primary`,
+      eggoriaBirds.setStageURI(land.index, STAGE.Primary, land.primary),
+    );
+  }
+
+  console.log("All 5 Primary NFT metadata URIs are configured.");
+}
+
+async function configureIntermediateMetadata(eggoriaBirds) {
+  for (const land of METADATA_BY_LAND) {
+    if (!land.intermediate.startsWith("ipfs://") && !land.intermediate.startsWith("https://")) {
+      throw new Error(`${land.name}.intermediate must be an IPFS or HTTPS metadata JSON URI.`);
+    }
+  }
+
+  const expectedMetadata = await Promise.all(
+    METADATA_BY_LAND.map(async (land) =>
+      JSON.parse(
+        await readFile(
+          new URL(`../metadata/${land.name.toLowerCase()}-intermediate.json`, import.meta.url),
+          "utf8",
+        ),
+      ),
+    ),
+  );
+
+  for (const [index, land] of METADATA_BY_LAND.entries()) {
+    await validateMetadataDocument(
+      `${land.name}.intermediate`,
+      land.intermediate,
+      expectedMetadata[index].image,
+    );
+  }
+
+  for (const land of METADATA_BY_LAND) {
+    await sendAndConfirm(
+      `${land.name} Intermediate`,
+      eggoriaBirds.setStageURI(land.index, STAGE.Intermediate, land.intermediate),
+    );
+  }
+
+  console.log("All 5 Intermediate NFT metadata URIs are configured.");
+}
+
 async function enableMinting(eggoriaBirds) {
   if (process.env.CONFIRM_ENABLE_EGGORIA_MINTING !== "YES") {
     throw new Error(
@@ -216,6 +369,30 @@ async function enableMinting(eggoriaBirds) {
   console.log("Minting is enabled.");
 }
 
+async function enableEvolutionTestMode(eggoriaBirds) {
+  if (process.env.CONFIRM_ENABLE_EVOLUTION_TEST_MODE !== "YES") {
+    throw new Error(
+      "Evolution test mode was not enabled. Set CONFIRM_ENABLE_EVOLUTION_TEST_MODE=YES only on a test deployment.",
+    );
+  }
+  await sendAndConfirm(
+    "Enable evolution test mode",
+    eggoriaBirds.setEvolutionTestMode(true),
+  );
+  console.log("Evolution test mode is enabled. New mints start at 9/10 check-ins.");
+}
+
+async function printContractStatus(eggoriaBirds) {
+  const [totalSupply, mintingEnabled, evolutionTestMode] = await Promise.all([
+    eggoriaBirds.totalSupply(),
+    eggoriaBirds.mintingEnabled(),
+    eggoriaBirds.evolutionTestMode(),
+  ]);
+  console.log("Total supply:", totalSupply.toString());
+  console.log("Minting enabled:", mintingEnabled);
+  console.log("Evolution test mode:", evolutionTestMode);
+}
+
 async function main() {
   const action = process.env.EGGORIA_ADMIN_ACTION ?? "configure-metadata";
   const { eggoriaBirds } = await verifyAdminContext();
@@ -224,13 +401,29 @@ async function main() {
     await configureMetadata(eggoriaBirds);
     return;
   }
+  if (action === "configure-primary") {
+    await configurePrimaryMetadata(eggoriaBirds);
+    return;
+  }
+  if (action === "configure-intermediate") {
+    await configureIntermediateMetadata(eggoriaBirds);
+    return;
+  }
   if (action === "enable-minting") {
     await enableMinting(eggoriaBirds);
     return;
   }
+  if (action === "enable-evolution-test-mode") {
+    await enableEvolutionTestMode(eggoriaBirds);
+    return;
+  }
+  if (action === "status") {
+    await printContractStatus(eggoriaBirds);
+    return;
+  }
 
   throw new Error(
-    `Unknown EGGORIA_ADMIN_ACTION "${action}". Use "configure-metadata" or "enable-minting".`,
+    `Unknown EGGORIA_ADMIN_ACTION "${action}". Use "configure-metadata", "configure-primary", "configure-intermediate", "enable-minting", "enable-evolution-test-mode", or "status".`,
   );
 }
 

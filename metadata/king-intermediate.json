@@ -1,0 +1,19 @@
+{
+  "name": "King Bird - Intermediate",
+  "description": "A Intermediate King Bird from Eggoria.",
+  "image": "ipfs://bafybeidzrbwiiqod2bedbgqquc5ruqarpmjw2lnr5bwefwh4fc44u4unqu",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "King"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Intermediate"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}

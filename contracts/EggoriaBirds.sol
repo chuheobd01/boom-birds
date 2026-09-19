@@ -45,6 +45,7 @@ contract EggoriaBirds is ERC721, AccessControl {
     uint256 public totalMinted;
     uint16 public totalLandsAssigned;
     bool public mintingEnabled;
+    bool public evolutionTestMode;
 
     mapping(address account => bool minted) public hasMinted;
     mapping(address account => uint256 tokenId) public mintedTokenOf;
@@ -74,6 +75,7 @@ contract EggoriaBirds is ERC721, AccessControl {
     error RarityNotRequested();
     error RarityAlreadyAssigned();
     error RarityPoolEmpty();
+    error InvalidTestCheckIns();
 
     event LandRequested(uint256 indexed tokenId, address indexed owner);
     event BirdMinted(uint256 indexed tokenId, address indexed owner, uint8 indexed land);
@@ -82,8 +84,10 @@ contract EggoriaBirds is ERC721, AccessControl {
     event RarityRequested(uint256 indexed tokenId, address indexed owner);
     event RarityAssigned(uint256 indexed tokenId, Rarity rarity, uint256 randomWord);
     event MintingStatusChanged(bool enabled);
+    event EvolutionTestModeChanged(bool enabled);
     event MetadataUpdate(uint256 indexed tokenId);
     event BatchMetadataUpdate(uint256 indexed fromTokenId, uint256 indexed toTokenId);
+    event TestBirdSeeded(uint256 indexed tokenId, address indexed owner, uint8 indexed land, uint8 checkIns);
 
     constructor(address initialAdmin) ERC721("Eggoria Birds", "EGBIRD") {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
@@ -101,8 +105,52 @@ contract EggoriaBirds is ERC721, AccessControl {
         hasMinted[msg.sender] = true;
         mintedTokenOf[msg.sender] = tokenId;
 
+        if (evolutionTestMode) birds[tokenId].checkIns = INTERMEDIATE_CHECK_INS - 1;
+
         _safeMint(msg.sender, tokenId);
-        emit LandRequested(tokenId, msg.sender);
+        if (evolutionTestMode) {
+            uint8 testLand = uint8((tokenId - 1) % LAND_COUNT);
+            Bird storage bird = birds[tokenId];
+            bird.land = testLand;
+            bird.landAssigned = true;
+            landMinted[testLand] += 1;
+            totalLandsAssigned += 1;
+            emit BirdMinted(tokenId, msg.sender, testLand);
+            emit MetadataUpdate(tokenId);
+        } else {
+            emit LandRequested(tokenId, msg.sender);
+        }
+    }
+
+    /// @notice Seeds an owned bird at a chosen pre-evolution check-in count for testnet QA.
+    /// @dev This admin-only helper must not be used for a production deployment.
+    function seedTestBird(address recipient, uint8 land, uint8 checkIns)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        returns (uint256 tokenId)
+    {
+        _validateLand(land);
+        if (checkIns >= INTERMEDIATE_CHECK_INS) revert InvalidTestCheckIns();
+        if (totalMinted >= MAX_SUPPLY) revert MaxSupplyReached();
+        if (hasMinted[recipient]) revert WalletAlreadyMinted();
+        if (landMinted[land] >= LAND_MAX_SUPPLY) revert LandPoolEmpty();
+
+        tokenId = ++totalMinted;
+        hasMinted[recipient] = true;
+        mintedTokenOf[recipient] = tokenId;
+
+        Bird storage bird = birds[tokenId];
+        bird.land = land;
+        bird.landAssigned = true;
+        bird.checkIns = checkIns;
+        bird.stage = Stage.Primary;
+        landMinted[land] += 1;
+        totalLandsAssigned += 1;
+
+        _safeMint(recipient, tokenId);
+        emit BirdMinted(tokenId, recipient, land);
+        emit TestBirdSeeded(tokenId, recipient, land, checkIns);
+        emit MetadataUpdate(tokenId);
     }
 
     /// @notice Assigns a land by selecting one of all remaining land inventory slots.
@@ -253,6 +301,13 @@ contract EggoriaBirds is ERC721, AccessControl {
     function setMintingEnabled(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
         mintingEnabled = enabled;
         emit MintingStatusChanged(enabled);
+    }
+
+    /// @notice Makes newly minted testnet birds immediately land-assigned at check-in 9.
+    /// @dev Keep disabled for production deployments.
+    function setEvolutionTestMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        evolutionTestMode = enabled;
+        emit EvolutionTestModeChanged(enabled);
     }
 
     function setStageURI(uint8 land, Stage stage, string calldata uri) external onlyRole(METADATA_ROLE) {

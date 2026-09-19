@@ -117,3 +117,56 @@ test("assigns lands from weighted remaining inventory and preserves rarity quota
 
   await ethers.provider.send("hardhat_stopImpersonatingAccount", [nextAddress]);
 });
+
+test("admin can seed day nine and the owner evolves on check-in ten", async () => {
+  const { ethers } = await network.connect();
+  const [admin, owner, stranger] = await ethers.getSigners();
+  const birds = await ethers.deployContract("EggoriaBirds", [await admin.getAddress()], admin);
+  await birds.waitForDeployment();
+  const ownerAddress = await owner.getAddress();
+
+  await assert.rejects(
+    () => birds.connect(stranger).seedTestBird(ownerAddress, 1, 9),
+    /AccessControlUnauthorizedAccount/,
+  );
+
+  await (await birds.seedTestBird(ownerAddress, 1, 9)).wait();
+  const before = await birds.tokenState(1);
+  assert.equal(before.land, 1n);
+  assert.equal(before.stage, 0n);
+  assert.equal(before.checkIns, 9n);
+  assert.equal(before.lastCheckInDay, 0n);
+
+  await (await birds.connect(owner).checkIn(1)).wait();
+  const after = await birds.tokenState(1);
+  assert.equal(after.stage, 1n);
+  assert.equal(after.checkIns, 10n);
+  assert.ok(after.lastCheckInDay > 0n);
+});
+
+test("evolution test mode starts every new mint at check-in nine", async () => {
+  const { ethers } = await network.connect();
+  const [admin, firstOwner, secondOwner] = await ethers.getSigners();
+  const birds = await ethers.deployContract("EggoriaBirds", [await admin.getAddress()], admin);
+  await birds.waitForDeployment();
+  await (await birds.setEvolutionTestMode(true)).wait();
+  await (await birds.setMintingEnabled(true)).wait();
+
+  await (await birds.connect(firstOwner).mint()).wait();
+  await (await birds.connect(secondOwner).mint()).wait();
+
+  const first = await birds.tokenState(1);
+  const second = await birds.tokenState(2);
+  assert.equal(first.landAssigned, true);
+  assert.equal(first.land, 0n);
+  assert.equal(first.checkIns, 9n);
+  assert.equal(first.stage, 0n);
+  assert.equal(second.landAssigned, true);
+  assert.equal(second.land, 1n);
+  assert.equal(second.checkIns, 9n);
+
+  await (await birds.connect(firstOwner).checkIn(1)).wait();
+  const evolved = await birds.tokenState(1);
+  assert.equal(evolved.checkIns, 10n);
+  assert.equal(evolved.stage, 1n);
+});

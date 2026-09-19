@@ -1,0 +1,19 @@
+{
+  "name": "Wizard Bird - Intermediate",
+  "description": "A Intermediate Wizard Bird from Eggoria.",
+  "image": "ipfs://bafybeigwe5l4axjoqphcd2vrrbqyjme3bevuppvhe6akjeh7bn5hal67fu",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Wizard"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Intermediate"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}

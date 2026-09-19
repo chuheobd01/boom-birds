@@ -1,0 +1,19 @@
+{
+  "name": "Wind Bird - Intermediate",
+  "description": "A Intermediate Wind Bird from Eggoria.",
+  "image": "ipfs://bafybeigp4nkklmjl6jrjvdzrxv3gxl3edbmbnug5jm5gvuviynge7fkjta",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Wind"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Intermediate"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}

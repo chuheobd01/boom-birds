@@ -15,6 +15,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preload" href="/assets/landing/egg.png" as="image" type="image/png" />
+        <link rel="preload" href="/assets/landing/island.png" as="image" type="image/png" />
+        <link rel="preload" href="/assets/landing/button.png" as="image" type="image/png" />
+      </head>
       <body><Providers>{children}</Providers></body>
     </html>
   );

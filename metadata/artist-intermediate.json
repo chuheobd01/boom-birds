@@ -1,0 +1,19 @@
+{
+  "name": "Artist Bird - Intermediate",
+  "description": "A Intermediate Artist Bird from Eggoria.",
+  "image": "ipfs://bafybeify2cxopvnp4j3bcbfnjnjthbfobqfqlu2yfuanznrveykun524y4",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Artist"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Intermediate"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}

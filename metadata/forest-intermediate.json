@@ -1,0 +1,19 @@
+{
+  "name": "Forest Bird - Intermediate",
+  "description": "An Intermediate Forest Bird from Eggoria.",
+  "image": "ipfs://bafybeicfcllzynkcofwzx65ddu6mjfxkzwqxx5aqdriu6cmwttiwvedo7q",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Forest"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Intermediate"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Locked"
+    }
+  ]
+}
