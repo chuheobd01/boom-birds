@@ -74,6 +74,7 @@ const landBirdAssets = ["forest-primary.png", "wind-primary.png", "wizard-primar
 const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png", "land-artist.png", "land-king.png"] as const;
 const landHatchlingAssets = ["hatchling-forest.png", "hatchling-wind.png", "hatchling-wizard.png", "hatchling-artist.png", "hatchling-king.png"] as const;
 const landHatchPopupAssets = ["hatch-popup-forest.png", "hatch-popup-wind.png", "hatch-popup-wizard.png", "hatch-popup-artist.png", "hatch-popup-king.png"] as const;
+const landEvolutionPopupAssets = ["evolution-popup-forest.png", "evolution-popup-wind.png", "evolution-popup-wizard.png", "evolution-popup-artist.png", "evolution-popup-king.png"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Advanced"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 const MILLISECONDS_PER_DAY = 86_400_000;
@@ -201,6 +202,7 @@ export default function EggoriaLanding({
   const [hatchPhase, setHatchPhase] = useState<HatchPhase>("idle");
   const [hatchingBird, setHatchingBird] = useState<OwnedBird | null>(null);
   const [hatchResult, setHatchResult] = useState<{ bird: OwnedBird; address: string } | null>(null);
+  const [evolutionResult, setEvolutionResult] = useState<OwnedBird | null>(null);
   const [postHatchOwnedAddress, setPostHatchOwnedAddress] = useState("");
   const [walletAlreadyMinted, setWalletAlreadyMinted] = useState(false);
   const [ownedBird, setOwnedBird] = useState<OwnedBird | null>(null);
@@ -292,6 +294,10 @@ export default function EggoriaLanding({
     setHatchResult(null);
   }, [hatchResult]);
 
+  const completeEvolution = useCallback(() => {
+    setEvolutionResult(null);
+  }, []);
+
   const connectGoogle = useCallback(async ({ credential }: GoogleCredential) => {
     setNotice("Verifying your account…");
     try {
@@ -350,15 +356,19 @@ export default function EggoriaLanding({
   }, [connectGoogle, googleClientId, portalReady]);
 
   useEffect(() => {
-    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen && !hatchResult) return;
+    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen && !hatchResult && !evolutionResult) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    if (hatchResult) hatchCompleteCloseRef.current?.focus();
+    if (hatchResult || evolutionResult) hatchCompleteCloseRef.current?.focus();
     else closeWalletRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         if (hatchResult) {
           completeHatch();
+          return;
+        }
+        if (evolutionResult) {
+          completeEvolution();
           return;
         }
         setWalletModalOpen(false);
@@ -371,7 +381,7 @@ export default function EggoriaLanding({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [claimModalOpen, closeFundsModal, completeHatch, fundsModalOpen, hatchResult, walletModalOpen]);
+  }, [claimModalOpen, closeFundsModal, completeEvolution, completeHatch, evolutionResult, fundsModalOpen, hatchResult, walletModalOpen]);
 
   const connectGoogleWallet = async () => {
     if (!thirdwebClient) {
@@ -763,6 +773,7 @@ export default function EggoriaLanding({
     setBalanceStateAddress("");
     setWalletMenuOpen(false);
     setFundsGuideOpen(false);
+    setEvolutionResult(null);
     setOwnedBird(null);
     setPostHatchOwnedAddress("");
     setNotice("");
@@ -965,6 +976,7 @@ export default function EggoriaLanding({
 
     setCheckInSubmitting(true);
     setCheckInError("");
+    const stageBeforeCheckIn = ownedBird.stage;
     try {
       const transaction = prepareContractCall({
         contract: eggoriaContract,
@@ -984,7 +996,15 @@ export default function EggoriaLanding({
           // lastCheckInDay still keeps the button disabled if timestamp lookup is unavailable.
         }
       }
-      await refreshEggoriaState(walletAddress);
+      const refreshedState = await refreshEggoriaState(walletAddress);
+      const evolvedBird = refreshedState.bird;
+      if (stageBeforeCheckIn === 0 && evolvedBird?.stage === 1) {
+        const popupArtwork = asset(landEvolutionPopupAssets[evolvedBird.land] ?? "evolution-popup-wizard.png");
+        const heroArtwork = evolvedBird.image || asset(landHatchlingAssets[evolvedBird.land] ?? "hatchling-wizard.png");
+        void decodeImage(heroArtwork);
+        await decodeImage(popupArtwork);
+        setEvolutionResult(evolvedBird);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message.toLowerCase() : "";
       setCheckInError(
@@ -1410,13 +1430,56 @@ export default function EggoriaLanding({
             </span>
           </div>
           <dl className="hatch-complete-details">
-            <div><dt>Token ID</dt><dd><img src={asset("hatch-token-icon.png")} alt="" />#{hatchResult.bird.tokenId.toString()}</dd></div>
+            <div><dt>Bird ID</dt><dd><img src={asset("hatch-token-icon.png")} alt="" />#{hatchResult.bird.tokenId.toString()}</dd></div>
             <div><dt>Stage</dt><dd><img src={asset("hatch-stage-icon.png")} alt="" />Primary</dd></div>
             <div><dt>Rarity</dt><dd><img src={asset("hatch-lock-icon.png")} alt="" />{hatchResult.bird.rarityAssigned ? rarityNames[hatchResult.bird.rarity] ?? "Assigned" : "Locked"}</dd></div>
           </dl>
           <p className="hatch-complete-tip">Complete 10 daily check-ins to evolve to Intermediate Stage!</p>
           <button className="figma-button hatch-complete-action" type="button" onClick={completeHatch}>
             <img src={asset("button.png")} alt="" /><span>Start Check In</span>
+          </button>
+        </section>
+      </div>, document.body)}
+
+      {portalReady && evolutionResult && createPortal(<div
+        className="wallet-modal-layer hatch-complete-layer is-open"
+        aria-hidden="false"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) completeEvolution();
+        }}
+      >
+        <section
+          className={`hatch-complete-modal evolution-complete-modal land-${landClassNames[evolutionResult.land] ?? "wizard"}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="evolution-complete-title"
+        >
+          <img className="hatch-complete-frame" src={asset("funds-modal-frame.png")} alt="" />
+          <button ref={hatchCompleteCloseRef} className="hatch-complete-close" type="button" aria-label="Close evolution result" onClick={completeEvolution}>
+            <img src={asset("claim-close.svg")} alt="" />
+          </button>
+          <header className="hatch-complete-heading">
+            <h2 id="evolution-complete-title">Evolution Complete!</h2>
+            <p>Your bird has successfully evolved to the Intermediate Stage!</p>
+          </header>
+          <div className="hatch-complete-artwork">
+            <img
+              src={asset(landEvolutionPopupAssets[evolutionResult.land] ?? "evolution-popup-wizard.png")}
+              alt={`${landNames[evolutionResult.land]} Intermediate bird on its island`}
+            />
+            <span className="hatch-land-badge">
+              <img src={asset(landRevealIcons[evolutionResult.land] ?? "hatch-land-wizard.png")} alt="" />
+              {landRevealNames[evolutionResult.land] ?? "Crystal Academy"}
+            </span>
+          </div>
+          <dl className="hatch-complete-details">
+            <div><dt>Bird ID</dt><dd><img src={asset("hatch-token-icon.png")} alt="" />#{evolutionResult.tokenId.toString()}</dd></div>
+            <div><dt>Stage</dt><dd><img src={asset("hatch-stage-icon.png")} alt="" />Intermediate</dd></div>
+            <div><dt>Rarity</dt><dd><img src={asset("hatch-lock-icon.png")} alt="" />{evolutionResult.rarityAssigned ? rarityNames[evolutionResult.rarity] ?? "Assigned" : "Locked"}</dd></div>
+          </dl>
+          <p className="hatch-complete-tip">Complete 10 more daily check-ins to reach Advanced Stage!</p>
+          <button className="figma-button hatch-complete-action" type="button" onClick={completeEvolution}>
+            <img src={asset("button.png")} alt="" /><span>Meet My Bird</span>
           </button>
         </section>
       </div>, document.body)}
