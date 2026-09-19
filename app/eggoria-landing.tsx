@@ -10,6 +10,11 @@ import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
 import { decodeEventLog, encodeFunctionData, isAddress } from "viem";
 
 import { EGGORIA_MAX_SUPPLY, eggoriaBirdsAbi } from "@/lib/eggoria-birds";
+import artistPrimaryMetadata from "@/metadata/artist-primary.json";
+import forestPrimaryMetadata from "@/metadata/forest-primary.json";
+import kingPrimaryMetadata from "@/metadata/king-primary.json";
+import windPrimaryMetadata from "@/metadata/wind-primary.json";
+import wizardPrimaryMetadata from "@/metadata/wizard-primary.json";
 
 type EggoriaUser = { id: string; name: string; position: number };
 type GoogleCredential = { credential: string };
@@ -81,8 +86,14 @@ const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeou
 const toBrowserUri = (uri: string) => uri.startsWith("ipfs://")
   ? `https://gateway.pinata.cloud/ipfs/${uri.slice("ipfs://".length)}`
   : uri;
-const primaryArtworkUris = landHatchPopupAssets.map(asset);
-const artworkDecodeCache = new Map<string, Promise<void>>();
+const primaryArtworkUris = [
+  forestPrimaryMetadata.image,
+  windPrimaryMetadata.image,
+  wizardPrimaryMetadata.image,
+  artistPrimaryMetadata.image,
+  kingPrimaryMetadata.image,
+].map(toBrowserUri);
+const artworkDecodeCache = new Map<string, Promise<HTMLImageElement>>();
 const decodeImage = async (src: string) => {
   const cachedDecode = artworkDecodeCache.get(src);
   if (cachedDecode) return cachedDecode;
@@ -103,6 +114,7 @@ const decodeImage = async (src: string) => {
         image.onerror = () => resolve();
       });
     }
+    return image;
   })();
 
   artworkDecodeCache.set(src, decode);
@@ -113,7 +125,7 @@ const preloadPotentialHatchArtwork = () => Promise.all(primaryArtworkUris.map(de
 
 const prepareBirdArtwork = async (bird: OwnedBird) => {
   await decodeImage(
-    asset(landHatchPopupAssets[bird.land] ?? "hatch-popup-wizard.png"),
+    bird.image || asset(landHatchlingAssets[bird.land] ?? "hatchling-wizard.png"),
   );
   return bird;
 };
@@ -1199,9 +1211,7 @@ export default function EggoriaLanding({
           {compositeBird && <img
             key={`owned-composite-${compositeBird.tokenId}`}
             className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
-            src={compositeBird.stage === 0
-              ? asset(landHatchPopupAssets[compositeBird.land] ?? "hatch-popup-wizard.png")
-              : compositeBird.image || asset(landHatchlingAssets[compositeBird.land] ?? "hatchling-wizard.png")}
+            src={compositeBird.image || asset(landHatchlingAssets[compositeBird.land] ?? "hatchling-wizard.png")}
             alt={`${landNames[compositeBird.land]} Hatchling on its island`}
           />}
           {ownedBird?.landAssigned && ownedBird.stage <= 1
