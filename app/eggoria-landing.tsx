@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { createPortal } from "react-dom";
 import { createThirdwebClient, defineChain, eth_estimateGas, eth_gasPrice, eth_getBlockByNumber, getContract, getContractEvents, getRpcClient, prepareContractCall, prepareEvent, readContract, sendTransaction, waitForReceipt } from "thirdweb";
 import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect, useIsAutoConnecting } from "thirdweb/react";
+import { getUserEmail } from "thirdweb/wallets/in-app";
 import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
 import { decodeEventLog, encodeFunctionData, isAddress } from "viem";
 
@@ -16,7 +17,7 @@ import kingPrimaryMetadata from "@/metadata/king-primary.json";
 import windPrimaryMetadata from "@/metadata/wind-primary.json";
 import wizardPrimaryMetadata from "@/metadata/wizard-primary.json";
 
-type EggoriaUser = { id: string; name: string; position: number };
+type EggoriaUser = { id: string; name: string; email?: string; picture?: string; position: number };
 type GoogleCredential = { credential: string };
 type WalletKind = "google" | "metamask" | "";
 type HatchPhase = "idle" | "charge" | "shake" | "reveal";
@@ -53,7 +54,7 @@ const asset = (name: string) => `/assets/landing/${name}`;
 const subscribeToClient = () => () => undefined;
 const ARC_TESTNET = defineChain({
   id: 5_042_002,
-  name: "Arc Testnet",
+  name: "ARC Testnet",
   rpc: "https://rpc.testnet.arc.network",
   nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
   blockExplorers: [{ name: "ArcScan", url: "https://testnet.arcscan.app" }],
@@ -67,7 +68,6 @@ const navItems = [
   ["rarity", "Rarity"], ["roadmap", "Roadmap"], ["faq", "FAQ"],
 ] as const;
 const landNames = ["Forest", "Wind", "Wizard", "Artist", "King"] as const;
-const landRevealNames = ["Whisper Forest", "Sky Port", "Crystal Academy", "Volcano Peak", "Golden Castle"] as const;
 const landBadgeNames = ["Land Forest", "Land Wind", "Land Wizard", "Land Artist", "Land King"] as const;
 const landRevealIcons = ["hatch-land-forest.png", "hatch-land-wind.png", "hatch-land-wizard.png", "hatch-land-fire.png", "hatch-land-king.png"] as const;
 const landClassNames = ["forest", "wind", "wizard", "artist", "king"] as const;
@@ -76,7 +76,7 @@ const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png",
 const landHatchlingAssets = ["hatchling-forest.png", "hatchling-wind.png", "hatchling-wizard.png", "hatchling-artist.png", "hatchling-king.png"] as const;
 const landHatchPopupAssets = ["hatch-popup-forest.png", "hatch-popup-wind.png", "hatch-popup-wizard.png", "hatch-popup-artist.png", "hatch-popup-king.png"] as const;
 const landEvolutionPopupAssets = ["evolution-popup-forest.png", "evolution-popup-wind.png", "evolution-popup-wizard.png", "evolution-popup-artist.png", "evolution-popup-king.png"] as const;
-const stageNames = ["Hatchling", "Fledgling", "Advanced"] as const;
+const stageNames = ["Hatchling", "Fledgling", "Soarling"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 const MILLISECONDS_PER_DAY = 86_400_000;
 const FALLBACK_MINT_FEE_USDC = 0.01;
@@ -213,11 +213,13 @@ export default function EggoriaLanding({
   const [checkInSubmitting, setCheckInSubmitting] = useState(false);
   const [checkInError, setCheckInError] = useState("");
   const [networkFee, setNetworkFee] = useState("Estimating...");
-  const [, setWalletKind] = useState<WalletKind>("");
+  const [walletKind, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
   const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; balance: string; address: string } | null>(null);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [walletAddressCopied, setWalletAddressCopied] = useState(false);
+  const [walletEmail, setWalletEmail] = useState("");
   const [fundsGuideOpen, setFundsGuideOpen] = useState(false);
   const [arcBalance, setArcBalance] = useState("0.00");
   const [requiredMintBalance, setRequiredMintBalance] = useState(FALLBACK_MINT_FEE_USDC);
@@ -229,6 +231,7 @@ export default function EggoriaLanding({
   const closeWalletRef = useRef<HTMLButtonElement>(null);
   const hatchCompleteCloseRef = useRef<HTMLButtonElement>(null);
   const evolutionCheckInCloseRef = useRef<HTMLButtonElement>(null);
+  const walletMenuAnchorRef = useRef<HTMLDivElement>(null);
   const heroEggRef = useRef<HTMLImageElement>(null);
   const activeGuideRef = useRef<HTMLElement>(null);
   const autoShownGuideStepsRef = useRef(new Set<string>());
@@ -394,6 +397,22 @@ export default function EggoriaLanding({
     };
   }, [claimModalOpen, checkInSubmitting, closeFundsModal, completeEvolution, completeHatch, evolutionCheckInOpen, evolutionResult, fundsModalOpen, hatchResult, walletModalOpen]);
 
+  useEffect(() => {
+    if (!walletMenuOpen) return;
+    const closeOnOutside = (event: PointerEvent) => {
+      if (!walletMenuAnchorRef.current?.contains(event.target as Node)) setWalletMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setWalletMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutside);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [walletMenuOpen]);
+
   const connectGoogleWallet = async () => {
     if (!thirdwebClient) {
       setWalletError("thirdweb-config");
@@ -429,7 +448,7 @@ export default function EggoriaLanding({
       if (readProviderErrorCode(error) !== 4902) throw error;
       await provider.request({
         method: "wallet_addEthereumChain",
-        params: [{ chainId: targetChainId, chainName: "Arc Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: ["https://rpc.testnet.arc.network"], blockExplorerUrls: ["https://testnet.arcscan.app"] }],
+        params: [{ chainId: targetChainId, chainName: "ARC Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: ["https://rpc.testnet.arc.network"], blockExplorerUrls: ["https://testnet.arcscan.app"] }],
       });
       await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: targetChainId }] });
     }
@@ -645,6 +664,17 @@ export default function EggoriaLanding({
   }, [walletAddress]);
 
   useEffect(() => {
+    if (!walletAddress || walletKind !== "google" || !thirdwebClient) return;
+    let active = true;
+    getUserEmail({ client: thirdwebClient })
+      .then((email) => {
+        if (active) setWalletEmail(email ?? "");
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [thirdwebClient, walletAddress, walletKind]);
+
+  useEffect(() => {
     if (!walletAddress || !thirdwebClient) return;
     let active = true;
     const requestedAddress = walletAddress.toLowerCase();
@@ -772,6 +802,18 @@ export default function EggoriaLanding({
     setWalletError("");
     setWalletModalOpen(true);
   };
+
+  const copyWalletAddress = async () => {
+    if (!walletAddress) return;
+    try {
+      await navigator.clipboard.writeText(walletAddress);
+      setWalletAddressCopied(true);
+      window.setTimeout(() => setWalletAddressCopied(false), 1_500);
+    } catch {
+      setWalletAddressCopied(false);
+    }
+  };
+
   const connectMetaMask = async () => {
     const provider = getMetaMaskProvider();
     if (!provider) {
@@ -792,6 +834,7 @@ export default function EggoriaLanding({
       });
       window.localStorage.setItem("eggoria-wallet-kind", "metamask");
       setWalletKind("metamask");
+      setWalletEmail("");
       setNotice("");
       setWalletModalOpen(false);
     } catch (error) {
@@ -814,6 +857,8 @@ export default function EggoriaLanding({
     setEggoriaStateAddress("");
     setBalanceStateAddress("");
     setWalletMenuOpen(false);
+    setWalletAddressCopied(false);
+    setWalletEmail("");
     setFundsGuideOpen(false);
     setEvolutionCheckInOpen(false);
     setEvolutionResult(null);
@@ -1083,7 +1128,7 @@ export default function EggoriaLanding({
   const nextStage = !ownedBird || ownedBird.stage === 0
     ? "Fledgling"
     : ownedBird.stage === 1
-      ? "Advanced"
+      ? "Soarling"
       : ownedBird.rarityAssigned
         ? rarityNames[ownedBird.rarity] ?? "Complete"
         : "Rarity pending";
@@ -1135,7 +1180,7 @@ export default function EggoriaLanding({
             ))}
           </div>
         </nav>
-        <div className="header-actions">
+        <div ref={walletMenuAnchorRef} className="header-actions">
           <div className="social-links">
             <a href="#" aria-label="Eggoria on X"><img className="social-frame" src={asset("icon-frame.png")} alt="" /><img className="social-glyph" src={asset("twitter.svg")} alt="" /></a>
             <a href="#" aria-label="Eggoria on Discord"><img className="social-frame" src={asset("icon-frame.png")} alt="" /><img className="social-glyph" src={asset("discord.svg")} alt="" /></a>
@@ -1144,9 +1189,25 @@ export default function EggoriaLanding({
             <img src={asset("button.png")} alt="" />
             <span className="header-connect-label">{connectionLabel}{walletAddress && <img className="wallet-chevron" src={asset("wallet-chevron.svg")} alt="" />}</span>
           </button>
-          {walletAddress && walletMenuOpen && <div className="wallet-nav-menu">
-            <a href={`https://testnet.arcscan.app/address/${walletAddress}`} target="_blank" rel="noreferrer">View on ArcScan</a>
-            <button type="button" onClick={disconnectWallet}>Disconnect</button>
+          {walletAddress && walletMenuOpen && <div className="wallet-nav-menu" role="dialog" aria-label="Connected wallet details">
+            <div className="wallet-menu-profile">
+              <img className="wallet-menu-avatar" src={asset("wallet-menu-avatar.png")} alt="" />
+              <div className="wallet-menu-identity">
+                <strong>{walletKind === "google" ? walletEmail || user?.email || "Google Wallet" : walletKind === "metamask" ? "MetaMask Wallet" : user?.email ?? "Connected Wallet"}</strong>
+                <span>{shortAddress(walletAddress)}</span>
+              </div>
+              <button className="wallet-menu-copy" type="button" aria-label={walletAddressCopied ? "Wallet address copied" : "Copy wallet address"} title={walletAddressCopied ? "Copied" : "Copy address"} onClick={() => void copyWalletAddress()}>
+                <img src={asset("wallet-menu-copy.png")} alt="" />
+              </button>
+            </div>
+            <div className="wallet-menu-divider" />
+            <div className="wallet-menu-row"><span><img src={asset("claim-wallet.png")} alt="" />Balance</span><strong>{formatUsdcBalance(arcBalance)} Test USDC</strong></div>
+            <div className="wallet-menu-row"><span><img src={asset("claim-network.png")} alt="" />Network</span><strong>{ARC_TESTNET.name}</strong></div>
+            <div className="wallet-menu-divider" />
+            <div className="wallet-menu-row"><span><img src={asset("evolution-bird.png")} alt="" />My Bird</span><strong>{ownedBird ? ownedBird.landAssigned ? `${currentStage}: ${stageProgress}/10` : "Assigning Land" : "No NFT"}</strong></div>
+            <a className="wallet-menu-row wallet-menu-link" href={`https://testnet.arcscan.app/address/${walletAddress}`} target="_blank" rel="noreferrer"><span><img src={asset("wallet-menu-external.png")} alt="" />View on Explorer</span></a>
+            <div className="wallet-menu-divider" />
+            <button className="wallet-menu-logout" type="button" onClick={disconnectWallet}><img src={asset("wallet-menu-logout.png")} alt="" />Log out</button>
           </div>}
         </div>
       </header>
@@ -1180,7 +1241,7 @@ export default function EggoriaLanding({
                   <img src={asset("checkin-helper.png")} alt="" />
                   <p>{ownedBird.landAssigned
                     ? ownedBird.stage >= 2
-                      ? `${rarityNames[ownedBird.rarity] ?? "Advanced"} evolution complete.`
+                      ? `${rarityNames[ownedBird.rarity] ?? "Soarling"} evolution complete.`
                       : `${checkInsRemaining} more check-in${checkInsRemaining === 1 ? "" : "s"} to reach ${nextStage}.`
                     : "Your land is being assigned securely."}</p>
                 </div>
@@ -1231,7 +1292,7 @@ export default function EggoriaLanding({
             {checkInError && <p className="bird-checkin-error" role="alert">{checkInError}</p>}
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div> : <div className="hero-connect-wrap">
-            <button className="figma-button hero-connect" type="button" onClick={handleHeroAction} disabled={isHatching}>
+            <button className="figma-button hero-connect hero-mint-button" type="button" onClick={handleHeroAction} disabled={claimSubmitting || isHatching} aria-busy={claimSubmitting || isHatching}>
               <img src={asset("button.png")} alt="" /><span>{!walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
             {walletAddress && <button
@@ -1489,7 +1550,7 @@ export default function EggoriaLanding({
               <div><dt><img src={asset("claim-wallet.png")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
               <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{ARC_TESTNET.name}</dd></div>
               <div><dt><img src={asset("evolution-arrow.png")} alt="" />Evolves to</dt><dd>Fledgling</dd></div>
-              <div><dt><img src={asset("evolution-bird.png")} alt="" />Bird</dt><dd>#{ownedBird.tokenId.toString()} – {landRevealNames[ownedBird.land] ?? "Crystal Academy"}</dd></div>
+              <div><dt><img src={asset("evolution-bird.png")} alt="" />Bird</dt><dd>#{ownedBird.tokenId.toString()} - {landBadgeNames[ownedBird.land] ?? "Land Wizard"}</dd></div>
               <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{evolutionNetworkFee === "Unavailable" || evolutionNetworkFee === "Estimating..." ? evolutionNetworkFee : `~${evolutionNetworkFee} Test USDC`}</dd></div>
             </dl>
             <div className="claim-actions evolution-checkin-actions">
@@ -1537,14 +1598,14 @@ export default function EggoriaLanding({
           </div>
           <dl className="hatch-complete-details">
             <div><dt>Bird ID</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's unique number.\nIt stays the same forever."} tabIndex={0} aria-label="Your bird's unique number. It stays the same forever."><img src={asset("hatch-token-icon.png")} alt="" /></span>#{hatchResult.bird.tokenId.toString()}</dd></div>
-            <div><dt>Stage</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's growth stage:\nHatchling → Fledgling → Soaring."} tabIndex={0} aria-label="Your bird's growth stage: Hatchling, Fledgling, then Soaring."><img src={asset("hatch-stage-icon.png")} alt="" /></span>Hatchling</dd></div>
-            <div><dt>Rarity</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Revealed when your bird\nevolves into Soaring."} tabIndex={0} aria-label="Rarity is revealed when your bird evolves into Soaring."><img src={asset("hatch-lock-icon.png")} alt="" /></span>{hatchResult.bird.rarityAssigned ? rarityNames[hatchResult.bird.rarity] ?? "Assigned" : "???"}</dd></div>
+            <div><dt>Stage</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's growth stage:\nHatchling → Fledgling → Soarling."} tabIndex={0} aria-label="Your bird's growth stage: Hatchling, Fledgling, then Soarling."><img src={asset("hatch-stage-icon.png")} alt="" /></span>Hatchling</dd></div>
+            <div><dt>Rarity</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Revealed when your bird\nevolves into Soarling."} tabIndex={0} aria-label="Rarity is revealed when your bird evolves into Soarling."><img src={asset("hatch-lock-icon.png")} alt="" /></span>{hatchResult.bird.rarityAssigned ? rarityNames[hatchResult.bird.rarity] ?? "Assigned" : "???"}</dd></div>
           </dl>
           <p className="hatch-complete-tip"><strong>10</strong> daily check-ins to evolve into a Fledgling</p>
           <button className="figma-button hatch-complete-action" type="button" onClick={completeHatch}>
             <img src={asset("button.png")} alt="" /><span>Check In Day 1</span>
           </button>
-          <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${hatchResult.transactionHash}`} target="_blank" rel="noreferrer">View transaction</a>
+          <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${hatchResult.transactionHash}`} target="_blank" rel="noreferrer">View Transaction</a>
         </section>
       </div>, document.body)}
 
@@ -1581,14 +1642,14 @@ export default function EggoriaLanding({
           </div>
           <dl className="hatch-complete-details">
             <div><dt>Bird ID</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's unique number.\nIt stays the same forever."} tabIndex={0} aria-label="Your bird's unique number. It stays the same forever."><img src={asset("hatch-token-icon.png")} alt="" /></span>#{evolutionResult.tokenId.toString()}</dd></div>
-            <div><dt>Stage</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's growth stage:\nHatchling → Fledgling → Soaring."} tabIndex={0} aria-label="Your bird's growth stage: Hatchling, Fledgling, then Soaring."><img src={asset("hatch-stage-icon.png")} alt="" /></span>Fledgling</dd></div>
-            <div><dt>Rarity</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Revealed when your bird\nevolves into Soaring."} tabIndex={0} aria-label="Rarity is revealed when your bird evolves into Soaring."><img src={asset("hatch-lock-icon.png")} alt="" /></span>{evolutionResult.rarityAssigned ? rarityNames[evolutionResult.rarity] ?? "Assigned" : "???"}</dd></div>
+            <div><dt>Stage</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's growth stage:\nHatchling → Fledgling → Soarling."} tabIndex={0} aria-label="Your bird's growth stage: Hatchling, Fledgling, then Soarling."><img src={asset("hatch-stage-icon.png")} alt="" /></span>Fledgling</dd></div>
+            <div><dt>Rarity</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Revealed when your bird\nevolves into Soarling."} tabIndex={0} aria-label="Rarity is revealed when your bird evolves into Soarling."><img src={asset("hatch-lock-icon.png")} alt="" /></span>{evolutionResult.rarityAssigned ? rarityNames[evolutionResult.rarity] ?? "Assigned" : "???"}</dd></div>
           </dl>
           <p className="hatch-complete-tip"><strong>10</strong> daily check-ins to evolve into a <strong>Soarling</strong> and reveal <strong>Rarity</strong></p>
           <button className="figma-button hatch-complete-action" type="button" onClick={completeEvolution}>
             <img src={asset("button.png")} alt="" /><span>Continue</span>
           </button>
-          {evolutionTransactionHash && <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${evolutionTransactionHash}`} target="_blank" rel="noreferrer">View transaction</a>}
+          {evolutionTransactionHash && <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${evolutionTransactionHash}`} target="_blank" rel="noreferrer">View Transaction</a>}
         </section>
       </div>, document.body)}
 

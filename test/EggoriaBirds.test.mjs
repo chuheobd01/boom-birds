@@ -144,7 +144,7 @@ test("admin can seed day nine and the owner evolves on check-in ten", async () =
   assert.ok(after.lastCheckInDay > 0n);
 });
 
-test("evolution test mode starts every new mint at check-in nine", async () => {
+test("evolution test mode previews both evolution checkpoints without a daily wait", async () => {
   const { ethers } = await network.connect();
   const [admin, firstOwner, secondOwner] = await ethers.getSigners();
   const birds = await ethers.deployContract("EggoriaBirds", [await admin.getAddress()], admin);
@@ -167,6 +167,14 @@ test("evolution test mode starts every new mint at check-in nine", async () => {
 
   await (await birds.connect(firstOwner).checkIn(1)).wait();
   const evolved = await birds.tokenState(1);
-  assert.equal(evolved.checkIns, 10n);
+  assert.equal(evolved.checkIns, 19n);
   assert.equal(evolved.stage, 1n);
+  assert.equal(evolved.lastCheckInDay, 0n);
+
+  await (await birds.connect(firstOwner).checkIn(1)).wait();
+  const completed = await birds.tokenState(1);
+  assert.equal(completed.checkIns, 20n);
+  assert.equal(completed.stage, 2n);
+  assert.equal(completed.rarityAssigned, true);
+  assert.equal(await birds.rarityPoolRemaining(), 499n);
 });

@@ -203,8 +203,20 @@ contract EggoriaBirds is ERC721, AccessControl {
             bird.stage = Stage.Intermediate;
             emit BirdEvolved(tokenId, Stage.Intermediate);
             emit MetadataUpdate(tokenId);
+            if (evolutionTestMode) {
+                // QA mode skips the waiting period between evolution stages while
+                // preserving the real 10-check-in progression when the mode is off.
+                bird.checkIns = ADVANCED_CHECK_INS - 1;
+                bird.lastCheckInDay = 0;
+            }
         } else if (bird.checkIns == ADVANCED_CHECK_INS) {
             emit RarityRequested(tokenId, msg.sender);
+            if (evolutionTestMode) {
+                _fulfillRarity(
+                    tokenId,
+                    uint256(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, tokenId, msg.sender)))
+                );
+            }
         }
     }
 
@@ -212,6 +224,10 @@ contract EggoriaBirds is ERC721, AccessControl {
     /// @dev The shrinking weighted pool guarantees final quotas of 300/125/50/20/5.
     function fulfillRarity(uint256 tokenId, uint256 randomWord) external onlyRole(RANDOMIZER_ROLE) {
         ownerOf(tokenId);
+        _fulfillRarity(tokenId, randomWord);
+    }
+
+    function _fulfillRarity(uint256 tokenId, uint256 randomWord) private {
         Bird storage bird = birds[tokenId];
         if (bird.rarityAssigned) revert RarityAlreadyAssigned();
         if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
