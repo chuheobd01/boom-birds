@@ -220,9 +220,9 @@ contract EggoriaBirds is ERC721, AccessControl {
         } else if (bird.checkIns == ADVANCED_CHECK_INS) {
             emit RarityRequested(tokenId, msg.sender);
             if (evolutionTestMode) {
-                // QA currently previews the Common Soarling result. A zero pick
-                // always selects Common while that land's Common quota remains.
-                _fulfillRarity(tokenId, 0);
+                // QA currently previews the Rare Soarling result. The first 60
+                // slots are Common, so pick 60 selects Rare on a fresh test deploy.
+                _fulfillRarity(tokenId, 60);
             }
         }
     }

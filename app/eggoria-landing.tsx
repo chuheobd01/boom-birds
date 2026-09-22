@@ -78,6 +78,8 @@ const landHatchPopupAssets = ["hatch-popup-forest.png", "hatch-popup-wind.png", 
 const landEvolutionPopupAssets = ["evolution-popup-forest.png", "evolution-popup-wind.png", "evolution-popup-wizard.png", "evolution-popup-artist.png", "evolution-popup-king.png"] as const;
 const landSoarlingResultAssets = ["soarling-result-forest.png", "soarling-result-wind.png", "soarling-result-wizard.png", "soarling-result-artist.png", "soarling-result-king.png"] as const;
 const landCommonSoarlingResultAssets = ["soarling-common-forest.png", "soarling-common-wind.png", "soarling-common-wizard.png", "soarling-common-artist.png", "soarling-common-king.png"] as const;
+const landRareSoarlingResultAssets = ["soarling-rare-forest.png", "soarling-rare-wind.png", "soarling-rare-wizard.png", "soarling-rare-artist.png", "soarling-rare-king.png"] as const;
+const landSoarlingParticleAssets = ["land-particle-forest.png", "land-particle-wind.png", "land-particle-wizard.png", "land-particle-artist.png", "land-particle-king.png"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Soarling"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 const rarityStarAssets = ["rarity-common-star.png", "rarity-rare-star.png", "rarity-epic-star.png", "rarity-legendary-star.png", "rarity-mythic-star.png"] as const;
@@ -133,6 +135,16 @@ const prepareBirdArtwork = async (bird: OwnedBird) => {
     bird.image || asset(landHatchlingAssets[bird.land] ?? "hatchling-wizard.png"),
   );
   return bird;
+};
+
+const getSoarlingResultAsset = (bird: OwnedBird) => {
+  if (bird.rarity === 0) {
+    return landCommonSoarlingResultAssets[bird.land] ?? "soarling-common-wizard.png";
+  }
+  if (bird.rarity === 1) {
+    return landRareSoarlingResultAssets[bird.land] ?? "soarling-rare-wizard.png";
+  }
+  return landSoarlingResultAssets[bird.land] ?? "soarling-result-wizard.png";
 };
 
 const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -1112,11 +1124,7 @@ export default function EggoriaLanding({
         setEvolutionTransactionHash(result.transactionHash);
         setEvolutionResult(evolvedBird);
       } else if (stageBeforeCheckIn === 1 && evolvedBird?.stage === 2) {
-        const popupArtwork = asset(
-          evolvedBird.rarity === 0
-            ? landCommonSoarlingResultAssets[evolvedBird.land] ?? "soarling-common-wizard.png"
-            : landSoarlingResultAssets[evolvedBird.land] ?? "soarling-result-wizard.png",
-        );
+        const popupArtwork = asset(getSoarlingResultAsset(evolvedBird));
         await decodeImage(popupArtwork);
         setSoarlingTransactionHash(result.transactionHash);
         setSoarlingResult(evolvedBird);
@@ -1716,13 +1724,17 @@ export default function EggoriaLanding({
           </header>
           <div className="hatch-complete-artwork soarling-result-artwork">
             <span className="soarling-artwork-glow" aria-hidden="true" />
-            <span className="soarling-artwork-sparks" aria-hidden="true"><i /><i /><i /></span>
+            <span className="soarling-artwork-sparks" aria-hidden="true">
+              {[0, 1, 2].map((particle) => (
+                <img
+                  key={particle}
+                  src={asset(landSoarlingParticleAssets[soarlingResult.land] ?? "land-particle-wizard.png")}
+                  alt=""
+                />
+              ))}
+            </span>
             <img
-              src={asset(
-                soarlingResult.rarity === 0
-                  ? landCommonSoarlingResultAssets[soarlingResult.land] ?? "soarling-common-wizard.png"
-                  : landSoarlingResultAssets[soarlingResult.land] ?? "soarling-result-wizard.png",
-              )}
+              src={asset(getSoarlingResultAsset(soarlingResult))}
               alt={`${landNames[soarlingResult.land]} Soarling bird on its island`}
             />
             <span className="hatch-land-badge">

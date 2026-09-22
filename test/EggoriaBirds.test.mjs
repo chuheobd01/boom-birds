@@ -183,9 +183,11 @@ test("evolution test mode previews both evolution checkpoints without a daily wa
   assert.equal(completed.checkIns, 20n);
   assert.equal(completed.stage, 2n);
   assert.equal(completed.rarityAssigned, true);
-  assert.equal(completed.rarity, 0n);
-  assert.equal(await birds.landRarityRemaining(0, 0), 59n);
+  assert.equal(completed.rarity, 1n);
+  assert.equal(await birds.landRarityRemaining(0, 0), 60n);
+  assert.equal(await birds.landRarityRemaining(0, 1), 24n);
   assert.equal(await birds.landRarityPoolRemaining(0), 99n);
-  assert.equal(await birds.rarityRemaining(0), 299n);
+  assert.equal(await birds.rarityRemaining(0), 300n);
+  assert.equal(await birds.rarityRemaining(1), 124n);
   assert.equal(await birds.rarityPoolRemaining(), 499n);
 });
