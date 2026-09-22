@@ -1,0 +1,19 @@
+{
+  "name": "Artist Bird - Soarling Mythic",
+  "description": "A Soarling Artist Bird from Eggoria.",
+  "image": "ipfs://bafybeib54szzvwwwq22bur4wzkjlj6q7b6alv7wya7u6uwcvek7vm476yq",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Artist"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Mythic"
+    }
+  ]
+}

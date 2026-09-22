@@ -55,6 +55,9 @@ contract EggoriaBirds is ERC721, AccessControl {
     // Exact full-collection quotas: 60%, 25%, 10%, 4%, 1% of 500.
     uint16[5] private _rarityRemaining = [uint16(300), 125, 50, 20, 5];
     uint16 private _rarityPoolRemaining = 500;
+    // Each 100-bird land independently contains 60/25/10/4/1 rarities.
+    uint16[5][LAND_COUNT] private _landRarityRemaining;
+    uint16[LAND_COUNT] private _landRarityPoolRemaining;
 
     string[LAND_COUNT] private _primaryUris;
     string[LAND_COUNT] private _intermediateUris;
@@ -93,6 +96,11 @@ contract EggoriaBirds is ERC721, AccessControl {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
         _grantRole(METADATA_ROLE, initialAdmin);
         _grantRole(RANDOMIZER_ROLE, initialAdmin);
+
+        for (uint8 land; land < LAND_COUNT; ++land) {
+            _landRarityRemaining[land] = [uint16(60), 25, 10, 4, 1];
+            _landRarityPoolRemaining[land] = LAND_MAX_SUPPLY;
+        }
     }
 
     /// @notice Mints one bird with its land pending secure random fulfillment.
@@ -212,16 +220,15 @@ contract EggoriaBirds is ERC721, AccessControl {
         } else if (bird.checkIns == ADVANCED_CHECK_INS) {
             emit RarityRequested(tokenId, msg.sender);
             if (evolutionTestMode) {
-                _fulfillRarity(
-                    tokenId,
-                    uint256(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, tokenId, msg.sender)))
-                );
+                // QA currently previews the Common Soarling result. A zero pick
+                // always selects Common while that land's Common quota remains.
+                _fulfillRarity(tokenId, 0);
             }
         }
     }
 
     /// @notice Assigns rarity and atomically completes the bird's final evolution.
-    /// @dev The shrinking weighted pool guarantees final quotas of 300/125/50/20/5.
+    /// @dev Each land has its own shrinking 60/25/10/4/1 weighted pool.
     function fulfillRarity(uint256 tokenId, uint256 randomWord) external onlyRole(RANDOMIZER_ROLE) {
         ownerOf(tokenId);
         _fulfillRarity(tokenId, randomWord);
@@ -231,21 +238,25 @@ contract EggoriaBirds is ERC721, AccessControl {
         Bird storage bird = birds[tokenId];
         if (bird.rarityAssigned) revert RarityAlreadyAssigned();
         if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
-        if (_rarityPoolRemaining == 0) revert RarityPoolEmpty();
+        uint8 land = bird.land;
+        uint16 landPoolRemaining = _landRarityPoolRemaining[land];
+        if (landPoolRemaining == 0) revert RarityPoolEmpty();
 
-        uint256 pick = randomWord % _rarityPoolRemaining;
+        uint256 pick = randomWord % landPoolRemaining;
         uint256 cumulative;
         uint8 selected;
 
         for (uint8 i; i < 5; ++i) {
-            cumulative += _rarityRemaining[i];
+            cumulative += _landRarityRemaining[land][i];
             if (pick < cumulative) {
                 selected = i;
+                _landRarityRemaining[land][i] -= 1;
                 _rarityRemaining[i] -= 1;
                 break;
             }
         }
 
+        _landRarityPoolRemaining[land] -= 1;
         _rarityPoolRemaining -= 1;
         bird.rarity = Rarity(selected);
         bird.rarityAssigned = true;
@@ -355,6 +366,16 @@ contract EggoriaBirds is ERC721, AccessControl {
 
     function rarityPoolRemaining() external view returns (uint16) {
         return _rarityPoolRemaining;
+    }
+
+    function landRarityRemaining(uint8 land, Rarity rarity) external view returns (uint16) {
+        _validateLand(land);
+        return _landRarityRemaining[land][uint8(rarity)];
+    }
+
+    function landRarityPoolRemaining(uint8 land) external view returns (uint16) {
+        _validateLand(land);
+        return _landRarityPoolRemaining[land];
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, AccessControl) returns (bool) {

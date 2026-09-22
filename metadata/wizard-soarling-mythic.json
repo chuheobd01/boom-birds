@@ -1,0 +1,19 @@
+{
+  "name": "Wizard Bird - Soarling Mythic",
+  "description": "A Soarling Wizard Bird from Eggoria.",
+  "image": "ipfs://bafybeigwgc5a6pjygzsoc3cjqkjn2nxl3ewzz7lnyf6gwrinhybnz74jwu",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Wizard"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Mythic"
+    }
+  ]
+}

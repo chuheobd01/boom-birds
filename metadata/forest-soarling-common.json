@@ -1,0 +1,19 @@
+{
+  "name": "Forest Bird - Soarling Common",
+  "description": "An Soarling Forest Bird from Eggoria.",
+  "image": "ipfs://bafybeiaiwkkn45nirhbgkvwnprihodx2kxwud2nycaax2khbv2vxwpil2i",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Forest"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}

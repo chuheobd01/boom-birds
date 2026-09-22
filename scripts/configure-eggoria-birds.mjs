@@ -30,12 +30,12 @@ const METADATA_BY_LAND = [
     name: "Forest",
     primary: "ipfs://bafkreieepdc6obx6kxpzbxdwbfdxn3cm6lx46capngykl32nlbmfuhcskm",
     intermediate: "ipfs://bafkreiclk6wlkklrbdrkjmkswisduyhqcbexfmi2t7fuhh64csjifvcjui",
-    advanced: {
-      Common: "REPLACE_WITH_FOREST_ADVANCED_COMMON_METADATA_URI",
-      Rare: "REPLACE_WITH_FOREST_ADVANCED_RARE_METADATA_URI",
-      Epic: "REPLACE_WITH_FOREST_ADVANCED_EPIC_METADATA_URI",
-      Legendary: "REPLACE_WITH_FOREST_ADVANCED_LEGENDARY_METADATA_URI",
-      Mythic: "REPLACE_WITH_FOREST_ADVANCED_MYTHIC_METADATA_URI",
+    soarling: {
+      Common: "ipfs://bafkreiatursharrm2zsktcnquevud4iafmtobznlk6nfuomn447rpwfqiu",
+      Rare: "ipfs://bafkreiga4by74ytlwip5d66pzvb4ijikqy7xmwtjxkvot42yxdbmkuuv5m",
+      Epic: "ipfs://bafkreihwtjhbmvo3ywcdyoyq5ifi64i4efmvm44yjcsiwucpba6my4q5wm",
+      Legendary: "ipfs://bafkreihwsiqygs7ntcogodger3vlgf44hszsccfdzp5ceg5dnpnmqfaejq",
+      Mythic: "ipfs://bafkreifd3eca3obbf5s6uuavtjvtkbfweq2an6byzz6upemhezh66kxygy",
     },
   },
   {
@@ -43,12 +43,12 @@ const METADATA_BY_LAND = [
     name: "Wind",
     primary: "ipfs://bafkreia3kzlmumbwzdy6hcjq64di4gd6onqjyiuvqrnerr6wqh5j7fyufy",
     intermediate: "ipfs://bafkreidbdao2ownynjaisznddvehld3quoheetbdze7i2cwj5f4balvcw4",
-    advanced: {
-      Common: "REPLACE_WITH_WIND_PILOT_ADVANCED_COMMON_METADATA_URI",
-      Rare: "REPLACE_WITH_WIND_PILOT_ADVANCED_RARE_METADATA_URI",
-      Epic: "REPLACE_WITH_WIND_PILOT_ADVANCED_EPIC_METADATA_URI",
-      Legendary: "REPLACE_WITH_WIND_PILOT_ADVANCED_LEGENDARY_METADATA_URI",
-      Mythic: "REPLACE_WITH_WIND_PILOT_ADVANCED_MYTHIC_METADATA_URI",
+    soarling: {
+      Common: "ipfs://bafkreieguwkxirbsfjzc4cxsfcgctg2aptfs4klporxfqbt7bjhnvuvkae",
+      Rare: "ipfs://bafkreigprtlitnq33m442x6yaduc4muiqrzwuxqroicygbohiu6cxsw3yy",
+      Epic: "ipfs://bafkreigan7qm5hcrl4jnaivr6npks6433xuvupyxdynrhjtah4sn7qi5wa",
+      Legendary: "ipfs://bafkreiawsyzinaey2tuhab33shmh6vrehwwx7iih2xhn7hy57stamnyrt4",
+      Mythic: "ipfs://bafkreigmdaltikuo5zbeqs6ltaxllx5jxqp4if6sccmu56lrldcvc36yjm",
     },
   },
   {
@@ -56,12 +56,12 @@ const METADATA_BY_LAND = [
     name: "Wizard",
     primary: "ipfs://bafkreifr3st42sgcrcjasi2mf4vix3hx5pgvrnodl6kquvaqpypx6o2hdy",
     intermediate: "ipfs://bafkreighjj6zo5ig6qnbsoynqrxmj247azfdv6vjq55mz2ur6h4355axvi",
-    advanced: {
-      Common: "REPLACE_WITH_WIZARD_ADVANCED_COMMON_METADATA_URI",
-      Rare: "REPLACE_WITH_WIZARD_ADVANCED_RARE_METADATA_URI",
-      Epic: "REPLACE_WITH_WIZARD_ADVANCED_EPIC_METADATA_URI",
-      Legendary: "REPLACE_WITH_WIZARD_ADVANCED_LEGENDARY_METADATA_URI",
-      Mythic: "REPLACE_WITH_WIZARD_ADVANCED_MYTHIC_METADATA_URI",
+    soarling: {
+      Common: "ipfs://bafkreigefgqejoejbfg6crf7fhye7soyksixovv3m47zltmmgwp46u2hnu",
+      Rare: "ipfs://bafkreiduyirmi5grvx7xh4aabq6qojoklt4owrxar5mh4f7u3j7t5gnqqm",
+      Epic: "ipfs://bafkreifm6llr46wx4jw34ujn4apv7qa6f6uqeylcqx4wdkrazfszfwa77m",
+      Legendary: "ipfs://bafkreibtnxkgkbhrlmjmxj3yvu5r33g4e2itmuom4fgvxgtmruniiq7tam",
+      Mythic: "ipfs://bafkreiagpca5drjya6yxsfzyqidbwa25aw3m7vufscoar5kqkh2i3jpewy",
     },
   },
   {
@@ -69,12 +69,12 @@ const METADATA_BY_LAND = [
     name: "Artist",
     primary: "ipfs://bafkreia6k55e7qcjgs7lma4suxt2qioon2dmv26rkxbfoxwqnwp5yqcboi",
     intermediate: "ipfs://bafkreidqolitzhbseuqnud4yxrusj6d4oyipz57ueabk32etqwuv67b47q",
-    advanced: {
-      Common: "REPLACE_WITH_ARTIST_ADVANCED_COMMON_METADATA_URI",
-      Rare: "REPLACE_WITH_ARTIST_ADVANCED_RARE_METADATA_URI",
-      Epic: "REPLACE_WITH_ARTIST_ADVANCED_EPIC_METADATA_URI",
-      Legendary: "REPLACE_WITH_ARTIST_ADVANCED_LEGENDARY_METADATA_URI",
-      Mythic: "REPLACE_WITH_ARTIST_ADVANCED_MYTHIC_METADATA_URI",
+    soarling: {
+      Common: "ipfs://bafkreiengdljnorecg5xz3uqsec3d5itqpji6jwy5sxtuudu3js7sxu5tm",
+      Rare: "ipfs://bafkreifspham42z4z5d4cwg74qk4tarizy47l5sq3gjsimeuuzmzzb6x4m",
+      Epic: "ipfs://bafkreic2zfsvipme57y52zxd3kyfsd2p2ypebeue5morr5k4urftsd2dkq",
+      Legendary: "ipfs://bafkreidk2f5tpjprscqj7lsocmapdhonfj5yih4pd3qseuqsyirbpf2vzu",
+      Mythic: "ipfs://bafkreicw3uj42e7m2g3g6willd2kct54q45ymkkvko2k4vtqry7sr56rri",
     },
   },
   {
@@ -82,12 +82,12 @@ const METADATA_BY_LAND = [
     name: "King",
     primary: "ipfs://bafkreiaaa5lmqvbi5mijpnlaqobp32vg5xdzqdskxadshw6cakp7iis2xq",
     intermediate: "ipfs://bafkreie4eevue3zecmfnvina5toxrhdob7svxi47mohgfdfmjhchwda6mq",
-    advanced: {
-      Common: "REPLACE_WITH_KING_ADVANCED_COMMON_METADATA_URI",
-      Rare: "REPLACE_WITH_KING_ADVANCED_RARE_METADATA_URI",
-      Epic: "REPLACE_WITH_KING_ADVANCED_EPIC_METADATA_URI",
-      Legendary: "REPLACE_WITH_KING_ADVANCED_LEGENDARY_METADATA_URI",
-      Mythic: "REPLACE_WITH_KING_ADVANCED_MYTHIC_METADATA_URI",
+    soarling: {
+      Common: "ipfs://bafkreidey7agalf7up3avun5v6rxsomj6ijeuaigoeclb4464iuek32u34",
+      Rare: "ipfs://bafkreicmh3klh2sqpoqqm3otmhdfs4bi47m7pttzi7lqn4u7hmp6mlnjsi",
+      Epic: "ipfs://bafkreigq5rel6on2mbcwnm2cfbz555yur4kjyz6brws7hx76kdxxjoo6im",
+      Legendary: "ipfs://bafkreig7qcxwyyk75kpupvqy5ackhfarfe6bahilaaerrexm7wcaq2vx2y",
+      Mythic: "ipfs://bafkreicpl4qdhvmolwnedbkfld2tkgiy3qlw3mskwhuspkjpft227s24cu",
     },
   },
 ];
@@ -109,8 +109,8 @@ function assertMetadataIsReady() {
   for (const land of METADATA_BY_LAND) {
     inspect(`${land.name}.primary`, land.primary);
     inspect(`${land.name}.intermediate`, land.intermediate);
-    for (const [rarity, uri] of Object.entries(land.advanced)) {
-      inspect(`${land.name}.advanced.${rarity}`, uri);
+    for (const [rarity, uri] of Object.entries(land.soarling)) {
+      inspect(`${land.name}.soarling.${rarity}`, uri);
     }
   }
 
@@ -277,8 +277,8 @@ async function configureMetadata(eggoriaBirds) {
     );
     for (const [rarityName, rarityIndex] of Object.entries(RARITY)) {
       await sendAndConfirm(
-        `${land.name} Advanced ${rarityName}`,
-        eggoriaBirds.setAdvancedURI(land.index, rarityIndex, land.advanced[rarityName]),
+        `${land.name} Soarling ${rarityName}`,
+        eggoriaBirds.setAdvancedURI(land.index, rarityIndex, land.soarling[rarityName]),
       );
     }
   }
@@ -391,6 +391,16 @@ async function printContractStatus(eggoriaBirds) {
   console.log("Total supply:", totalSupply.toString());
   console.log("Minting enabled:", mintingEnabled);
   console.log("Evolution test mode:", evolutionTestMode);
+  const rarityNames = Object.keys(RARITY);
+  for (const land of METADATA_BY_LAND) {
+    const quota = await Promise.all(
+      rarityNames.map((rarity) => eggoriaBirds.landRarityRemaining(land.index, RARITY[rarity])),
+    );
+    console.log(
+      `${land.name} rarity remaining:`,
+      rarityNames.map((rarity, index) => `${rarity}=${quota[index]}`).join(", "),
+    );
+  }
 }
 
 async function main() {

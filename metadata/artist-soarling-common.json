@@ -1,0 +1,19 @@
+{
+  "name": "Artist Bird - Soarling Common",
+  "description": "A Soarling Artist Bird from Eggoria.",
+  "image": "ipfs://bafybeig4lzqzmvrcqurymiz4rjo5myywdsvyqq6uhxeypypwsiqgmmpwoi",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Artist"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}

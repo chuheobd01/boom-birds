@@ -1,0 +1,19 @@
+{
+  "name": "King Bird - Soarling Common",
+  "description": "A Soarling King Bird from Eggoria.",
+  "image": "ipfs://bafybeihk2iz6aq6qmy74rzi344kurc3chu4m4essqz3bt2rnlj75o3jyyy",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "King"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}

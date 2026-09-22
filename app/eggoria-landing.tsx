@@ -76,6 +76,9 @@ const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png",
 const landHatchlingAssets = ["hatchling-forest.png", "hatchling-wind.png", "hatchling-wizard.png", "hatchling-artist.png", "hatchling-king.png"] as const;
 const landHatchPopupAssets = ["hatch-popup-forest.png", "hatch-popup-wind.png", "hatch-popup-wizard.png", "hatch-popup-artist.png", "hatch-popup-king.png"] as const;
 const landEvolutionPopupAssets = ["evolution-popup-forest.png", "evolution-popup-wind.png", "evolution-popup-wizard.png", "evolution-popup-artist.png", "evolution-popup-king.png"] as const;
+const landSoarlingResultAssets = ["soarling-result-forest.png", "soarling-result-wind.png", "soarling-result-wizard.png", "soarling-result-artist.png", "soarling-result-king.png"] as const;
+const landCommonSoarlingResultAssets = ["soarling-common-forest.png", "soarling-common-wind.png", "soarling-common-wizard.png", "soarling-common-artist.png", "soarling-common-king.png"] as const;
+const landRealmNames = ["Whisper Forest", "Sky Port", "Crystal Academy", "Volcano Peak", "Golden Castle"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Soarling"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 const MILLISECONDS_PER_DAY = 86_400_000;
@@ -205,7 +208,10 @@ export default function EggoriaLanding({
   const [hatchResult, setHatchResult] = useState<{ bird: OwnedBird; address: string; transactionHash: string } | null>(null);
   const [evolutionResult, setEvolutionResult] = useState<OwnedBird | null>(null);
   const [evolutionTransactionHash, setEvolutionTransactionHash] = useState("");
+  const [soarlingResult, setSoarlingResult] = useState<OwnedBird | null>(null);
+  const [soarlingTransactionHash, setSoarlingTransactionHash] = useState("");
   const [evolutionCheckInOpen, setEvolutionCheckInOpen] = useState(false);
+  const [evolutionTargetStage, setEvolutionTargetStage] = useState<1 | 2>(1);
   const [evolutionNetworkFee, setEvolutionNetworkFee] = useState("Estimating...");
   const [postHatchOwnedAddress, setPostHatchOwnedAddress] = useState("");
   const [walletAlreadyMinted, setWalletAlreadyMinted] = useState(false);
@@ -307,6 +313,17 @@ export default function EggoriaLanding({
     setEvolutionTransactionHash("");
   }, []);
 
+  const completeSoarlingEvolution = useCallback(() => {
+    setSoarlingResult(null);
+    setSoarlingTransactionHash("");
+  }, []);
+
+  const viewRoadmap = useCallback(() => {
+    completeSoarlingEvolution();
+    setActiveNav("roadmap");
+    window.location.hash = "roadmap";
+  }, [completeSoarlingEvolution]);
+
   const connectGoogle = useCallback(async ({ credential }: GoogleCredential) => {
     setNotice("Verifying your account…");
     try {
@@ -365,10 +382,10 @@ export default function EggoriaLanding({
   }, [connectGoogle, googleClientId, portalReady]);
 
   useEffect(() => {
-    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen && !evolutionCheckInOpen && !hatchResult && !evolutionResult) return;
+    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen && !evolutionCheckInOpen && !hatchResult && !evolutionResult && !soarlingResult) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    if (hatchResult || evolutionResult) hatchCompleteCloseRef.current?.focus();
+    if (hatchResult || evolutionResult || soarlingResult) hatchCompleteCloseRef.current?.focus();
     else if (evolutionCheckInOpen) evolutionCheckInCloseRef.current?.focus();
     else closeWalletRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -379,6 +396,10 @@ export default function EggoriaLanding({
         }
         if (evolutionResult) {
           completeEvolution();
+          return;
+        }
+        if (soarlingResult) {
+          completeSoarlingEvolution();
           return;
         }
         if (evolutionCheckInOpen) {
@@ -395,7 +416,7 @@ export default function EggoriaLanding({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [claimModalOpen, checkInSubmitting, closeFundsModal, completeEvolution, completeHatch, evolutionCheckInOpen, evolutionResult, fundsModalOpen, hatchResult, walletModalOpen]);
+  }, [claimModalOpen, checkInSubmitting, closeFundsModal, completeEvolution, completeHatch, completeSoarlingEvolution, evolutionCheckInOpen, evolutionResult, fundsModalOpen, hatchResult, soarlingResult, walletModalOpen]);
 
   useEffect(() => {
     if (!walletMenuOpen) return;
@@ -863,6 +884,8 @@ export default function EggoriaLanding({
     setEvolutionCheckInOpen(false);
     setEvolutionResult(null);
     setEvolutionTransactionHash("");
+    setSoarlingResult(null);
+    setSoarlingTransactionHash("");
     setOwnedBird(null);
     setPostHatchOwnedAddress("");
     setNotice("");
@@ -1094,6 +1117,15 @@ export default function EggoriaLanding({
         await decodeImage(popupArtwork);
         setEvolutionTransactionHash(result.transactionHash);
         setEvolutionResult(evolvedBird);
+      } else if (stageBeforeCheckIn === 1 && evolvedBird?.stage === 2) {
+        const popupArtwork = asset(
+          evolvedBird.rarity === 0
+            ? landCommonSoarlingResultAssets[evolvedBird.land] ?? "soarling-common-wizard.png"
+            : landSoarlingResultAssets[evolvedBird.land] ?? "soarling-result-wizard.png",
+        );
+        await decodeImage(popupArtwork);
+        setSoarlingTransactionHash(result.transactionHash);
+        setSoarlingResult(evolvedBird);
       }
       return true;
     } catch (error) {
@@ -1110,8 +1142,11 @@ export default function EggoriaLanding({
   };
 
   const handleCheckInClick = () => {
-    if (ownedBird?.stage === 0 && ownedBird.checkIns === 9) {
+    const isFledglingCheckpoint = ownedBird?.stage === 0 && ownedBird.checkIns === 9;
+    const isSoarlingCheckpoint = ownedBird?.stage === 1 && ownedBird.checkIns === 19;
+    if (isFledglingCheckpoint || isSoarlingCheckpoint) {
       setCheckInError("");
+      setEvolutionTargetStage(isSoarlingCheckpoint ? 2 : 1);
       setEvolutionNetworkFee("Estimating...");
       setEvolutionCheckInOpen(true);
       return;
@@ -1158,7 +1193,10 @@ export default function EggoriaLanding({
   const hatchRarityClass = hatchingBird?.rarityAssigned
     ? ` rarity-${rarityNames[hatchingBird.rarity]?.toLowerCase() ?? "common"}`
     : "";
-  const compositeBird = ownedBird?.landAssigned && ownedBird.stage <= 1 ? ownedBird : null;
+  // Every assigned-stage metadata image is a complete bird + island composition.
+  // Render Soarlings through the same full-size path as Fledglings so the metadata
+  // artwork is not shrunk into the standalone-bird slot or layered over a second island.
+  const compositeBird = ownedBird?.landAssigned ? ownedBird : null;
 
   return (
     <>
@@ -1204,7 +1242,9 @@ export default function EggoriaLanding({
             <div className="wallet-menu-row"><span><img src={asset("claim-wallet.png")} alt="" />Balance</span><strong>{formatUsdcBalance(arcBalance)} Test USDC</strong></div>
             <div className="wallet-menu-row"><span><img src={asset("claim-network.png")} alt="" />Network</span><strong>{ARC_TESTNET.name}</strong></div>
             <div className="wallet-menu-divider" />
-            <div className="wallet-menu-row"><span><img src={asset("evolution-bird.png")} alt="" />My Bird</span><strong>{ownedBird ? ownedBird.landAssigned ? `${currentStage}: ${stageProgress}/10` : "Assigning Land" : "No NFT"}</strong></div>
+            {ownedBird
+              ? <a className="wallet-menu-row wallet-menu-link wallet-menu-bird-link" href={`https://testnet.arcscan.app/token/${eggoriaBirdsAddress}/instance/${ownedBird.tokenId.toString()}`} target="_blank" rel="noreferrer"><span><img src={asset("evolution-bird.png")} alt="" />My Bird</span><strong>{ownedBird.landAssigned ? `${currentStage}: ${stageProgress}/10` : "Assigning Land"}</strong></a>
+              : <div className="wallet-menu-row"><span><img src={asset("evolution-bird.png")} alt="" />My Bird</span><strong>No NFT</strong></div>}
             <a className="wallet-menu-row wallet-menu-link" href={`https://testnet.arcscan.app/address/${walletAddress}`} target="_blank" rel="noreferrer"><span><img src={asset("wallet-menu-external.png")} alt="" />View on Explorer</span></a>
             <div className="wallet-menu-divider" />
             <button className="wallet-menu-logout" type="button" onClick={disconnectWallet}><img src={asset("wallet-menu-logout.png")} alt="" />Log out</button>
@@ -1355,9 +1395,9 @@ export default function EggoriaLanding({
             key={`owned-composite-${compositeBird.tokenId}`}
             className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
             src={compositeBird.image || asset(landHatchlingAssets[compositeBird.land] ?? "hatchling-wizard.png")}
-            alt={`${landNames[compositeBird.land]} Hatchling on its island`}
+            alt={`${landNames[compositeBird.land]} ${stageNames[compositeBird.stage] ?? "bird"} on its island`}
           />}
-          {ownedBird?.landAssigned && ownedBird.stage <= 1
+          {ownedBird?.landAssigned
             ? null
             : <>
               <img className="island-new" src={ownedBird?.landAssigned ? asset(landIslandAssets[ownedBird.land] ?? "land-wizard.png") : asset("island.png")} alt="" />
@@ -1542,14 +1582,16 @@ export default function EggoriaLanding({
           </button>
           <img className="evolution-checkin-icon" src={asset("evolution-checkin-icon.png")} alt="" />
           <header className="claim-modal-heading evolution-checkin-heading">
-            <h2 id="evolution-checkin-title">Evolution Check-In</h2>
-            <p>This check-in will evolve your Bird to Fledgling.</p>
+            <h2 id="evolution-checkin-title">{evolutionTargetStage === 2 ? "Ready To Evolve!" : "Evolution Check-In"}</h2>
+            <p>{evolutionTargetStage === 2
+              ? "One final check-in to become a Soarling and reveal Rarity"
+              : "This check-in will evolve your Bird to Fledgling."}</p>
           </header>
           <div className="claim-panel evolution-checkin-panel">
             <dl className="claim-details evolution-checkin-details">
               <div><dt><img src={asset("claim-wallet.png")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
               <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{ARC_TESTNET.name}</dd></div>
-              <div><dt><img src={asset("evolution-arrow.png")} alt="" />Evolves to</dt><dd>Fledgling</dd></div>
+              <div><dt><img src={asset("evolution-arrow.png")} alt="" />Evolves to</dt><dd>{evolutionTargetStage === 2 ? "Soarling" : "Fledgling"}</dd></div>
               <div><dt><img src={asset("evolution-bird.png")} alt="" />Bird</dt><dd>#{ownedBird.tokenId.toString()} - {landBadgeNames[ownedBird.land] ?? "Land Wizard"}</dd></div>
               <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{evolutionNetworkFee === "Unavailable" || evolutionNetworkFee === "Estimating..." ? evolutionNetworkFee : `~${evolutionNetworkFee} Test USDC`}</dd></div>
             </dl>
@@ -1650,6 +1692,60 @@ export default function EggoriaLanding({
             <img src={asset("button.png")} alt="" /><span>Continue</span>
           </button>
           {evolutionTransactionHash && <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${evolutionTransactionHash}`} target="_blank" rel="noreferrer">View Transaction</a>}
+        </section>
+      </div>, document.body)}
+
+      {portalReady && soarlingResult && createPortal(<div
+        className="wallet-modal-layer hatch-complete-layer is-open"
+        aria-hidden="false"
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) completeSoarlingEvolution();
+        }}
+      >
+        <section
+          className={`hatch-complete-modal soarling-complete-modal land-${landClassNames[soarlingResult.land] ?? "wizard"}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="soarling-complete-title"
+        >
+          <img className="hatch-complete-frame" src={asset("funds-modal-frame.png")} alt="" />
+          <button ref={hatchCompleteCloseRef} className="hatch-complete-close" type="button" aria-label="Close Soarling result" onClick={completeSoarlingEvolution}>
+            <img src={asset("claim-close.svg")} alt="" />
+          </button>
+          <header className="hatch-complete-heading">
+            <h2 id="soarling-complete-title">Hatch Complete</h2>
+            <p>Your Mystery Egg has hatched into a new bird!</p>
+          </header>
+          <div className="hatch-complete-artwork soarling-result-artwork">
+            <span className="soarling-result-glow" aria-hidden="true" />
+            <span className="soarling-result-sparks" aria-hidden="true">
+              <i /><i /><i /><i /><i />
+            </span>
+            <span className="soarling-result-image-wrap">
+              <img
+                src={asset(
+                  soarlingResult.rarity === 0
+                    ? landCommonSoarlingResultAssets[soarlingResult.land] ?? "soarling-common-wizard.png"
+                    : landSoarlingResultAssets[soarlingResult.land] ?? "soarling-result-wizard.png",
+                )}
+                alt={`${landNames[soarlingResult.land]} Soarling bird on its island`}
+              />
+            </span>
+            <span className="hatch-land-badge">
+              <img src={asset(landRevealIcons[soarlingResult.land] ?? "hatch-land-wizard.png")} alt="" />
+              {landRealmNames[soarlingResult.land] ?? "Crystal Academy"}
+            </span>
+          </div>
+          <dl className="hatch-complete-details">
+            <div><dt>Bird ID</dt><dd><img src={asset("hatch-token-icon.png")} alt="" />#{soarlingResult.tokenId.toString()}</dd></div>
+            <div><dt>Stage</dt><dd><img src={asset("hatch-stage-icon.png")} alt="" />Soarling</dd></div>
+            <div><dt>Rarity</dt><dd><span className={`soarling-rarity-star rarity-${rarityNames[soarlingResult.rarity]?.toLowerCase() ?? "common"}`} aria-hidden="true" />{rarityNames[soarlingResult.rarity] ?? "Common"}</dd></div>
+          </dl>
+          <p className="hatch-complete-tip soarling-complete-tip">Your journey is complete. PvP &amp; PvE arrive in Q2.</p>
+          <button className="figma-button hatch-complete-action" type="button" onClick={viewRoadmap}>
+            <img src={asset("button.png")} alt="" /><span>View Roadmap</span>
+          </button>
+          {soarlingTransactionHash && <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${soarlingTransactionHash}`} target="_blank" rel="noreferrer">View Transaction</a>}
         </section>
       </div>, document.body)}
 

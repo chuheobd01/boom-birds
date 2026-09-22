@@ -1,0 +1,19 @@
+{
+  "name": "Wind Bird - Soarling Common",
+  "description": "A Soarling Wind Bird from Eggoria.",
+  "image": "ipfs://bafybeicjjdmele2pus2odxt625idr5f3zpserog5fknmzicwdafow5dh4q",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Wind"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Common"
+    }
+  ]
+}

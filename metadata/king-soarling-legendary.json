@@ -1,0 +1,19 @@
+{
+  "name": "King Bird - Soarling Legendary",
+  "description": "A Soarling King Bird from Eggoria.",
+  "image": "ipfs://bafybeifg3zjp5ejhegmyfmct2wevbpcmxay43enrwihqn7s67idtnvnamy",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "King"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "King Bird - Soarling Epic",
+  "description": "A Soarling King Bird from Eggoria.",
+  "image": "ipfs://bafybeigdngdtot62osaguny6eq7rc2zk2rlpypehadtu5i2zdpvlwi4fmq",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "King"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    }
+  ]
+}

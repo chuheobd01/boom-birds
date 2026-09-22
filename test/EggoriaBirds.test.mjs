@@ -113,6 +113,13 @@ test("assigns lands from weighted remaining inventory and preserves rarity quota
     await Promise.all([0, 1, 2, 3, 4].map((rarity) => birds.rarityRemaining(rarity))),
     [300n, 125n, 50n, 20n, 5n],
   );
+  for (let land = 0; land < 5; land += 1) {
+    assert.deepEqual(
+      await Promise.all([0, 1, 2, 3, 4].map((rarity) => birds.landRarityRemaining(land, rarity))),
+      [60n, 25n, 10n, 4n, 1n],
+    );
+    assert.equal(await birds.landRarityPoolRemaining(land), 100n);
+  }
   assert.equal(await birds.rarityPoolRemaining(), 500n);
 
   await ethers.provider.send("hardhat_stopImpersonatingAccount", [nextAddress]);
@@ -176,5 +183,9 @@ test("evolution test mode previews both evolution checkpoints without a daily wa
   assert.equal(completed.checkIns, 20n);
   assert.equal(completed.stage, 2n);
   assert.equal(completed.rarityAssigned, true);
+  assert.equal(completed.rarity, 0n);
+  assert.equal(await birds.landRarityRemaining(0, 0), 59n);
+  assert.equal(await birds.landRarityPoolRemaining(0), 99n);
+  assert.equal(await birds.rarityRemaining(0), 299n);
   assert.equal(await birds.rarityPoolRemaining(), 499n);
 });

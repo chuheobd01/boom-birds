@@ -1,0 +1,19 @@
+{
+  "name": "Forest Bird - Soarling Epic",
+  "description": "An Soarling Forest Bird from Eggoria.",
+  "image": "ipfs://bafybeiarx7phrwiavh22vj6ymienu4lujpvuvxwyokgabg3uavzi322nqu",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Forest"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Epic"
+    }
+  ]
+}
