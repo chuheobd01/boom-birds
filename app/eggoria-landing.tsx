@@ -78,9 +78,9 @@ const landHatchPopupAssets = ["hatch-popup-forest.png", "hatch-popup-wind.png", 
 const landEvolutionPopupAssets = ["evolution-popup-forest.png", "evolution-popup-wind.png", "evolution-popup-wizard.png", "evolution-popup-artist.png", "evolution-popup-king.png"] as const;
 const landSoarlingResultAssets = ["soarling-result-forest.png", "soarling-result-wind.png", "soarling-result-wizard.png", "soarling-result-artist.png", "soarling-result-king.png"] as const;
 const landCommonSoarlingResultAssets = ["soarling-common-forest.png", "soarling-common-wind.png", "soarling-common-wizard.png", "soarling-common-artist.png", "soarling-common-king.png"] as const;
-const landRealmNames = ["Whisper Forest", "Sky Port", "Crystal Academy", "Volcano Peak", "Golden Castle"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Soarling"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
+const rarityStarAssets = ["rarity-common-star.png", "rarity-rare-star.png", "rarity-epic-star.png", "rarity-legendary-star.png", "rarity-mythic-star.png"] as const;
 const MILLISECONDS_PER_DAY = 86_400_000;
 const FALLBACK_MINT_FEE_USDC = 0.01;
 const MINT_FEE_BUFFER = 1.25;
@@ -317,12 +317,6 @@ export default function EggoriaLanding({
     setSoarlingResult(null);
     setSoarlingTransactionHash("");
   }, []);
-
-  const viewRoadmap = useCallback(() => {
-    completeSoarlingEvolution();
-    setActiveNav("roadmap");
-    window.location.hash = "roadmap";
-  }, [completeSoarlingEvolution]);
 
   const connectGoogle = useCallback(async ({ credential }: GoogleCredential) => {
     setNotice("Verifying your account…");
@@ -1391,6 +1385,10 @@ export default function EggoriaLanding({
           <span className="egg-glow-new">
             <img src={asset("glow.svg")} alt="" />
           </span>
+          {compositeBird?.stage === 2 && <>
+            <span className="owned-soarling-glow" aria-hidden="true" />
+            <span className="owned-soarling-sparks" aria-hidden="true"><i /><i /><i /></span>
+          </>}
           {compositeBird && <img
             key={`owned-composite-${compositeBird.tokenId}`}
             className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
@@ -1703,7 +1701,7 @@ export default function EggoriaLanding({
         }}
       >
         <section
-          className={`hatch-complete-modal soarling-complete-modal land-${landClassNames[soarlingResult.land] ?? "wizard"}`}
+          className={`hatch-complete-modal evolution-complete-modal land-${landClassNames[soarlingResult.land] ?? "wizard"}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby="soarling-complete-title"
@@ -1713,37 +1711,33 @@ export default function EggoriaLanding({
             <img src={asset("claim-close.svg")} alt="" />
           </button>
           <header className="hatch-complete-heading">
-            <h2 id="soarling-complete-title">Hatch Complete</h2>
-            <p>Your Mystery Egg has hatched into a new bird!</p>
+            <h2 id="soarling-complete-title">Your Bird Has Evolved!</h2>
+            <p>Congratulations, your bird is now a Soarling.</p>
           </header>
           <div className="hatch-complete-artwork soarling-result-artwork">
-            <span className="soarling-result-glow" aria-hidden="true" />
-            <span className="soarling-result-sparks" aria-hidden="true">
-              <i /><i /><i /><i /><i />
-            </span>
-            <span className="soarling-result-image-wrap">
-              <img
-                src={asset(
-                  soarlingResult.rarity === 0
-                    ? landCommonSoarlingResultAssets[soarlingResult.land] ?? "soarling-common-wizard.png"
-                    : landSoarlingResultAssets[soarlingResult.land] ?? "soarling-result-wizard.png",
-                )}
-                alt={`${landNames[soarlingResult.land]} Soarling bird on its island`}
-              />
-            </span>
+            <span className="soarling-artwork-glow" aria-hidden="true" />
+            <span className="soarling-artwork-sparks" aria-hidden="true"><i /><i /><i /></span>
+            <img
+              src={asset(
+                soarlingResult.rarity === 0
+                  ? landCommonSoarlingResultAssets[soarlingResult.land] ?? "soarling-common-wizard.png"
+                  : landSoarlingResultAssets[soarlingResult.land] ?? "soarling-result-wizard.png",
+              )}
+              alt={`${landNames[soarlingResult.land]} Soarling bird on its island`}
+            />
             <span className="hatch-land-badge">
               <img src={asset(landRevealIcons[soarlingResult.land] ?? "hatch-land-wizard.png")} alt="" />
-              {landRealmNames[soarlingResult.land] ?? "Crystal Academy"}
+              {landBadgeNames[soarlingResult.land] ?? "Land Wizard"}
             </span>
           </div>
           <dl className="hatch-complete-details">
-            <div><dt>Bird ID</dt><dd><img src={asset("hatch-token-icon.png")} alt="" />#{soarlingResult.tokenId.toString()}</dd></div>
-            <div><dt>Stage</dt><dd><img src={asset("hatch-stage-icon.png")} alt="" />Soarling</dd></div>
-            <div><dt>Rarity</dt><dd><span className={`soarling-rarity-star rarity-${rarityNames[soarlingResult.rarity]?.toLowerCase() ?? "common"}`} aria-hidden="true" />{rarityNames[soarlingResult.rarity] ?? "Common"}</dd></div>
+            <div><dt>Bird ID</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's unique number.\nIt stays the same forever."} tabIndex={0} aria-label="Your bird's unique number. It stays the same forever."><img src={asset("hatch-token-icon.png")} alt="" /></span>#{soarlingResult.tokenId.toString()}</dd></div>
+            <div><dt>Stage</dt><dd><span className="hatch-detail-tooltip" data-tooltip={"Your bird's growth stage:\nHatchling → Fledgling → Soarling."} tabIndex={0} aria-label="Your bird's growth stage: Hatchling, Fledgling, then Soarling."><img src={asset("hatch-stage-icon.png")} alt="" /></span>Soarling</dd></div>
+            <div><dt>Rarity</dt><dd><span className="hatch-detail-tooltip" data-tooltip="Your bird's final rarity." tabIndex={0} aria-label="Your bird's final rarity."><img className="soarling-rarity-star" src={asset(rarityStarAssets[soarlingResult.rarity] ?? "rarity-common-star.png")} alt="" /></span><span className={`soarling-rarity-value rarity-${rarityNames[soarlingResult.rarity]?.toLowerCase() ?? "common"}`}>{rarityNames[soarlingResult.rarity] ?? "Common"}</span></dd></div>
           </dl>
-          <p className="hatch-complete-tip soarling-complete-tip">Your journey is complete. PvP &amp; PvE arrive in Q2.</p>
-          <button className="figma-button hatch-complete-action" type="button" onClick={viewRoadmap}>
-            <img src={asset("button.png")} alt="" /><span>View Roadmap</span>
+          <p className="hatch-complete-tip">Your journey is complete. PvP &amp; PvE arrive in Q2.</p>
+          <button className="figma-button hatch-complete-action" type="button" onClick={completeSoarlingEvolution}>
+            <img src={asset("button.png")} alt="" /><span>Continue</span>
           </button>
           {soarlingTransactionHash && <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${soarlingTransactionHash}`} target="_blank" rel="noreferrer">View Transaction</a>}
         </section>
