@@ -113,11 +113,15 @@ contract EggoriaBirds is ERC721, AccessControl {
         hasMinted[msg.sender] = true;
         mintedTokenOf[msg.sender] = tokenId;
 
-        if (evolutionTestMode) birds[tokenId].checkIns = INTERMEDIATE_CHECK_INS - 1;
+        if (evolutionTestMode) {
+            birds[tokenId].checkIns = INTERMEDIATE_CHECK_INS - 1;
+        }
 
         _safeMint(msg.sender, tokenId);
         if (evolutionTestMode) {
-            uint8 testLand = uint8((tokenId - 1) % LAND_COUNT);
+            // QA-only pseudo-randomness: production minting must use fulfillLand's trusted adapter.
+            uint256 randomWord = uint256(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, msg.sender, tokenId)));
+            uint8 testLand = _pickAvailableLand(randomWord);
             Bird storage bird = birds[tokenId];
             bird.land = testLand;
             bird.landAssigned = true;
@@ -168,20 +172,7 @@ contract EggoriaBirds is ERC721, AccessControl {
         Bird storage bird = birds[tokenId];
         if (bird.landAssigned) revert LandAlreadyAssigned();
 
-        uint256 slotsRemaining = MAX_SUPPLY - totalLandsAssigned;
-        if (slotsRemaining == 0) revert LandPoolEmpty();
-
-        uint256 pick = randomWord % slotsRemaining;
-        uint256 cumulative;
-        uint8 selected;
-
-        for (uint8 i; i < LAND_COUNT; ++i) {
-            cumulative += LAND_MAX_SUPPLY - landMinted[i];
-            if (pick < cumulative) {
-                selected = i;
-                break;
-            }
-        }
+        uint8 selected = _pickAvailableLand(randomWord);
 
         bird.land = selected;
         bird.landAssigned = true;
@@ -220,9 +211,11 @@ contract EggoriaBirds is ERC721, AccessControl {
         } else if (bird.checkIns == ADVANCED_CHECK_INS) {
             emit RarityRequested(tokenId, msg.sender);
             if (evolutionTestMode) {
-                // QA currently previews the Rare Soarling result. The first 60
-                // slots are Common, so pick 60 selects Rare on a fresh test deploy.
-                _fulfillRarity(tokenId, 60);
+                // QA previews the Epic Soarling result. Select the first available
+                // Epic slot dynamically so earlier Common/Rare draws do not shift it.
+                uint256 epicPick = uint256(_landRarityRemaining[bird.land][0])
+                    + uint256(_landRarityRemaining[bird.land][1]);
+                _fulfillRarity(tokenId, epicPick);
             }
         }
     }
@@ -384,6 +377,19 @@ contract EggoriaBirds is ERC721, AccessControl {
 
     function _validateLand(uint8 land) private pure {
         if (land >= LAND_COUNT) revert InvalidLand();
+    }
+
+    function _pickAvailableLand(uint256 randomWord) private view returns (uint8) {
+        uint256 slotsRemaining = MAX_SUPPLY - totalLandsAssigned;
+        if (slotsRemaining == 0) revert LandPoolEmpty();
+
+        uint256 pick = randomWord % slotsRemaining;
+        uint256 cumulative;
+        for (uint8 land; land < LAND_COUNT; ++land) {
+            cumulative += LAND_MAX_SUPPLY - landMinted[land];
+            if (pick < cumulative) return land;
+        }
+        revert LandPoolEmpty();
     }
 
     function _emitMetadataRefresh() private {

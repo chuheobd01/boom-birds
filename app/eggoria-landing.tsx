@@ -79,6 +79,14 @@ const landEvolutionPopupAssets = ["evolution-popup-forest.png", "evolution-popup
 const landSoarlingResultAssets = ["soarling-result-forest.png", "soarling-result-wind.png", "soarling-result-wizard.png", "soarling-result-artist.png", "soarling-result-king.png"] as const;
 const landCommonSoarlingResultAssets = ["soarling-common-forest.png", "soarling-common-wind.png", "soarling-common-wizard.png", "soarling-common-artist.png", "soarling-common-king.png"] as const;
 const landRareSoarlingResultAssets = ["soarling-rare-forest.png", "soarling-rare-wind.png", "soarling-rare-wizard.png", "soarling-rare-artist.png", "soarling-rare-king.png"] as const;
+const landEpicSoarlingResultAssets = ["soarling-epic-forest.png", "soarling-epic-wind.png", "soarling-epic-wizard.png", "soarling-epic-artist.png", "soarling-epic-king.png"] as const;
+const landEpicDetailAssets = [
+  ["soarling-epic-feather-left.png", "soarling-epic-feather-right.png"],
+  ["soarling-epic-item-wind.png", "soarling-epic-item-wind.png"],
+  ["soarling-epic-item-wizard.png", "soarling-epic-item-wizard.png"],
+  ["soarling-epic-item-artist.png", "soarling-epic-item-artist.png"],
+  ["soarling-epic-item-king.png", "soarling-epic-item-king.png"],
+] as const;
 const landSoarlingParticleAssets = ["land-particle-forest.png", "land-particle-wind.png", "land-particle-wizard.png", "land-particle-artist.png", "land-particle-king.png"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Soarling"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
@@ -143,6 +151,9 @@ const getSoarlingResultAsset = (bird: OwnedBird) => {
   }
   if (bird.rarity === 1) {
     return landRareSoarlingResultAssets[bird.land] ?? "soarling-rare-wizard.png";
+  }
+  if (bird.rarity === 2) {
+    return landEpicSoarlingResultAssets[bird.land] ?? "soarling-epic-wizard.png";
   }
   return landSoarlingResultAssets[bird.land] ?? "soarling-result-wizard.png";
 };
@@ -321,14 +332,18 @@ export default function EggoriaLanding({
   }, [hatchResult]);
 
   const completeEvolution = useCallback(() => {
+    if (!evolutionResult) return;
+    setOwnedBird(evolutionResult);
     setEvolutionResult(null);
     setEvolutionTransactionHash("");
-  }, []);
+  }, [evolutionResult]);
 
   const completeSoarlingEvolution = useCallback(() => {
+    if (!soarlingResult) return;
+    setOwnedBird(soarlingResult);
     setSoarlingResult(null);
     setSoarlingTransactionHash("");
-  }, []);
+  }, [soarlingResult]);
 
   const connectGoogle = useCallback(async ({ credential }: GoogleCredential) => {
     setNotice("Verifying your account…");
@@ -1114,20 +1129,24 @@ export default function EggoriaLanding({
           // lastCheckInDay still keeps the button disabled if timestamp lookup is unavailable.
         }
       }
-      const refreshedState = await refreshEggoriaState(walletAddress);
+      const refreshedState = await readEggoriaState(walletAddress);
+      setMinted(refreshedState.totalSupply);
+      setWalletAlreadyMinted(refreshedState.alreadyMinted);
       const evolvedBird = refreshedState.bird;
       if (stageBeforeCheckIn === 0 && evolvedBird?.stage === 1) {
         const popupArtwork = asset(landEvolutionPopupAssets[evolvedBird.land] ?? "evolution-popup-wizard.png");
         const heroArtwork = evolvedBird.image || asset(landHatchlingAssets[evolvedBird.land] ?? "hatchling-wizard.png");
-        void decodeImage(heroArtwork);
-        await decodeImage(popupArtwork);
+        await Promise.all([decodeImage(heroArtwork), decodeImage(popupArtwork)]);
         setEvolutionTransactionHash(result.transactionHash);
         setEvolutionResult(evolvedBird);
       } else if (stageBeforeCheckIn === 1 && evolvedBird?.stage === 2) {
         const popupArtwork = asset(getSoarlingResultAsset(evolvedBird));
-        await decodeImage(popupArtwork);
+        const heroArtwork = evolvedBird.image || popupArtwork;
+        await Promise.all([decodeImage(heroArtwork), decodeImage(popupArtwork)]);
         setSoarlingTransactionHash(result.transactionHash);
         setSoarlingResult(evolvedBird);
+      } else {
+        setOwnedBird(evolvedBird);
       }
       return true;
     } catch (error) {
@@ -1397,8 +1416,16 @@ export default function EggoriaLanding({
             <span className="owned-soarling-glow" aria-hidden="true" />
             <span className="owned-soarling-sparks" aria-hidden="true"><i /><i /><i /></span>
           </>}
+          {compositeBird?.stage === 2 && compositeBird.rarity === 2 && (
+            <span className="owned-epic-land-details" aria-hidden="true">
+              <img className="owned-epic-land-item owned-epic-land-item-left" src={asset(landEpicDetailAssets[compositeBird.land]?.[0] ?? landEpicDetailAssets[0][0])} alt="" />
+              <img className="owned-epic-land-item owned-epic-land-item-right" src={asset(landEpicDetailAssets[compositeBird.land]?.[1] ?? landEpicDetailAssets[0][1])} alt="" />
+              <i className="owned-epic-land-light owned-epic-land-light-left" />
+              <i className="owned-epic-land-light owned-epic-land-light-right" />
+            </span>
+          )}
           {compositeBird && <img
-            key={`owned-composite-${compositeBird.tokenId}`}
+            key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
             className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
             src={compositeBird.image || asset(landHatchlingAssets[compositeBird.land] ?? "hatchling-wizard.png")}
             alt={`${landNames[compositeBird.land]} ${stageNames[compositeBird.stage] ?? "bird"} on its island`}
@@ -1722,8 +1749,15 @@ export default function EggoriaLanding({
             <h2 id="soarling-complete-title">Your Bird Has Evolved!</h2>
             <p>Congratulations, your bird is now a Soarling.</p>
           </header>
-          <div className="hatch-complete-artwork soarling-result-artwork">
+          <div className={`hatch-complete-artwork soarling-result-artwork${soarlingResult.rarity === 2 ? " has-epic-magic" : ""}`}>
             <span className="soarling-artwork-glow" aria-hidden="true" />
+            {soarlingResult.rarity === 2 && <>
+              <span className="epic-magic-feathers" aria-hidden="true">
+                <img className="epic-magic-feather epic-magic-feather-left" src={asset(landEpicDetailAssets[soarlingResult.land]?.[0] ?? landEpicDetailAssets[0][0])} alt="" />
+                <img className="epic-magic-feather epic-magic-feather-right" src={asset(landEpicDetailAssets[soarlingResult.land]?.[1] ?? landEpicDetailAssets[0][1])} alt="" />
+              </span>
+              <span className="epic-magic-dots" aria-hidden="true"><i /><i /><i /><i /><i /><i /></span>
+            </>}
             <span className="soarling-artwork-sparks" aria-hidden="true">
               {[0, 1, 2].map((particle) => (
                 <img
@@ -1734,6 +1768,7 @@ export default function EggoriaLanding({
               ))}
             </span>
             <img
+              className="soarling-result-image"
               src={asset(getSoarlingResultAsset(soarlingResult))}
               alt={`${landNames[soarlingResult.land]} Soarling bird on its island`}
             />

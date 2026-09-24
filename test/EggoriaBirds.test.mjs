@@ -151,7 +151,7 @@ test("admin can seed day nine and the owner evolves on check-in ten", async () =
   assert.ok(after.lastCheckInDay > 0n);
 });
 
-test("evolution test mode previews both evolution checkpoints without a daily wait", async () => {
+test("evolution test mode randomly mints all five lands and previews both evolution checkpoints", async () => {
   const { ethers } = await network.connect();
   const [admin, firstOwner, secondOwner] = await ethers.getSigners();
   const birds = await ethers.deployContract("EggoriaBirds", [await admin.getAddress()], admin);
@@ -165,12 +165,13 @@ test("evolution test mode previews both evolution checkpoints without a daily wa
   const first = await birds.tokenState(1);
   const second = await birds.tokenState(2);
   assert.equal(first.landAssigned, true);
-  assert.equal(first.land, 0n);
+  assert.ok(first.land >= 0n && first.land < 5n);
   assert.equal(first.checkIns, 9n);
   assert.equal(first.stage, 0n);
   assert.equal(second.landAssigned, true);
-  assert.equal(second.land, 1n);
+  assert.ok(second.land >= 0n && second.land < 5n);
   assert.equal(second.checkIns, 9n);
+  assert.equal(await birds.totalLandsAssigned(), 2n);
 
   await (await birds.connect(firstOwner).checkIn(1)).wait();
   const evolved = await birds.tokenState(1);
@@ -183,11 +184,33 @@ test("evolution test mode previews both evolution checkpoints without a daily wa
   assert.equal(completed.checkIns, 20n);
   assert.equal(completed.stage, 2n);
   assert.equal(completed.rarityAssigned, true);
-  assert.equal(completed.rarity, 1n);
-  assert.equal(await birds.landRarityRemaining(0, 0), 60n);
-  assert.equal(await birds.landRarityRemaining(0, 1), 24n);
-  assert.equal(await birds.landRarityPoolRemaining(0), 99n);
+  assert.equal(completed.rarity, 2n);
+  assert.equal(await birds.landRarityRemaining(first.land, 0), 60n);
+  assert.equal(await birds.landRarityRemaining(first.land, 1), 25n);
+  assert.equal(await birds.landRarityRemaining(first.land, 2), 9n);
+  assert.equal(await birds.landRarityPoolRemaining(first.land), 99n);
   assert.equal(await birds.rarityRemaining(0), 300n);
-  assert.equal(await birds.rarityRemaining(1), 124n);
+  assert.equal(await birds.rarityRemaining(1), 125n);
+  assert.equal(await birds.rarityRemaining(2), 49n);
   assert.equal(await birds.rarityPoolRemaining(), 499n);
+
+  const observedLands = new Set([Number(first.land), Number(second.land)]);
+  for (let index = 0; index < 498; index += 1) {
+    const address = `0x${(0x30_000 + index).toString(16).padStart(40, "0")}`;
+    await ethers.provider.send("hardhat_setBalance", [address, "0x56BC75E2D63100000"]);
+    await ethers.provider.send("hardhat_impersonateAccount", [address]);
+    await (await birds.connect(await ethers.getSigner(address)).mint()).wait();
+    observedLands.add(Number(await birds.tokenLand(index + 3)));
+    await ethers.provider.send("hardhat_stopImpersonatingAccount", [address]);
+  }
+
+  assert.deepEqual([...observedLands].sort(), [0, 1, 2, 3, 4]);
+  for (let land = 0; land < 5; land += 1) {
+    assert.equal(await birds.landMinted(land), 100n);
+  }
+  assert.equal(await birds.totalLandsAssigned(), 500n);
+  await expectRevert(
+    () => birds.connect(admin).mint(),
+    "test minting should stop at the global 500-bird cap",
+  );
 });
