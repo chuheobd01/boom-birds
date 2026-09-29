@@ -6,7 +6,7 @@
 @font-face{font-family:"Be Vietnam Pro";src:url("/assets/fonts/be-vietnam-pro-regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"Be Vietnam Pro";src:url("/assets/fonts/be-vietnam-pro-medium.ttf") format("truetype");font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:"Be Vietnam Pro";src:url("/assets/fonts/be-vietnam-pro-semibold.ttf") format("truetype");font-weight:600;font-style:normal;font-display:swap}
-:root{color-scheme:light;font-family:"Be Vietnam Pro",Arial,sans-serif;background:#df9ee0;--text-primary:#211052;--text-default:#40356b;--text-secondary:#51466f;--text-muted:#665b84;--text-secondary-strong:#40356b;--text-on-dark-primary:#fff9f3;--text-on-dark-default:#d8cff0;--text-on-dark-secondary:#b7a9d8;--text-on-dark-muted:#8f82b3;--brand-purple-50:#a061f0;--brand-purple-60:#853de7;--brand-purple-70:#6a2cd7;--brand-purple-80:#541db8;--accent-gold-40:#ffd978;--accent-gold-50:#f0b84a;--rarity-common:#86efac;--rarity-rare:#93c5fd;--rarity-epic:#f0abfc;--surface-cream:#fff8ee;--surface-lavender:#f5eefa;--surface-soft-purple:#f7f2ff;--surface-dark:#1b1246;--surface-dark-2:#17103d;--progress-container:#eee8f8;--progress-track:#6a58a7;--progress-fill-start:#c156f3;--progress-fill-end:#823dda}*{box-sizing:border-box}html{scroll-behavior:smooth}body{min-width:320px;margin:0;background:#df9ee0;color:var(--text-primary)}button,a{font:inherit}
+:root{color-scheme:light;font-family:"Be Vietnam Pro",Arial,sans-serif;background:#df9ee0;--text-primary:#211052;--text-default:#40356b;--text-secondary:#51466f;--text-muted:#665b84;--text-secondary-strong:#40356b;--text-on-dark-primary:#fff9f3;--text-on-dark-default:#d8cff0;--text-on-dark-secondary:#b7a9d8;--text-on-dark-muted:#8f82b3;--brand-purple-50:#a061f0;--brand-purple-60:#853de7;--brand-purple-70:#6a2cd7;--brand-purple-80:#541db8;--accent-gold-40:#ffd978;--accent-gold-50:#f0b84a;--rarity-common:#86efac;--rarity-rare:#93c5fd;--rarity-epic:#f0abfc;--rarity-legendary:#fca5a5;--rarity-mythic:#fde68a;--surface-cream:#fff8ee;--surface-lavender:#f5eefa;--surface-soft-purple:#f7f2ff;--surface-dark:#1b1246;--surface-dark-2:#17103d;--progress-container:#eee8f8;--progress-track:#6a58a7;--progress-fill-start:#c156f3;--progress-fill-end:#823dda}*{box-sizing:border-box}html{scroll-behavior:smooth}body{min-width:320px;margin:0;background:#df9ee0;color:var(--text-primary)}button,a{font:inherit}
 .landing{position:relative;min-height:max(100vh,97.13vw);overflow:hidden;background:#10105d}
 .landing::before{position:fixed;z-index:0;inset:0;background:#df9ee0 url("/assets/landing/background.png") center top/cover no-repeat;content:"";opacity:0;transform-origin:center center;animation:world-opening 450ms ease-out 1 both;pointer-events:none}
 .landing-header{position:relative;z-index:20;display:flex;width:100%;height:119px;align-items:center;gap:30px;padding:14px 2.78% 0}
@@ -291,6 +291,27 @@
   .wallet-provider-content small{min-height:clamp(18px,4.8vw,24px);padding-inline:clamp(4px,1.6vw,8px);font-size:clamp(7px,2vw,10px)}
 }
 
+/* Keep sign-in guidance and recovery actions inside the wallet chooser. */
+.wallet-modal{width:min(525px,calc(100vw - 24px));max-height:calc(100dvh - 24px);aspect-ratio:auto;overflow-y:auto;padding:38px 40px 32px;background:url("/assets/landing/wallet-modal-frame.png") center/116.36% 117.82% no-repeat}
+.wallet-modal-frame{display:none}
+.wallet-modal-close{top:24px;right:26px}
+.wallet-modal-heading{position:relative;top:auto;left:auto;width:100%}
+.wallet-options{position:relative;top:auto;left:auto;width:100%;margin-top:25px;gap:14px;transform:none}
+.wallet-option>p{line-height:1.4}
+.wallet-provider{display:block;text-decoration:none}
+.wallet-provider[aria-busy="true"] .wallet-provider-content strong::after{display:inline-block;width:12px;height:12px;margin-left:8px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;content:"";animation:wallet-provider-spin .8s linear infinite}
+@keyframes wallet-provider-spin{to{transform:rotate(360deg)}}
+.wallet-info,.wallet-feedback{width:100%;padding:10px 12px;border:1px solid rgba(255,224,143,.48);border-radius:12px;background:rgba(255,225,142,.1);color:#ffe6ac;font:400 14px/1.45 "Be Vietnam Pro",sans-serif;text-align:left}
+.wallet-info{margin:0}
+.wallet-feedback.is-info{border-color:rgba(171,148,255,.45);background:rgba(140,107,225,.12);color:#e6d8ff}
+.wallet-feedback p{margin:0}
+.wallet-feedback p+p{margin-top:5px}
+.wallet-feedback button,.wallet-info button{display:inline;padding:0;border:0;background:none;color:#fff;font:600 14px/1.45 "Be Vietnam Pro",sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.wallet-feedback button+button{margin-left:14px}
+.wallet-config-error{position:static;margin:12px 0 0;font-size:14px;line-height:1.4;text-align:center}
+@media(max-width:520px){.wallet-modal{padding:clamp(28px,7vw,38px) clamp(20px,7vw,40px) 28px}.wallet-modal-close{top:18px;right:18px}.wallet-options{margin-top:20px;gap:12px}.wallet-info,.wallet-feedback,.wallet-feedback button,.wallet-info button{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.wallet-provider[aria-busy="true"] .wallet-provider-content strong::after{animation:none}}
+
 /* Raise the faucet actions 10px and fit the popup height to the new layout. */
 .funds-modal{width:min(472.668px,calc(100vw - 24px),calc((100dvh - 24px)*1.27748));aspect-ratio:472.668/370}
 .funds-modal-actions{top:290.95px}
@@ -414,13 +435,13 @@
 .hero-copy>.bird-owner-wrap .login-note{display:block;width:auto;margin:0;color:var(--text-secondary-strong);font-family:"Be Vietnam Pro",sans-serif;font-size:14px;font-weight:400;white-space:nowrap}.bird-checkin-error{max-width:448px;margin:0;color:#8a2453;font-family:"Be Vietnam Pro",sans-serif;font-size:11px;text-align:center}
 .bird-owner-wrap:has(.funds-guide.is-open) .bird-checkin-button{z-index:13;filter:brightness(1.16) saturate(1.06) drop-shadow(0 0 12px rgba(211,157,255,.65));pointer-events:none}.bird-owner-wrap:has(.funds-guide.is-open) .funds-guide-help{pointer-events:none}.bird-owner-wrap:has(.funds-guide.is-open) .funds-guide-help::after{opacity:0;visibility:hidden;transition:none}.bird-checkin-guide{top:203px;left:calc(50% + 208px)}
 .hero-art.bird-owned{animation:none}.hero-new:has(.hero-art.bird-owned)>.spark-field,.hero-new:has(.hero-art.bird-owned)>.balloon{display:none}.hero-art.bird-owned .egg-glow-new{opacity:.52}.bird-land-composite{position:absolute;z-index:5;top:0;left:645px;width:850px;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));animation:bird-island-float 5.6s ease-in-out infinite;will-change:transform}.hero-art.bird-owned::after{display:none}.hero-art.bird-owned .egg-glow-new{display:none}.bird-new{position:absolute;z-index:5;top:-15px;left:900px;width:450px;height:450px;object-fit:contain;scale:-1 1;filter:drop-shadow(0 14px 18px rgba(31,12,78,.28));animation:bird-owner-enter 700ms cubic-bezier(.22,1,.36,1) both,bird-owner-float 4.8s ease-in-out 700ms infinite}.bird-new.is-metadata-pending{top:70px;left:1010px;width:150px;height:210px;scale:1}.hero-art.bird-owned .island-new{top:265px;left:675px;width:830px;height:470px;object-fit:contain;filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));animation:none}
-.hero-art.land-forest{--owned-land-glow:#63f278;--owned-land-glow-mid:#42c85b;--owned-land-glow-edge:#2e7540}.hero-art.land-wind{--owned-land-glow:#55ccff;--owned-land-glow-mid:#2d9dd3;--owned-land-glow-edge:#296883}.hero-art.land-wizard{--owned-land-glow:#b26cff;--owned-land-glow-mid:#8039d8;--owned-land-glow-edge:#5c3b80}.hero-art.land-artist{--owned-land-glow:#ff4548;--owned-land-glow-mid:#d83339;--owned-land-glow-edge:#993c3e}.hero-art.land-king{--owned-land-glow:#ffe35c;--owned-land-glow-mid:#d7a928;--owned-land-glow-edge:#8f742c}.owned-soarling-glow{position:absolute;z-index:4;top:100px;left:880px;width:385px;height:385px;border-radius:50%;background:radial-gradient(circle,var(--owned-land-glow) 0%,color-mix(in srgb,var(--owned-land-glow-mid) 70%,transparent) 50%,color-mix(in srgb,var(--owned-land-glow-edge) 0%,transparent) 100%);filter:blur(90px);mix-blend-mode:screen;opacity:.7;transform-origin:center;will-change:transform,opacity;animation:owned-soarling-glow 4.2s ease-in-out infinite;pointer-events:none}.owned-soarling-sparks{position:absolute;z-index:6;inset:0;pointer-events:none}.owned-soarling-sparks i{position:absolute;width:7px;height:7px;border-radius:50%;background:color-mix(in srgb,var(--owned-land-glow) 58%,#fff 42%);box-shadow:0 0 8px 2px color-mix(in srgb,var(--owned-land-glow) 58%,transparent),0 0 16px 4px color-mix(in srgb,var(--owned-land-glow-mid) 34%,transparent);animation:owned-soarling-spark 3.2s ease-in-out infinite}.owned-soarling-sparks i:nth-child(1){top:135px;left:61%;animation-delay:-.5s}.owned-soarling-sparks i:nth-child(2){top:0px;left:83%;width:5px;height:5px;animation-delay:-1.6s}.owned-soarling-sparks i:nth-child(3){top:140px;left:90%;width:5px;height:5px;animation-delay:-2.3s}@keyframes owned-soarling-glow{0%,100%{opacity:.62;transform:scale(.98)}50%{opacity:.76;transform:scale(1.025)}}@keyframes owned-soarling-spark{0%,100%{opacity:.32;transform:translateY(3px) scale(.86)}50%{opacity:.94;transform:translateY(-6px) scale(1.15)}}
+.hero-art.land-forest{--owned-land-glow:#63f278;--owned-land-glow-mid:#42c85b;--owned-land-glow-edge:#2e7540}.hero-art.land-wind{--owned-land-glow:#55ccff;--owned-land-glow-mid:#2d9dd3;--owned-land-glow-edge:#296883}.hero-art.land-wizard{--owned-land-glow:#b26cff;--owned-land-glow-mid:#8039d8;--owned-land-glow-edge:#5c3b80}.hero-art.land-artist{--owned-land-glow:#ff4548;--owned-land-glow-mid:#d83339;--owned-land-glow-edge:#993c3e}.hero-art.land-king{--owned-land-glow:#ffe35c;--owned-land-glow-mid:#d7a928;--owned-land-glow-edge:#8f742c}.owned-soarling-sparks{position:absolute;z-index:6;inset:0;pointer-events:none}.owned-soarling-sparks i{position:absolute;width:7px;height:7px;border-radius:50%;background:color-mix(in srgb,var(--owned-land-glow) 58%,#fff 42%);box-shadow:0 0 8px 2px color-mix(in srgb,var(--owned-land-glow) 58%,transparent),0 0 16px 4px color-mix(in srgb,var(--owned-land-glow-mid) 34%,transparent);animation:owned-soarling-spark 3.2s ease-in-out infinite}.owned-soarling-sparks i:nth-child(1){top:135px;left:61%;animation-delay:-.5s}.owned-soarling-sparks i:nth-child(2){top:0px;left:83%;width:5px;height:5px;animation-delay:-1.6s}.owned-soarling-sparks i:nth-child(3){top:140px;left:90%;width:5px;height:5px;animation-delay:-2.3s}@keyframes owned-soarling-spark{0%,100%{opacity:.32;transform:translateY(3px) scale(.86)}50%{opacity:.94;transform:translateY(-6px) scale(1.15)}}
 @keyframes bird-owner-enter{from{opacity:0;transform:translateY(-12px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes bird-owner-float{0%,100%{translate:0 0}50%{translate:0 -5px}}
 @keyframes bird-island-float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-7px,0)}}
-@media(max-width:760px){.bird-owner-wrap,.bird-evolution-card{width:min(94vw,448px)}.bird-evolution-card{height:auto;aspect-ratio:448/154}.bird-evolution-content{padding-inline:5.3%}.bird-checkin-marker{width:clamp(17px,5vw,24px);height:clamp(17px,5vw,24px)}.bird-checkin-guide{top:auto;left:auto}.bird-land-composite{top:10px;left:0;width:100%;height:auto}.bird-new{top:20px;left:28%;width:46%;height:auto;aspect-ratio:1}.bird-new.is-metadata-pending{top:15px;left:43%;width:18%;height:auto}.hero-art.bird-owned .island-new{top:250px;left:1%;width:98%;height:auto}.owned-soarling-glow{top:15%;left:30%;width:40%;height:auto;aspect-ratio:1}.owned-soarling-sparks i:nth-child(1){top:135px;left:61%}.owned-soarling-sparks i:nth-child(2){top:14%;left:82%}.owned-soarling-sparks i:nth-child(3){top:38%;left:87%}}
+@media(max-width:760px){.bird-owner-wrap,.bird-evolution-card{width:min(94vw,448px)}.bird-evolution-card{height:auto;aspect-ratio:448/154}.bird-evolution-content{padding-inline:5.3%}.bird-checkin-marker{width:clamp(17px,5vw,24px);height:clamp(17px,5vw,24px)}.bird-checkin-guide{top:auto;left:auto}.bird-land-composite{top:10px;left:0;width:100%;height:auto}.bird-new{top:20px;left:28%;width:46%;height:auto;aspect-ratio:1}.bird-new.is-metadata-pending{top:15px;left:43%;width:18%;height:auto}.hero-art.bird-owned .island-new{top:250px;left:1%;width:98%;height:auto}.owned-soarling-sparks i:nth-child(1){top:135px;left:61%}.owned-soarling-sparks i:nth-child(2){top:14%;left:82%}.owned-soarling-sparks i:nth-child(3){top:38%;left:87%}}
 @media(max-width:460px){.bird-stage-heading strong{font-size:12px}.bird-stage-heading span,.bird-checkin-message{font-size:12px}.bird-checkin-track{margin-top:10px}.bird-checkin-message{margin-top:8px}.bird-checkin-button{width:min(78vw,340px);height:58px}.hero-copy>.bird-owner-wrap .login-note{white-space:normal;text-align:center}}
-@media(prefers-reduced-motion:reduce){.bird-land-composite,.bird-new,.hero-art.bird-owned,.owned-soarling-glow,.owned-soarling-sparks i{animation:none}}
+@media(prefers-reduced-motion:reduce){.bird-land-composite,.bird-new,.hero-art.bird-owned,.owned-soarling-sparks i{animation:none}}
 
 /* Confirmed on-chain mint: hatch the Hero egg in place without a status popup. */
 .hero-new .mint-progress,.hero-new .hero-connect-wrap{transition:opacity 280ms ease,filter 280ms ease}
@@ -474,7 +495,7 @@
 .bird-owner-wrap>.hero-state-helper{animation:login-note-enter 520ms cubic-bezier(.22,1,.36,1) 620ms both}
 @keyframes owned-composite-enter{0%,24%{opacity:0;transform:translate3d(0,8px,0) scale(.988)}52%{opacity:.32;transform:translate3d(0,5px,0) scale(.992)}78%{opacity:.82;transform:translate3d(0,1px,0) scale(.998)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
 @keyframes owned-copy-enter{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.bird-land-composite.is-hatch-reveal,.hero-new.is-pos.owned-soarling-glowt-hatch .bird-owner-wrap{animation:none}}
+@media(prefers-reduced-motion:reduce){.bird-land-composite.is-hatch-reveal,.hero-new.is-post-hatch .bird-owner-wrap{animation:none}}
 
 /* Figma 1041/1047/1064 — dynamic hatch-complete result for all five lands. */
 .hatch-complete-layer{background:rgba(13,8,55,.66);backdrop-filter:blur(2px) saturate(.82)}
@@ -497,7 +518,7 @@
 .hatch-complete-tip strong{font-weight:600}
 .hatch-complete-action{width:196px;height:48px;margin-top:16px;color:var(--text-on-dark-primary);font-family:"Be Vietnam Pro",sans-serif;font-size:20px;font-weight:500;animation:hatch-result-section-enter 440ms ease-out 520ms both}.hatch-complete-action:not(:disabled):hover{transform:translateY(-2px) scale(1.025);filter:brightness(1.1)}
 .evolution-transaction-link{display:inline-block;margin-top:7px;color:var(--text-on-dark-default);font:400 14px/1.2 "Be Vietnam Pro",sans-serif;text-underline-offset:3px;transition:color 180ms ease,transform 180ms ease,text-shadow 180ms ease;animation:hatch-result-section-enter 440ms ease-out 600ms both}.evolution-transaction-link:hover{color:var(--text-on-dark-primary);text-shadow:0 0 10px rgba(216,207,240,.45);transform:translateY(-1px)}.evolution-transaction-link:active{transform:translateY(0)}.evolution-transaction-link:focus-visible{border-radius:3px;outline:2px solid #d9b7ff;outline-offset:3px}
-.hatch-detail-tooltip:has(.soarling-rarity-star){width:24px;height:30px;flex-basis:24px}.soarling-rarity-star{display:block!important;width:24px!important;height:30px!important;margin:0!important;object-fit:contain!important;filter:drop-shadow(0 0 5px rgba(255,255,255,.22))}.soarling-rarity-value.rarity-common{color:var(--rarity-common)}.soarling-rarity-value.rarity-rare{color:var(--rarity-rare)}.soarling-rarity-value.rarity-epic{color:var(--rarity-epic)}
+.hatch-detail-tooltip:has(.soarling-rarity-star){width:24px;height:30px;flex-basis:24px}.soarling-rarity-star{display:block!important;width:24px!important;height:30px!important;margin:0!important;object-fit:contain!important;filter:drop-shadow(0 0 5px rgba(255,255,255,.22))}.soarling-rarity-value.rarity-common{color:var(--rarity-common)}.soarling-rarity-value.rarity-rare{color:var(--rarity-rare)}.soarling-rarity-value.rarity-epic{color:var(--rarity-epic)}.soarling-rarity-value.rarity-legendary{color:var(--rarity-legendary)}.soarling-rarity-value.rarity-mythic{color:var(--rarity-mythic)}
 .soarling-result-artwork{isolation:isolate}.soarling-result-artwork>img{position:relative;z-index:1}.soarling-artwork-glow{position:absolute;z-index:0;top:25px;left:50%;width:180px;height:145px;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--hatch-land) 22%,#fff 5%) 0%,color-mix(in srgb,var(--hatch-land) 10%,transparent) 48%,transparent 76%);filter:blur(18px);opacity:.3;transform:translateX(-50%);animation:soarling-artwork-glow 4.2s ease-in-out infinite;pointer-events:none}.soarling-artwork-sparks{position:absolute;z-index:2;inset:0;pointer-events:none}.soarling-artwork-sparks i{position:absolute;width:4px;height:4px;border-radius:50%;background:color-mix(in srgb,var(--hatch-land) 48%,#fff 52%);box-shadow:0 0 5px 1px color-mix(in srgb,var(--hatch-land) 50%,transparent),0 0 10px 2px color-mix(in srgb,var(--hatch-land) 24%,transparent);animation:soarling-artwork-spark 3.2s ease-in-out infinite}.soarling-artwork-sparks i:nth-child(1){top:42px;left:32%;animation-delay:-.5s}.soarling-artwork-sparks i:nth-child(2){top:72px;right:30%;width:3px;height:3px;animation-delay:-1.6s}.soarling-artwork-sparks i:nth-child(3){top:118px;left:27%;width:3px;height:3px;animation-delay:-2.3s}
 @keyframes soarling-artwork-glow{0%,100%{opacity:.25;transform:translateX(-50%) scale(.98)}50%{opacity:.34;transform:translateX(-50%) scale(1.025)}}
 @keyframes soarling-artwork-spark{0%,100%{opacity:.35;transform:translateY(2px) scale(.88)}50%{opacity:.92;transform:translateY(-4px) scale(1.12)}}
@@ -546,6 +567,42 @@
 .epic-magic-dots i:nth-child(4){top:20%;right:29%;width:3px;height:3px;--dot-enter:1.29s;--dot-idle:1.72s;--dot-cycle:1.95s}
 .epic-magic-dots i:nth-child(5){top:43%;right:20%;--dot-enter:1.42s;--dot-idle:2.18s;--dot-cycle:2.55s}
 .epic-magic-dots i:nth-child(6){top:64%;right:27%;width:3px;height:3px;--dot-enter:1.55s;--dot-idle:2.4s;--dot-cycle:2.15s}
+.land-forest .epic-magic-dots i{background:#b7ff9a;box-shadow:0 0 6px 2px rgba(110,255,125,.82),0 0 13px 3px rgba(56,203,107,.46);animation:epic-magic-dot-enter .25s ease-out var(--dot-enter) both,forest-magic-dot-twinkle var(--dot-cycle) ease-in-out var(--dot-idle) infinite}
+@keyframes forest-magic-dot-twinkle{0%,100%{opacity:0;transform:translateY(2px) scale(.65)}45%{opacity:.95;transform:translateY(-2px) scale(1.18)}70%{opacity:.22;transform:translateY(-4px) scale(.85)}}
+/* Each land places its Epic items and motes around its own bird silhouette. */
+.land-wind .epic-magic-feather-left{left:62%;top:16%;width:40px}
+.land-wind .epic-magic-feather-right{right:71%;top:17%;width:42px}
+.land-wind .epic-magic-dots i:nth-child(1){top:19%;left:33%}
+.land-wind .epic-magic-dots i:nth-child(2){top:41%;left:23%}
+.land-wind .epic-magic-dots i:nth-child(3){top:60%;left:30%}
+.land-wind .epic-magic-dots i:nth-child(4){top:25%;right:25%}
+.land-wind .epic-magic-dots i:nth-child(5){top:47%;right:18%}
+.land-wind .epic-magic-dots i:nth-child(6){top:68%;right:32%}
+.land-wizard .epic-magic-feather-left{left:73%;top:28%;width:34px}
+.land-wizard .epic-magic-feather-right{right:72%;top:16%;width:30px}
+.land-wizard .epic-magic-dots i:nth-child(1){top:17%;left:36%}
+.land-wizard .epic-magic-dots i:nth-child(2){top:38%;left:16%}
+.land-wizard .epic-magic-dots i:nth-child(3){top:72%;left:33%}
+.land-wizard .epic-magic-dots i:nth-child(4){top:16%;right:25%}
+.land-wizard .epic-magic-dots i:nth-child(5){top:49%;right:17%}
+.land-wizard .epic-magic-dots i:nth-child(6){top:60%;right:34%}
+.land-artist .epic-magic-feather-left{left:66%;top:27%;width:36px}
+.land-artist .epic-magic-feather-right{right:69%;top:19%;width:45px}
+.land-artist .epic-magic-dots i:nth-child(1){top:28%;left:32%}
+.land-artist .epic-magic-dots i:nth-child(2){top:50%;left:17%}
+.land-artist .epic-magic-dots i:nth-child(3){top:70%;left:25%}
+.land-artist .epic-magic-dots i:nth-child(4){top:18%;right:33%}
+.land-artist .epic-magic-dots i:nth-child(5){top:39%;right:16%}
+.land-artist .epic-magic-dots i:nth-child(6){top:69%;right:29%}
+.land-king .epic-magic-feather{width:18px}
+.land-king .epic-magic-feather-left{left:72%;top:35%}
+.land-king .epic-magic-feather-right{right:67%;top:29%;width:30px}
+.land-king .epic-magic-dots i:nth-child(1){top:21%;left:35%}
+.land-king .epic-magic-dots i:nth-child(2){top:48%;left:21%}
+.land-king .epic-magic-dots i:nth-child(3){top:67%;left:34%}
+.land-king .epic-magic-dots i:nth-child(4){top:17%;right:32%}
+.land-king .epic-magic-dots i:nth-child(5){top:45%;right:18%}
+.land-king .epic-magic-dots i:nth-child(6){top:62%;right:25%}
 .hatch-complete-artwork.has-epic-magic>.soarling-result-image{animation:epic-soarling-art-enter .8s cubic-bezier(.2,.78,.25,1) .2s both,hatch-result-composite-float 3.8s ease-in-out 1.1s infinite}
 @keyframes epic-soarling-art-enter{0%{opacity:0;transform:translate3d(0,20px,0) scale(.92)}72%{opacity:1;transform:translate3d(0,-2px,0) scale(1.02)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
 @keyframes epic-feather-left-enter{0%{opacity:0;transform:translate3d(-54px,22px,0) rotate(-44deg) scale(.72)}62%{opacity:1;transform:translate3d(6px,-5px,0) rotate(8deg) scale(1.04)}100%{opacity:1;transform:translate3d(0,0,0) rotate(0) scale(1)}}
@@ -557,6 +614,42 @@
 @media(max-width:620px){.epic-magic-feather{width:25px}.epic-magic-feather-right{width:47px}.epic-magic-feather-left{left:22%}.epic-magic-feather-right{right:64%}}
 @media(prefers-reduced-motion:reduce){.has-epic-magic>.soarling-result-image,.epic-magic-feather,.epic-magic-dots i{animation:none!important}.epic-magic-feather{opacity:1;transform:none}.epic-magic-dots i{opacity:.7;transform:none}}
 
+/* Legendary Soarling has independent placement and animation controls. */
+.has-legendary-magic>.soarling-artwork-sparks{display:none}
+.legendary-magic-items,.legendary-magic-dots{position:absolute;inset:0;pointer-events:none}
+.legendary-magic-items,.legendary-magic-dots{z-index:2}
+.legendary-magic-item{position:absolute;display:block;width:36px;height:auto;object-fit:contain;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--hatch-land) 68%,transparent));will-change:transform,opacity}
+.legendary-magic-item-left{top:30%;left:69%;animation:legendary-item-left-enter .75s cubic-bezier(.2,.75,.25,1) .7s both,legendary-item-left-idle 3.2s ease-in-out 1.45s infinite}
+.legendary-magic-item-right{top:25%;right:67%;animation:legendary-item-right-enter .75s cubic-bezier(.2,.75,.25,1) .85s both,legendary-item-right-idle 3.5s ease-in-out 1.6s infinite}
+.legendary-magic-dots i{position:absolute;width:4px;height:4px;border-radius:50%;background:color-mix(in srgb,var(--hatch-land) 60%,#fff 40%);box-shadow:0 0 7px 2px color-mix(in srgb,var(--hatch-land) 75%,transparent),0 0 14px 3px color-mix(in srgb,var(--hatch-land) 38%,transparent);opacity:0;animation:legendary-dot-enter .3s ease-out var(--legendary-enter) both,legendary-dot-pulse var(--legendary-cycle) ease-in-out var(--legendary-idle) infinite;will-change:transform,opacity}
+.legendary-magic-dots i:nth-child(1){top:18%;left:34%;--legendary-enter:.92s;--legendary-idle:1.7s;--legendary-cycle:2.1s}
+.legendary-magic-dots i:nth-child(2){top:44%;left:19%;width:3px;height:3px;--legendary-enter:1.07s;--legendary-idle:1.95s;--legendary-cycle:2.7s}
+.legendary-magic-dots i:nth-child(3){top:68%;left:31%;--legendary-enter:1.22s;--legendary-idle:2.22s;--legendary-cycle:1.9s}
+.legendary-magic-dots i:nth-child(4){top:22%;right:26%;width:3px;height:3px;--legendary-enter:1.37s;--legendary-idle:1.85s;--legendary-cycle:2.4s}
+.legendary-magic-dots i:nth-child(5){top:48%;right:18%;--legendary-enter:1.52s;--legendary-idle:2.4s;--legendary-cycle:1.8s}
+.legendary-magic-dots i:nth-child(6){top:66%;right:30%;width:3px;height:3px;--legendary-enter:1.67s;--legendary-idle:2.1s;--legendary-cycle:2.9s}
+.land-forest .legendary-magic-item-left{top:27%;left:24%;width:37px}
+.land-forest .legendary-magic-item-right{top:39%;right:22%;width:37px}
+.land-forest .legendary-magic-dots i{background:#b7ff9a;box-shadow:0 0 7px 2px rgba(110,255,125,.85),0 0 14px 3px rgba(56,203,107,.48)}
+.land-wind .legendary-magic-item-left{top:30%;left:72%;width:34px}
+.land-wind .legendary-magic-item-right{top:20%;right:71%;width:39px}
+.land-wizard .legendary-magic-item-left{top:27%;left:70%;width:34px}
+.land-wizard .legendary-magic-item-right{top:21%;right:72%;width:35px}
+.land-artist .legendary-magic-item-left{top:33%;left:68%;width:35px}
+.land-artist .legendary-magic-item-right{top:20%;right:70%;width:42px}
+.land-king .legendary-magic-item-left{top:31%;left:72%;width:26px}
+.land-king .legendary-magic-item-right{top:24%;right:68%;width:36px}
+.hatch-complete-artwork.has-legendary-magic>.soarling-result-image{animation:legendary-soarling-art-enter .82s cubic-bezier(.2,.78,.25,1) .2s both,hatch-result-composite-float 3.8s ease-in-out 1.12s infinite}
+@keyframes legendary-soarling-art-enter{0%{opacity:0;transform:translate3d(0,20px,0) scale(.92)}72%{opacity:1;transform:translate3d(0,-2px,0) scale(1.02)}100%{opacity:1;transform:translate3d(0,0,0) scale(1)}}
+@keyframes legendary-item-left-enter{0%{opacity:0;transform:translate3d(-48px,18px,0) rotate(-38deg) scale(.74)}100%{opacity:1;transform:translate3d(0,0,0) rotate(0) scale(1)}}
+@keyframes legendary-item-right-enter{0%{opacity:0;transform:translate3d(48px,18px,0) rotate(38deg) scale(.74)}100%{opacity:1;transform:translate3d(0,0,0) rotate(0) scale(1)}}
+@keyframes legendary-item-left-idle{0%,100%{transform:translate3d(0,0,0) rotate(-3deg)}50%{transform:translate3d(0,-5px,0) rotate(4deg)}}
+@keyframes legendary-item-right-idle{0%,100%{transform:translate3d(0,1px,0) rotate(3deg)}50%{transform:translate3d(0,-5px,0) rotate(-4deg)}}
+@keyframes legendary-dot-enter{from{opacity:0;transform:scale(.3)}to{opacity:.85;transform:scale(1)}}
+@keyframes legendary-dot-pulse{0%,100%{opacity:0;transform:translateY(2px) scale(.7)}48%{opacity:.95;transform:translateY(-3px) scale(1.2)}}
+@media(max-width:620px){.legendary-magic-item{width:clamp(18px,6vw,34px)}.land-king .legendary-magic-item-left{width:20px}.land-king .legendary-magic-item-right{width:27px}}
+@media(prefers-reduced-motion:reduce){.has-legendary-magic>.soarling-result-image,.legendary-magic-item,.legendary-magic-dots i{animation:none!important}.legendary-magic-item{opacity:1;transform:none}.legendary-magic-dots i{opacity:.7;transform:none}}
+
 /* Carry each Epic land's popup items and lights into the owned-bird hero. */
 .owned-epic-land-details{position:absolute;z-index:6;top:0;left:645px;display:block;width:850px;aspect-ratio:1080/682;pointer-events:none}
 .owned-epic-land-item{position:absolute;display:block;width:70px;height:auto;object-fit:contain;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--owned-land-glow) 58%,transparent));will-change:transform,opacity}
@@ -565,5 +658,116 @@
 .owned-epic-land-light{position:absolute;display:block;width:6px;height:6px;border-radius:50%;background:color-mix(in srgb,var(--owned-land-glow) 65%,#fff 35%);box-shadow:0 0 8px 2px color-mix(in srgb,var(--owned-land-glow) 82%,transparent),0 0 17px 4px color-mix(in srgb,var(--owned-land-glow) 40%,transparent);animation:owned-soarling-spark 2.6s ease-in-out infinite}
 .owned-epic-land-light-left{top:8%;left:23%;animation-delay:-.7s}
 .owned-epic-land-light-right{top:16%;right:22%;width:5px;height:5px;animation-delay:-1.8s}
+.hero-art.land-wind .owned-epic-land-item-left{top:25%;left:81%;width:clamp(20px,7vw,64px)}
+.hero-art.land-wind .owned-epic-land-item-right{top:18%;right:76%;width:clamp(20px,7vw,64px)}
+.hero-art.land-wind .owned-epic-land-light-left{top:12%;left:20%}
+.hero-art.land-wind .owned-epic-land-light-right{top:11%;right:24%}
+.hero-art.land-wizard .owned-epic-land-item-left{top:20%;left:80%;width:clamp(20px,7vw,54px)}
+.hero-art.land-wizard .owned-epic-land-item-right{top:30%;right:81%;width:clamp(20px,7vw,66px)}
+.hero-art.land-wizard .owned-epic-land-light-left{top:6%;left:28%}
+.hero-art.land-wizard .owned-epic-land-light-right{top:20%;right:20%}
+.hero-art.land-artist .owned-epic-land-item-left{top:31%;left:76%;width:clamp(20px,7vw,62px)}
+.hero-art.land-artist .owned-epic-land-item-right{top:18%;right:79%;width:clamp(20px,7vw,68px)}
+.hero-art.land-artist .owned-epic-land-light-left{top:13%;left:25%}
+.hero-art.land-artist .owned-epic-land-light-right{top:9%;right:27%}
+.hero-art.land-king .owned-epic-land-item-left{top:26%;left:80%;width:clamp(16px,5vw,42px)}
+.hero-art.land-king .owned-epic-land-item-right{top:20%;right:78%;width:clamp(20px,6vw,56px)}
+.hero-art.land-king .owned-epic-land-light-left{top:9%;left:26%}
+.hero-art.land-king .owned-epic-land-light-right{top:13%;right:19%}
 @media(max-width:760px){.owned-epic-land-details{top:10px;left:0;width:100%}.owned-epic-land-item{width:clamp(20px,7vw,34px)}.owned-epic-land-light{width:4px;height:4px}}
 @media(prefers-reduced-motion:reduce){.owned-epic-land-item,.owned-epic-land-light{animation:none}}
+
+/* Legendary owned-bird decorations are independent of the Epic hero styles. */
+.owned-legendary-land-details{position:absolute;z-index:6;top:0;left:645px;display:block;width:850px;aspect-ratio:1080/682;pointer-events:none}
+.owned-legendary-land-item{position:absolute;display:block;width:62px;height:auto;object-fit:contain;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--owned-land-glow) 62%,transparent));will-change:transform,opacity}
+.owned-legendary-land-item-left{top:26%;left:79%;animation:legendary-item-left-enter .75s cubic-bezier(.2,.75,.25,1) both,legendary-item-left-idle 3.2s ease-in-out .75s infinite}
+.owned-legendary-land-item-right{top:20%;right:78%;animation:legendary-item-right-enter .75s cubic-bezier(.2,.75,.25,1) both,legendary-item-right-idle 3.5s ease-in-out .9s infinite}
+.owned-legendary-land-light{position:absolute;display:block;width:6px;height:6px;border-radius:50%;background:color-mix(in srgb,var(--owned-land-glow) 65%,#fff 35%);box-shadow:0 0 8px 2px color-mix(in srgb,var(--owned-land-glow) 82%,transparent),0 0 17px 4px color-mix(in srgb,var(--owned-land-glow) 40%,transparent);animation:owned-soarling-spark 2.8s ease-in-out infinite}
+.owned-legendary-land-light-left{top:10%;left:24%;animation-delay:-.8s}
+.owned-legendary-land-light-right{top:17%;right:24%;width:5px;height:5px;animation-delay:-1.9s}
+.hero-art.land-wind .owned-legendary-land-item-left{top:24%;left:81%}
+.hero-art.land-wind .owned-legendary-land-item-right{top:18%;right:77%}
+.hero-art.land-wizard .owned-legendary-land-item-left{top:22%;left:80%}
+.hero-art.land-wizard .owned-legendary-land-item-right{top:29%;right:81%}
+.hero-art.land-artist .owned-legendary-land-item-left{top:30%;left:78%}
+.hero-art.land-artist .owned-legendary-land-item-right{top:18%;right:79%}
+.hero-art.land-king .owned-legendary-land-item-left{top:25%;left:80%;width:44px}
+.hero-art.land-king .owned-legendary-land-item-right{top:20%;right:79%;width:55px}
+@media(max-width:760px){.owned-legendary-land-details{top:10px;left:0;width:100%}.owned-legendary-land-item{width:clamp(20px,7vw,34px)}.hero-art.land-king .owned-legendary-land-item-left{width:clamp(16px,5vw,25px)}.hero-art.land-king .owned-legendary-land-item-right{width:clamp(20px,6vw,32px)}.owned-legendary-land-light{width:4px;height:4px}}
+@media(prefers-reduced-motion:reduce){.owned-legendary-land-item,.owned-legendary-land-light{animation:none}}
+
+/* Legendary glow keeps the Figma radial stops, tinted to each island. */
+.has-legendary-magic{--legendary-glow-core:#a245ff;--legendary-glow-mid:rgba(117,51,216,.7);--legendary-glow-edge:rgba(97,60,153,0)}
+.hatch-complete-modal.land-forest .has-legendary-magic{--legendary-glow-core:#63f278;--legendary-glow-mid:rgba(66,200,91,.7);--legendary-glow-edge:rgba(46,117,64,0)}
+.hatch-complete-modal.land-wind .has-legendary-magic{--legendary-glow-core:#55ccff;--legendary-glow-mid:rgba(45,157,211,.7);--legendary-glow-edge:rgba(41,104,131,0)}
+.hatch-complete-modal.land-artist .has-legendary-magic{--legendary-glow-core:#ff5a35;--legendary-glow-mid:rgba(216,51,57,.7);--legendary-glow-edge:rgba(153,60,62,0)}
+.hatch-complete-modal.land-king .has-legendary-magic{--legendary-glow-core:#ffe35c;--legendary-glow-mid:rgba(215,169,40,.7);--legendary-glow-edge:rgba(143,116,44,0)}
+.has-legendary-magic>.soarling-artwork-glow{top:9px;left:50%;width:176.68px;height:176.68px;border-radius:50%;background:radial-gradient(circle,var(--legendary-glow-core) 0%,var(--legendary-glow-mid) 50%,var(--legendary-glow-edge) 100%);filter:blur(60px);mix-blend-mode:normal;opacity:1;animation:legendary-popup-glow 4s ease-in-out infinite}
+@keyframes legendary-popup-glow{0%,100%{opacity:.88;transform:translateX(-50%) scale(.98)}50%{opacity:1;transform:translateX(-50%) scale(1.025)}}
+/* IPFS Soarling art is portrait-shaped; align its visible island with the Hatchling art. */
+.hero-art.bird-owned.is-soarling{--soarling-hero-top:-16px}
+.hero-art.bird-owned.is-soarling.land-wind{--soarling-hero-top:-11px}
+.hero-art.bird-owned.is-soarling.land-forest{--soarling-hero-top:-36px}
+.hero-art.bird-owned.is-soarling.land-wizard{--soarling-hero-top:-45px}
+.hero-art.bird-owned.is-soarling.land-artist{--soarling-hero-top:-30px}
+.hero-art.bird-owned.is-soarling.land-king{--soarling-hero-top:-60px}
+.hero-art.bird-owned.is-soarling.is-legendary.land-artist{--soarling-hero-top:-10px}
+.hero-art.bird-owned.is-soarling .bird-land-composite,.hero-art.bird-owned.is-soarling .owned-epic-land-details,.hero-art.bird-owned.is-soarling .owned-legendary-land-details{top:var(--soarling-hero-top);left:705px;width:730px}
+@media(max-width:760px){.hero-art.bird-owned.is-soarling{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-forest{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-wizard{--soarling-hero-top:-25px}.hero-art.bird-owned.is-soarling.land-king{--soarling-hero-top:-20px}.hero-art.bird-owned.is-soarling .bird-land-composite,.hero-art.bird-owned.is-soarling .owned-epic-land-details,.hero-art.bird-owned.is-soarling .owned-legendary-land-details{top:var(--soarling-hero-top);left:6%;width:88%}}
+
+/* Enlarge every Mythic bird while keeping the island's lower edge in view. */
+.hero-art.bird-owned.is-mythic .bird-land-composite{top:calc(var(--soarling-hero-top) - 25px);scale:1.25 1.13}
+.hero-art.bird-owned.is-mythic.land-wind{--soarling-hero-top:-53px}
+@media(max-width:760px){.hero-art.bird-owned.is-mythic .bird-land-composite{top:calc(var(--soarling-hero-top) - 8px);scale:1.14 1.08}.hero-art.bird-owned.is-mythic.land-wind{--soarling-hero-top:0px}}
+@media(max-width:620px){.has-legendary-magic>.soarling-artwork-glow{top:5px;width:clamp(112px,29vw,176.68px);filter:blur(60px);height:auto;aspect-ratio:1}}
+@media(prefers-reduced-motion:reduce){.has-legendary-magic>.soarling-artwork-glow{animation:none;opacity:1}}
+
+/* Forest Mythic keeps its Figma leaf details. */
+.mythic-forest-leaves{position:absolute;z-index:2;inset:0;pointer-events:none}
+.mythic-forest-leaf{position:absolute;display:block;width:38px;height:auto;object-fit:contain;filter:drop-shadow(0 0 5px rgba(181,255,69,.6));animation:soarling-artwork-spark 3.2s ease-in-out infinite}
+.mythic-forest-leaf-left{top:30%;left:25%;animation-delay:-.7s}
+.mythic-forest-leaf-right{top:39%;right:23%;animation-delay:-1.6s}
+@media(max-width:620px){.mythic-forest-leaf{width:clamp(24px,6vw,38px)}}
+@media(prefers-reduced-motion:reduce){.mythic-forest-leaf{animation:none}}
+
+/* All Mythic result popups share the Forest glow geometry, with land-specific colors. */
+.hatch-complete-modal.land-forest .has-mythic-magic{--mythic-glow-core:#b5ff45;--mythic-glow-mid:rgba(112,216,51,.7);--mythic-glow-edge:rgba(130,153,60,.4);--mythic-dot:#b5ff45}
+.hatch-complete-modal.land-wind .has-mythic-magic{--mythic-glow-core:#73ddff;--mythic-glow-mid:rgba(42,175,233,.7);--mythic-glow-edge:rgba(43,109,157,.4);--mythic-dot:#8feaff}
+.hatch-complete-modal.land-wizard .has-mythic-magic{--mythic-glow-core:#c18aff;--mythic-glow-mid:rgba(139,74,226,.7);--mythic-glow-edge:rgba(92,59,146,.4);--mythic-dot:#d3a5ff}
+.hatch-complete-modal.land-artist .has-mythic-magic{--mythic-glow-core:#ff875c;--mythic-glow-mid:rgba(239,77,57,.7);--mythic-glow-edge:rgba(155,59,49,.4);--mythic-dot:#ffae78}
+.hatch-complete-modal.land-king .has-mythic-magic{--mythic-glow-core:#ffe576;--mythic-glow-mid:rgba(222,177,48,.7);--mythic-glow-edge:rgba(147,109,44,.4);--mythic-dot:#ffed9b}
+.has-mythic-magic>.soarling-artwork-glow{top:43px;left:50%;width:222.08px;height:222.08px;border-radius:50%;background:radial-gradient(circle,var(--mythic-glow-core) 0%,var(--mythic-glow-mid) 50%,var(--mythic-glow-edge) 100%);filter:blur(60px);opacity:1;animation:mythic-popup-glow 4s ease-in-out infinite}
+.has-mythic-magic>.soarling-artwork-sparks{display:none}
+.mythic-wind-feathers,.mythic-magic-dots{position:absolute;z-index:2;inset:0;pointer-events:none}
+.mythic-wind-feather{position:absolute;display:block;width:42px;height:auto;object-fit:contain;filter:drop-shadow(0 0 6px rgba(115,221,255,.65));animation:soarling-artwork-spark 3.2s ease-in-out infinite}
+.mythic-wind-feather-left{top:45%;left:74%;animation-delay:-.6s}
+.mythic-wind-feather-right{top:16%;right:70%;width:47px;animation-delay:-1.5s}
+.mythic-magic-dots i{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--mythic-dot);box-shadow:0 0 7px 2px color-mix(in srgb,var(--mythic-dot) 70%,transparent),0 0 17px 4px color-mix(in srgb,var(--mythic-dot) 35%,transparent);animation:mythic-dot-float 3.1s ease-in-out infinite}
+.mythic-magic-dots i:nth-child(1){top:13%;left:31%;animation-delay:-.3s}
+.mythic-magic-dots i:nth-child(2){top:24%;right:29%;width:3px;height:3px;animation-delay:-1.6s}
+.mythic-magic-dots i:nth-child(3){top:46%;left:17%;width:4px;height:4px;animation-delay:-2.2s}
+.mythic-magic-dots i:nth-child(4){top:53%;right:15%;animation-delay:-.9s}
+.mythic-magic-dots i:nth-child(5){top:72%;left:28%;width:3px;height:3px;animation-delay:-1.9s}
+.mythic-magic-dots i:nth-child(6){top:73%;right:27%;width:4px;height:4px;animation-delay:-2.7s}
+.mythic-magic-dots i:nth-child(7){top:8%;right:41%;width:3px;height:3px;animation-delay:-1.2s}
+.mythic-magic-dots i:nth-child(8){top:63%;left:39%;width:3px;height:3px;animation-delay:-2.5s}
+@keyframes mythic-dot-float{0%,100%{opacity:.18;transform:translateY(4px) scale(.7)}50%{opacity:.95;transform:translateY(-7px) scale(1.2)}}
+@keyframes mythic-popup-glow{0%,100%{opacity:.9;transform:translateX(-50%) scale(.98)}50%{opacity:1;transform:translateX(-50%) scale(1.025)}}
+@media(max-width:620px){.has-mythic-magic>.soarling-artwork-glow{top:20%;width:clamp(130px,35vw,222.08px);height:auto;aspect-ratio:1}.mythic-wind-feather{width:clamp(26px,7vw,42px)}.mythic-wind-feather-right{width:clamp(30px,8vw,47px)}}
+@media(prefers-reduced-motion:reduce){.has-mythic-magic>.soarling-artwork-glow,.mythic-wind-feather,.mythic-magic-dots i{animation:none}.mythic-magic-dots i{opacity:.7}}
+
+/* ARC Testnet setup and faucet feedback */
+.arc-network-icon{position:absolute;top:60.95px;left:50%;display:block;width:80px;height:80px;object-fit:contain;transform:translateX(-50%)}
+.arc-network-copy p{max-width:400px}
+.arc-network-actions .funds-confirm span{white-space:nowrap}
+.arc-network-modal:has(.arc-network-feedback){width:min(472.668px,calc(100vw - 24px),calc((100dvh - 24px)*1.18167));aspect-ratio:472.668/400}
+.arc-network-modal:has(.arc-network-feedback) .arc-network-actions{top:auto;bottom:24px}
+.arc-network-feedback{position:absolute;right:30px;bottom:82px;left:30px;margin:0;color:#e2d4f9;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:13px;line-height:1.35;text-align:center}
+.arc-network-feedback.is-error{color:#ffc3ce}
+.arc-flow-toast{position:fixed;z-index:10000;top:24px;left:50%;max-width:min(92vw,480px);padding:12px 20px;border:1px solid #edc76d;border-radius:12px;background:#171139;color:#fff;box-shadow:0 10px 35px rgba(16,6,45,.35);font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:14px;text-align:center;transform:translateX(-50%)}
+.funds-modal:has(.funds-flow-feedback){aspect-ratio:472.668/400}
+.funds-modal:has(.funds-flow-feedback) .funds-modal-actions{top:auto;bottom:24px}
+.funds-flow-feedback{position:absolute;right:30px;bottom:82px;left:30px;margin:0;color:#ecd599;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:13px;line-height:1.35;text-align:center}
+.funds-flow-feedback.is-neutral{color:#e2d4f9}
+.funds-flow-feedback.is-error{color:#ffc3ce}
+@media(max-width:500px){.arc-network-icon{top:16.04%;width:20%;height:20%}.arc-network-feedback,.funds-flow-feedback{right:16px;bottom:22%;left:16px;font-size:clamp(11px,3.2vw,13px)}.arc-network-modal:has(.arc-network-feedback) .arc-network-actions,.funds-modal:has(.funds-flow-feedback) .funds-modal-actions{bottom:5%}}

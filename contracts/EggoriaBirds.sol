@@ -46,6 +46,10 @@ contract EggoriaBirds is ERC721, AccessControl {
     uint16 public totalLandsAssigned;
     bool public mintingEnabled;
     bool public evolutionTestMode;
+    bool public evolutionShowcaseMode;
+    bool public evolutionPairRotationMode;
+    uint8 public evolutionTestLand; // First land in the five-mint QA rotation.
+    Rarity public evolutionTestRarity = Rarity.Legendary;
 
     mapping(address account => bool minted) public hasMinted;
     mapping(address account => uint256 tokenId) public mintedTokenOf;
@@ -88,6 +92,10 @@ contract EggoriaBirds is ERC721, AccessControl {
     event RarityAssigned(uint256 indexed tokenId, Rarity rarity, uint256 randomWord);
     event MintingStatusChanged(bool enabled);
     event EvolutionTestModeChanged(bool enabled);
+    event EvolutionShowcaseModeChanged(bool enabled);
+    event EvolutionPairRotationModeChanged(bool enabled);
+    event EvolutionTestLandChanged(uint8 indexed land);
+    event EvolutionTestRarityChanged(Rarity rarity);
     event MetadataUpdate(uint256 indexed tokenId);
     event BatchMetadataUpdate(uint256 indexed fromTokenId, uint256 indexed toTokenId);
     event TestBirdSeeded(uint256 indexed tokenId, address indexed owner, uint8 indexed land, uint8 checkIns);
@@ -113,20 +121,26 @@ contract EggoriaBirds is ERC721, AccessControl {
         hasMinted[msg.sender] = true;
         mintedTokenOf[msg.sender] = tokenId;
 
+        uint8 testLand;
         if (evolutionTestMode) {
-            birds[tokenId].checkIns = INTERMEDIATE_CHECK_INS - 1;
+            if (evolutionPairRotationMode) {
+                testLand = uint8(((tokenId - 1) / 2) % LAND_COUNT);
+            } else if (evolutionShowcaseMode && tokenId <= 12) {
+                testLand = uint8((tokenId - 1) / 3 + 1);
+            } else {
+                testLand = uint8((uint256(evolutionTestLand) + (tokenId - 1) / 5) % LAND_COUNT);
+            }
+            if (landMinted[testLand] >= LAND_MAX_SUPPLY) revert LandPoolEmpty();
+            Bird storage bird = birds[tokenId];
+            bird.land = testLand;
+            bird.landAssigned = true;
+            bird.checkIns = INTERMEDIATE_CHECK_INS - 1;
+            landMinted[testLand] += 1;
+            totalLandsAssigned += 1;
         }
 
         _safeMint(msg.sender, tokenId);
         if (evolutionTestMode) {
-            // QA-only pseudo-randomness: production minting must use fulfillLand's trusted adapter.
-            uint256 randomWord = uint256(keccak256(abi.encodePacked(block.prevrandao, block.timestamp, msg.sender, tokenId)));
-            uint8 testLand = _pickAvailableLand(randomWord);
-            Bird storage bird = birds[tokenId];
-            bird.land = testLand;
-            bird.landAssigned = true;
-            landMinted[testLand] += 1;
-            totalLandsAssigned += 1;
             emit BirdMinted(tokenId, msg.sender, testLand);
             emit MetadataUpdate(tokenId);
         } else {
@@ -211,11 +225,28 @@ contract EggoriaBirds is ERC721, AccessControl {
         } else if (bird.checkIns == ADVANCED_CHECK_INS) {
             emit RarityRequested(tokenId, msg.sender);
             if (evolutionTestMode) {
-                // QA previews the Epic Soarling result. Select the first available
-                // Epic slot dynamically so earlier Common/Rare draws do not shift it.
-                uint256 epicPick = uint256(_landRarityRemaining[bird.land][0])
-                    + uint256(_landRarityRemaining[bird.land][1]);
-                _fulfillRarity(tokenId, epicPick);
+                if (evolutionPairRotationMode) {
+                    _fulfillPairTestRarity(tokenId);
+                    return;
+                }
+                uint8 selected = evolutionShowcaseMode && tokenId <= 12
+                    ? uint8(tokenId <= 3 ? Rarity.Epic : Rarity.Legendary)
+                    : uint8(evolutionTestRarity);
+                // QA keeps the real 60/25/10/4/1 quotas: once the chosen rarity
+                // is exhausted, use the first remaining slot in this land.
+                if (_landRarityRemaining[bird.land][selected] == 0) {
+                    for (uint8 i; i < 5; ++i) {
+                        if (_landRarityRemaining[bird.land][i] > 0) {
+                            selected = i;
+                            break;
+                        }
+                    }
+                }
+                uint256 pick;
+                for (uint8 i; i < selected; ++i) {
+                    pick += _landRarityRemaining[bird.land][i];
+                }
+                _fulfillRarity(tokenId, pick);
             }
         }
     }
@@ -257,6 +288,22 @@ contract EggoriaBirds is ERC721, AccessControl {
 
         emit BirdEvolved(tokenId, Stage.Advanced);
         emit RarityAssigned(tokenId, bird.rarity, randomWord);
+        emit MetadataUpdate(tokenId);
+    }
+
+    /// @dev QA-only deterministic rarity; production rarity quotas are deliberately untouched.
+    function _fulfillPairTestRarity(uint256 tokenId) private {
+        Bird storage bird = birds[tokenId];
+        if (bird.rarityAssigned) revert RarityAlreadyAssigned();
+        if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
+
+        // Each ten-mint cycle has two birds per land. Artist's second bird is Legendary.
+        bird.rarity = (tokenId - 1) % 10 == 7 ? Rarity.Legendary : Rarity.Mythic;
+        bird.rarityAssigned = true;
+        bird.stage = Stage.Advanced;
+
+        emit BirdEvolved(tokenId, Stage.Advanced);
+        emit RarityAssigned(tokenId, bird.rarity, 0);
         emit MetadataUpdate(tokenId);
     }
 
@@ -328,6 +375,31 @@ contract EggoriaBirds is ERC721, AccessControl {
     function setEvolutionTestMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
         evolutionTestMode = enabled;
         emit EvolutionTestModeChanged(enabled);
+    }
+
+    /// @notice QA only: first 12 mints are 3 Wind Epic, then 3 each Wizard, Artist and King Legendary.
+    function setEvolutionShowcaseMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        evolutionShowcaseMode = enabled;
+        emit EvolutionShowcaseModeChanged(enabled);
+    }
+
+    /// @notice QA only: two mints per land, all Mythic except the second Artist bird (Legendary).
+    function setEvolutionPairRotationMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        evolutionPairRotationMode = enabled;
+        emit EvolutionPairRotationModeChanged(enabled);
+    }
+
+    /// @notice Chooses the first land in each five-mint test-mode rotation.
+    function setEvolutionTestLand(uint8 land) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _validateLand(land);
+        evolutionTestLand = land;
+        emit EvolutionTestLandChanged(land);
+    }
+
+    /// @notice Chooses the preferred rarity for test-mode evolutions.
+    function setEvolutionTestRarity(Rarity rarity) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        evolutionTestRarity = rarity;
+        emit EvolutionTestRarityChanged(rarity);
     }
 
     function setStageURI(uint8 land, Stage stage, string calldata uri) external onlyRole(METADATA_ROLE) {

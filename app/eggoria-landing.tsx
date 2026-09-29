@@ -20,6 +20,10 @@ import wizardPrimaryMetadata from "@/metadata/wizard-primary.json";
 type EggoriaUser = { id: string; name: string; email?: string; picture?: string; position: number };
 type GoogleCredential = { credential: string };
 type WalletKind = "google" | "metamask" | "";
+type WalletErrorKind = "missing-metamask" | "thirdweb-config" | "google-cancelled" | "google-popup-blocked" | "google-failed" | "metamask-closed" | "metamask-cancelled" | "metamask-pending" | "metamask-locked" | "metamask-failed" | "";
+type NetworkDialog = "add" | "switch" | null;
+type FundsPhase = "idle" | "signing" | "sending" | "updating";
+type FundsErrorKind = "" | "cancelled" | "cooldown" | "empty" | "timeout" | "error";
 type HatchPhase = "idle" | "charge" | "shake" | "reveal";
 type OwnedBird = {
   tokenId: bigint;
@@ -38,6 +42,8 @@ type EthereumProvider = {
   isMetaMask?: boolean;
   providers?: EthereumProvider[];
   request(options: { method: string; params?: unknown[] }): Promise<unknown>;
+  on?(event: string, listener: (...args: unknown[]) => void): void;
+  removeListener?(event: string, listener: (...args: unknown[]) => void): void;
 };
 
 declare global {
@@ -60,6 +66,14 @@ const ARC_TESTNET = defineChain({
   blockExplorers: [{ name: "ArcScan", url: "https://testnet.arcscan.app" }],
   testnet: true,
 });
+const ARC_CHAIN_ID_HEX = "0x4cef52";
+const ARC_NETWORK_PARAMS = {
+  chainId: ARC_CHAIN_ID_HEX,
+  chainName: "ARC Testnet",
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+  rpcUrls: ["https://rpc.testnet.arc.network"],
+  blockExplorerUrls: ["https://testnet.arcscan.app"],
+};
 const googleInAppWallet = inAppWallet({ auth: { mode: "popup", options: ["google"] } });
 const metaMaskWallet = createWallet("io.metamask");
 const supportedWallets = [googleInAppWallet, metaMaskWallet];
@@ -80,12 +94,21 @@ const landSoarlingResultAssets = ["soarling-result-forest.png", "soarling-result
 const landCommonSoarlingResultAssets = ["soarling-common-forest.png", "soarling-common-wind.png", "soarling-common-wizard.png", "soarling-common-artist.png", "soarling-common-king.png"] as const;
 const landRareSoarlingResultAssets = ["soarling-rare-forest.png", "soarling-rare-wind.png", "soarling-rare-wizard.png", "soarling-rare-artist.png", "soarling-rare-king.png"] as const;
 const landEpicSoarlingResultAssets = ["soarling-epic-forest.png", "soarling-epic-wind.png", "soarling-epic-wizard.png", "soarling-epic-artist.png", "soarling-epic-king.png"] as const;
+const landLegendarySoarlingResultAssets = ["soarling-legendary-forest.png", "soarling-legendary-wind.png", "soarling-legendary-wizard-v2.png", "soarling-legendary-artist.png", "soarling-legendary-king.png"] as const;
+const landMythicSoarlingResultAssets = ["soarling-mythic-forest.png", "soarling-mythic-wind.png", "soarling-mythic-wizard.png", "soarling-mythic-artist.png", "soarling-mythic-king.png"] as const;
 const landEpicDetailAssets = [
-  ["soarling-epic-feather-left.png", "soarling-epic-feather-right.png"],
-  ["soarling-epic-item-wind.png", "soarling-epic-item-wind.png"],
-  ["soarling-epic-item-wizard.png", "soarling-epic-item-wizard.png"],
-  ["soarling-epic-item-artist.png", "soarling-epic-item-artist.png"],
-  ["soarling-epic-item-king.png", "soarling-epic-item-king.png"],
+  ["soarling-forest-leaf-left.png", "soarling-forest-leaf-right.png"],
+  ["soarling-epic-item-wind.png", "soarling-epic-item-wind-right.png"],
+  ["soarling-epic-item-wizard.png", "soarling-epic-item-wizard-right.png"],
+  ["soarling-epic-item-artist.png", "soarling-epic-item-artist-right.png"],
+  ["soarling-epic-item-king.png", "soarling-epic-item-king-right.png"],
+] as const;
+const landLegendaryDetailAssets = [
+  ["soarling-forest-leaf-left.png", "soarling-forest-leaf-right.png"],
+  ["soarling-epic-item-wind.png", "soarling-epic-item-wind-right.png"],
+  ["soarling-epic-item-wizard.png", "soarling-epic-item-wizard-right.png"],
+  ["soarling-epic-item-artist.png", "soarling-epic-item-artist-right.png"],
+  ["soarling-epic-item-king.png", "soarling-epic-item-king-right.png"],
 ] as const;
 const landSoarlingParticleAssets = ["land-particle-forest.png", "land-particle-wind.png", "land-particle-wizard.png", "land-particle-artist.png", "land-particle-king.png"] as const;
 const stageNames = ["Hatchling", "Fledgling", "Soarling"] as const;
@@ -155,6 +178,12 @@ const getSoarlingResultAsset = (bird: OwnedBird) => {
   if (bird.rarity === 2) {
     return landEpicSoarlingResultAssets[bird.land] ?? "soarling-epic-wizard.png";
   }
+  if (bird.rarity === 3) {
+    return landLegendarySoarlingResultAssets[bird.land] ?? "soarling-legendary-wizard-v2.png";
+  }
+  if (bird.rarity === 4) {
+    return landMythicSoarlingResultAssets[bird.land] ?? "soarling-mythic-wizard.png";
+  }
   return landSoarlingResultAssets[bird.land] ?? "soarling-result-wizard.png";
 };
 
@@ -163,6 +192,10 @@ const formatUsdcBalance = (value: string | number) => {
   const amount = Number(value);
   if (!Number.isFinite(amount)) return "0";
   return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
+};
+const formatCooldown = (retryAt: string) => {
+  const minutes = Math.max(1, Math.ceil((new Date(retryAt).getTime() - Date.now()) / 60_000));
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 };
 
 const readNftImage = async (tokenUri: string) => {
@@ -222,6 +255,11 @@ export default function EggoriaLanding({
   const [, setGoogleReady] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
   const [walletModalOpen, setWalletModalOpen] = useState(false);
+  const [networkDialog, setNetworkDialog] = useState<NetworkDialog>(null);
+  const [lastNetworkDialog, setLastNetworkDialog] = useState<Exclude<NetworkDialog, null>>("switch");
+  const [networkBusy, setNetworkBusy] = useState(false);
+  const [networkFeedback, setNetworkFeedback] = useState<"" | "error">("");
+  const [toast, setToast] = useState("");
   const [fundsModalOpen, setFundsModalOpen] = useState(false);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimError, setClaimError] = useState("");
@@ -245,6 +283,8 @@ export default function EggoriaLanding({
   const [walletKind, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
+  const [fundsPhase, setFundsPhase] = useState<FundsPhase>("idle");
+  const [fundsErrorKind, setFundsErrorKind] = useState<FundsErrorKind>("");
   const [fundsSuccess, setFundsSuccess] = useState<{ amount: number; balance: string; address: string } | null>(null);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [walletAddressCopied, setWalletAddressCopied] = useState(false);
@@ -255,7 +295,13 @@ export default function EggoriaLanding({
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
   const [eggoriaStateAddress, setEggoriaStateAddress] = useState("");
   const [balanceStateAddress, setBalanceStateAddress] = useState("");
-  const [walletError, setWalletError] = useState<"missing-metamask" | "thirdweb-config" | "">("");
+  const [walletError, setWalletError] = useState<WalletErrorKind>("");
+  const [metaMaskInstalled, setMetaMaskInstalled] = useState(false);
+  const [mobileWalletBrowser, setMobileWalletBrowser] = useState(false);
+  const [inAppBrowser, setInAppBrowser] = useState(false);
+  const [walletLinkCopied, setWalletLinkCopied] = useState(false);
+  const [connectingProvider, setConnectingProvider] = useState<WalletKind>("");
+  const [metaMaskWaitLong, setMetaMaskWaitLong] = useState(false);
   const portalReady = useSyncExternalStore(subscribeToClient, () => true, () => false);
   const closeWalletRef = useRef<HTMLButtonElement>(null);
   const hatchCompleteCloseRef = useRef<HTMLButtonElement>(null);
@@ -266,6 +312,18 @@ export default function EggoriaLanding({
   const autoShownGuideStepsRef = useRef(new Set<string>());
   const lastNetworkFeeRef = useRef("");
   const networkFeeRequestRef = useRef(false);
+  const fundsDismissedDuringSendRef = useRef(false);
+  const networkWasWrongRef = useRef(false);
+  const networkDialogRef = useRef<NetworkDialog>(null);
+  const showNetworkDialog = useCallback((dialog: Exclude<NetworkDialog, null>) => {
+    networkDialogRef.current = dialog;
+    setLastNetworkDialog(dialog);
+    setNetworkDialog(dialog);
+  }, []);
+  const hideNetworkDialog = useCallback(() => {
+    networkDialogRef.current = null;
+    setNetworkDialog(null);
+  }, []);
   const thirdwebClient = useMemo(
     () => thirdwebClientId ? createThirdwebClient({ clientId: thirdwebClientId }) : null,
     [thirdwebClientId],
@@ -308,22 +366,38 @@ export default function EggoriaLanding({
   }, [eggoriaBirdsAddress, eggoriaContract, thirdwebClient]);
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
+  const isMetaMaskWallet = walletKind === "metamask" || activeWallet?.id === "io.metamask";
   const isAutoConnecting = useIsAutoConnecting();
   const { connect, isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
   const closeFundsModal = useCallback(() => {
+    if (fundsSending) fundsDismissedDuringSendRef.current = true;
     if (fundsSuccess && activeAccount?.address.toLowerCase() === fundsSuccess.address.toLowerCase()) {
       setArcBalance(fundsSuccess.balance);
+      setToast("Test USDC added. Next: mint your Egg.");
     }
+    if (fundsSuccess) setFundsSuccess(null);
     setFundsModalOpen(false);
-  }, [activeAccount?.address, fundsSuccess]);
+  }, [activeAccount?.address, fundsSending, fundsSuccess]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = window.setTimeout(() => setToast(""), 5_000);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
+  useEffect(() => {
+    if (connectingProvider !== "metamask") return;
+    const timeout = window.setTimeout(() => setMetaMaskWaitLong(true), 8_000);
+    return () => window.clearTimeout(timeout);
+  }, [connectingProvider]);
 
   const completeHatch = useCallback(() => {
     if (!hatchResult) return;
     const checkInGuideKey = `${hatchResult.address}:check-in`;
     autoShownGuideStepsRef.current.add(checkInGuideKey);
     window.localStorage.setItem(`eggoria-guide-seen:${checkInGuideKey}`, "1");
-    setFundsGuideOpen(false);
+    setFundsGuideOpen(true);
     setPostHatchOwnedAddress(hatchResult.address);
     setOwnedBird(hatchResult.bird);
     setHatchingBird(null);
@@ -403,7 +477,7 @@ export default function EggoriaLanding({
   }, [connectGoogle, googleClientId, portalReady]);
 
   useEffect(() => {
-    if (!walletModalOpen && !fundsModalOpen && !claimModalOpen && !evolutionCheckInOpen && !hatchResult && !evolutionResult && !soarlingResult) return;
+    if (!walletModalOpen && !networkDialog && !fundsModalOpen && !claimModalOpen && !evolutionCheckInOpen && !hatchResult && !evolutionResult && !soarlingResult) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     if (hatchResult || evolutionResult || soarlingResult) hatchCompleteCloseRef.current?.focus();
@@ -427,6 +501,7 @@ export default function EggoriaLanding({
           if (!checkInSubmitting) setEvolutionCheckInOpen(false);
           return;
         }
+        hideNetworkDialog();
         setWalletModalOpen(false);
         closeFundsModal();
         setClaimModalOpen(false);
@@ -437,7 +512,7 @@ export default function EggoriaLanding({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [claimModalOpen, checkInSubmitting, closeFundsModal, completeEvolution, completeHatch, completeSoarlingEvolution, evolutionCheckInOpen, evolutionResult, fundsModalOpen, hatchResult, soarlingResult, walletModalOpen]);
+  }, [claimModalOpen, checkInSubmitting, closeFundsModal, completeEvolution, completeHatch, completeSoarlingEvolution, evolutionCheckInOpen, evolutionResult, fundsModalOpen, hatchResult, hideNetworkDialog, networkDialog, soarlingResult, walletModalOpen]);
 
   useEffect(() => {
     if (!walletMenuOpen) return;
@@ -461,6 +536,7 @@ export default function EggoriaLanding({
       return;
     }
     setWalletError("");
+    setConnectingProvider("google");
     try {
       await connect(async () => {
         await googleInAppWallet.connect({ client: thirdwebClient, chain: ARC_TESTNET, strategy: "google" });
@@ -469,30 +545,81 @@ export default function EggoriaLanding({
       window.localStorage.setItem("eggoria-wallet-kind", "google");
       setWalletKind("google");
       setWalletModalOpen(false);
-    } catch {
-      // OAuth cancellation intentionally leaves the chooser open for another attempt.
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error ?? "");
+      setWalletError(readProviderErrorCode(error) === 4001 || /cancel|reject|closed|dismiss|denied/i.test(message) ? "google-cancelled" : /pop.?up.*block|block.*pop.?up/i.test(message) ? "google-popup-blocked" : "google-failed");
+    } finally {
+      setConnectingProvider("");
     }
   };
 
-  const getMetaMaskProvider = () => {
+  const getMetaMaskProvider = useCallback(() => {
     const injected = window.ethereum;
     if (!injected) return undefined;
     return injected.providers?.find((provider) => provider.isMetaMask)
       ?? (injected.isMetaMask ? injected : undefined);
-  };
+  }, []);
 
-  const ensureArcTestnet = async (provider: EthereumProvider) => {
-    const targetChainId = "0x4cef52";
-    if (await provider.request({ method: "eth_chainId" }) === targetChainId) return;
+  useEffect(() => {
+    if (!walletModalOpen) return;
+    const checkMetaMask = () => setMetaMaskInstalled(Boolean(getMetaMaskProvider()));
+    window.addEventListener("focus", checkMetaMask);
+    window.addEventListener("ethereum#initialized", checkMetaMask);
+    return () => {
+      window.removeEventListener("focus", checkMetaMask);
+      window.removeEventListener("ethereum#initialized", checkMetaMask);
+    };
+  }, [getMetaMaskProvider, walletModalOpen]);
+
+  const checkArcNetwork = useCallback(async () => {
+    const provider = getMetaMaskProvider();
+    if (!provider) return null;
+    const chainId = await provider.request({ method: "eth_chainId" });
+    return Number(chainId) === ARC_TESTNET.id;
+  }, [getMetaMaskProvider]);
+
+  const requireArcNetwork = useCallback(async () => {
+    if (!isMetaMaskWallet) return true;
     try {
-      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: targetChainId }] });
+      if (await checkArcNetwork() === true) return true;
+    } catch {
+      // Treat an unreadable chain as unsafe until the wallet is checked again.
+    }
+    setNetworkFeedback("");
+    setFundsModalOpen(false);
+    setClaimModalOpen(false);
+    showNetworkDialog("switch");
+    return false;
+  }, [checkArcNetwork, isMetaMaskWallet, showNetworkDialog]);
+
+  const requestArcNetwork = async () => {
+    if (!networkDialog || networkBusy) return;
+    const provider = getMetaMaskProvider();
+    if (!provider) {
+      setNetworkFeedback("error");
+      return;
+    }
+    setNetworkBusy(true);
+    setNetworkFeedback("");
+    try {
+      if (networkDialog === "add") {
+        await provider.request({ method: "wallet_addEthereumChain", params: [ARC_NETWORK_PARAMS] });
+      }
+      if (!await checkArcNetwork()) {
+        await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_ID_HEX }] });
+      }
+      if (!await checkArcNetwork()) throw new Error("ARC Testnet is not active yet.");
+      hideNetworkDialog();
+      setToast("You're on ARC Testnet.");
     } catch (error) {
-      if (readProviderErrorCode(error) !== 4902) throw error;
-      await provider.request({
-        method: "wallet_addEthereumChain",
-        params: [{ chainId: targetChainId, chainName: "ARC Testnet", nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, rpcUrls: ["https://rpc.testnet.arc.network"], blockExplorerUrls: ["https://testnet.arcscan.app"] }],
-      });
-      await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: targetChainId }] });
+      if (networkDialog === "switch" && readProviderErrorCode(error) === 4902) {
+        showNetworkDialog("add");
+      } else {
+        const code = readProviderErrorCode(error);
+        setNetworkFeedback(code === 4001 || code === -32002 ? "" : "error");
+      }
+    } finally {
+      setNetworkBusy(false);
     }
   };
 
@@ -506,6 +633,45 @@ export default function EggoriaLanding({
   const balanceStateLoading = Boolean(walletAddress) && balanceStateAddress !== normalizedWalletAddress;
   const walletViewLoading = isAutoConnecting || eggoriaStateLoading || (!ownedBird && balanceStateLoading);
   const activeGuideStep = !walletAddress || walletViewLoading ? "" : ownedBird ? "check-in" : hasTestFunds ? "mint" : "funds";
+
+  useEffect(() => {
+    if (!walletAddress || !isMetaMaskWallet) {
+      networkWasWrongRef.current = false;
+      Promise.resolve().then(() => {
+        hideNetworkDialog();
+      });
+      return;
+    }
+    const provider = getMetaMaskProvider();
+    if (!provider) return;
+    let active = true;
+    const updateNetwork = async () => {
+      try {
+        const ready = await checkArcNetwork();
+        if (!active || ready === null) return;
+        if (!ready) {
+          networkWasWrongRef.current = true;
+          setFundsModalOpen(false);
+          setClaimModalOpen(false);
+          setNetworkFeedback("");
+          if (!networkDialogRef.current) showNetworkDialog("switch");
+        } else {
+          hideNetworkDialog();
+          if (networkWasWrongRef.current) setToast("You're on ARC Testnet.");
+          networkWasWrongRef.current = false;
+        }
+      } catch {
+        // The next action rechecks the network directly from MetaMask.
+      }
+    };
+    void updateNetwork();
+    const onChainChanged = () => { void updateNetwork(); };
+    provider.on?.("chainChanged", onChainChanged);
+    return () => {
+      active = false;
+      provider.removeListener?.("chainChanged", onChainChanged);
+    };
+  }, [checkArcNetwork, getMetaMaskProvider, hideNetworkDialog, isMetaMaskWallet, showNetworkDialog, walletAddress]);
 
   const findOwnedTokenId = useCallback(async (address: string, supply: number) => {
     if (!eggoriaContract || !isAddress(address)) return null;
@@ -804,7 +970,7 @@ export default function EggoriaLanding({
       active = false;
       window.clearInterval(interval);
     };
-  }, [claimModalOpen, claimSubmitting, eggoriaBirdsAddress, walletAddress]);
+  }, [claimModalOpen, claimSubmitting, eggoriaBirdsAddress, getMetaMaskProvider, walletAddress]);
 
   useEffect(() => {
     if (!evolutionCheckInOpen || !ownedBird || !walletAddress || !thirdwebClient || !isAddress(eggoriaBirdsAddress)) return;
@@ -842,7 +1008,20 @@ export default function EggoriaLanding({
       return;
     }
     setWalletError("");
+    setMetaMaskInstalled(Boolean(getMetaMaskProvider()));
+    setMobileWalletBrowser(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+    setInAppBrowser(/FBAN|FBAV|Instagram|Telegram|Zalo|Line\//i.test(navigator.userAgent));
+    setWalletLinkCopied(false);
     setWalletModalOpen(true);
+  };
+
+  const copySignInLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setWalletLinkCopied(true);
+    } catch {
+      setWalletLinkCopied(false);
+    }
   };
 
   const copyWalletAddress = async () => {
@@ -859,6 +1038,7 @@ export default function EggoriaLanding({
   const connectMetaMask = async () => {
     const provider = getMetaMaskProvider();
     if (!provider) {
+      setMetaMaskInstalled(false);
       setWalletError("missing-metamask");
       return;
     }
@@ -867,11 +1047,12 @@ export default function EggoriaLanding({
       return;
     }
     setWalletError("");
+    setMetaMaskWaitLong(false);
+    setConnectingProvider("metamask");
     try {
       await provider.request({ method: "eth_requestAccounts" });
-      await ensureArcTestnet(provider);
       await connect(async () => {
-        await metaMaskWallet.connect({ client: thirdwebClient, chain: ARC_TESTNET });
+        await metaMaskWallet.connect({ client: thirdwebClient });
         return metaMaskWallet;
       });
       window.localStorage.setItem("eggoria-wallet-kind", "metamask");
@@ -880,12 +1061,14 @@ export default function EggoriaLanding({
       setNotice("");
       setWalletModalOpen(false);
     } catch (error) {
-      setWalletModalOpen(false);
-      if (readProviderErrorCode(error) === 4001) {
-        setWalletError("");
-        return;
-      }
-      setNotice("MetaMask could not connect. Please try again.");
+      const code = readProviderErrorCode(error);
+      const message = error instanceof Error ? error.message : String(error ?? "");
+      setWalletError(code === 4001
+        ? /closed|dismiss/i.test(message) ? "metamask-closed" : "metamask-cancelled"
+        : code === -32002 ? "metamask-pending"
+          : /unlock|locked/i.test(message) ? "metamask-locked" : /closed|dismiss/i.test(message) ? "metamask-closed" : "metamask-failed");
+    } finally {
+      setConnectingProvider("");
     }
   };
 
@@ -912,12 +1095,27 @@ export default function EggoriaLanding({
     setNotice("");
   };
 
-  const handleHeroAction = () => {
+  const handleHeroAction = async () => {
     if (!walletAddress) {
       openWallet();
       return;
     }
-    if (hasTestFunds) {
+    if (!await requireArcNetwork()) return;
+    let readyToMint = hasTestFunds;
+    if (!readyToMint && thirdwebClient) {
+      try {
+        const balance = await getWalletBalance({ client: thirdwebClient, chain: ARC_TESTNET, address: walletAddress });
+        const freshBalance = Number(balance.displayValue);
+        if (Number.isFinite(freshBalance)) {
+          setArcBalance(freshBalance.toFixed(6));
+          readyToMint = freshBalance >= requiredMintBalance;
+        }
+      } catch {
+        // Keep the last known balance when the read-only RPC is temporarily unavailable.
+      }
+    }
+    if (readyToMint) {
+      if (!hasTestFunds) setToast("You already have test USDC. Ready to mint!");
       setClaimError(
         minted >= EGGORIA_MAX_SUPPLY
           ? "All available eggs have already been claimed."
@@ -932,6 +1130,8 @@ export default function EggoriaLanding({
     }
     setFundsGuideOpen(false);
     setFundsError("");
+    setFundsErrorKind("");
+    setFundsPhase("idle");
     setFundsSuccess(null);
     setFundsModalOpen(true);
   };
@@ -939,11 +1139,16 @@ export default function EggoriaLanding({
   const claimTestFunds = async () => {
     if (!activeAccount || !walletAddress || fundsSending) return;
     setFundsError("");
+    setFundsErrorKind("");
     setFundsSuccess(null);
+    fundsDismissedDuringSendRef.current = false;
     setFundsSending(true);
+    setFundsPhase("signing");
     try {
+      if (!await requireArcNetwork()) return;
       const message = `Eggoria ARC Testnet Faucet\nAddress: ${walletAddress}\nTimestamp: ${Date.now()}`;
       const signature = await activeAccount.signMessage({ message });
+      setFundsPhase("sending");
       const response = await fetch("/api/faucet", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -952,20 +1157,46 @@ export default function EggoriaLanding({
       const result = await response.json();
       if (!response.ok) {
         if (response.status === 429 && result.retryAt) {
-          const retryAt = new Date(result.retryAt).toLocaleString();
-          throw new Error(`Already claimed. Try again after ${retryAt}.`);
+          setFundsErrorKind("cooldown");
+          throw new Error(`You can claim again in ${formatCooldown(result.retryAt)}.`);
         }
-        throw new Error(result.message || "Test USDC could not be sent.");
+        if (/faucet does not have enough/i.test(String(result.message))) {
+          setFundsErrorKind("empty");
+          throw new Error("The faucet is empty right now. Try again later, or ask us on Discord.");
+        }
+        setFundsErrorKind("error");
+        throw new Error("This is taking longer than usual. Check your balance before trying again.");
       }
-      setFundsSuccess({
+      const sentFunds = {
         amount: Number(result.amount) || 1,
         balance: String(result.balance || arcBalance),
         address: walletAddress,
-      });
+      };
+      setFundsPhase("updating");
+      setArcBalance(sentFunds.balance);
+      setToast("Test USDC added. Next: mint your Egg.");
+      if (fundsDismissedDuringSendRef.current) {
+        setFundsSuccess(sentFunds);
+        setFundsModalOpen(true);
+      } else {
+        setFundsModalOpen(false);
+      }
     } catch (error) {
-      setFundsError(error instanceof Error ? error.message : "Test USDC could not be sent.");
+      const message = error instanceof Error ? error.message : String(error);
+      if (readProviderErrorCode(error) === 4001 || /cancel|reject|closed|denied/i.test(message)) {
+        setFundsErrorKind("cancelled");
+        setFundsError("You closed the MetaMask window.");
+      } else if (/timeout|network|fetch failed/i.test(message) && !/faucet|ARC Testnet/i.test(message)) {
+        setFundsErrorKind("timeout");
+        setFundsError("This is taking longer than usual. Check your balance before trying again.");
+      } else {
+        setFundsError((current) => current || message || "This is taking longer than usual. Check your balance before trying again.");
+        setFundsErrorKind((current) => current || "error");
+      }
+      if (!fundsDismissedDuringSendRef.current) setFundsModalOpen(true);
     } finally {
       setFundsSending(false);
+      setFundsPhase("idle");
     }
   };
 
@@ -993,6 +1224,8 @@ export default function EggoriaLanding({
         setClaimError("You have already claimed your Egg.");
         return;
       }
+
+      if (!await requireArcNetwork()) return;
 
       const transaction = prepareContractCall({
         contract: eggoriaContract,
@@ -1408,12 +1641,11 @@ export default function EggoriaLanding({
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div>}
         </div>
-        <div className={`hero-art${walletViewLoading ? " is-state-loading" : ownedBird ? ` bird-owned land-${ownedLandClass}${postHatchOwned ? " is-post-hatch" : ""}` : isHatching ? ` is-hatching hatch-${hatchPhase} land-${hatchLandClass}${hatchRarityClass}` : ""}`} aria-label={!walletViewLoading && ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : isHatching ? "Your Egg is hatching" : undefined} aria-hidden={!walletViewLoading && (ownedBird || isHatching) ? undefined : "true"}>
+        <div className={`hero-art${walletViewLoading ? " is-state-loading" : ownedBird ? ` bird-owned land-${ownedLandClass}${ownedBird.stage === 2 ? " is-soarling" : ""}${ownedBird.stage === 2 && ownedBird.rarity === 3 ? " is-legendary" : ownedBird.stage === 2 && ownedBird.rarity === 4 ? " is-mythic" : ""}${postHatchOwned ? " is-post-hatch" : ""}` : isHatching ? ` is-hatching hatch-${hatchPhase} land-${hatchLandClass}${hatchRarityClass}` : ""}`} aria-label={!walletViewLoading && ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : isHatching ? "Your Egg is hatching" : undefined} aria-hidden={!walletViewLoading && (ownedBird || isHatching) ? undefined : "true"}>
           <span className="egg-glow-new">
             <img src={asset("glow.svg")} alt="" />
           </span>
           {compositeBird?.stage === 2 && <>
-            <span className="owned-soarling-glow" aria-hidden="true" />
             <span className="owned-soarling-sparks" aria-hidden="true"><i /><i /><i /></span>
           </>}
           {compositeBird?.stage === 2 && compositeBird.rarity === 2 && (
@@ -1422,6 +1654,14 @@ export default function EggoriaLanding({
               <img className="owned-epic-land-item owned-epic-land-item-right" src={asset(landEpicDetailAssets[compositeBird.land]?.[1] ?? landEpicDetailAssets[0][1])} alt="" />
               <i className="owned-epic-land-light owned-epic-land-light-left" />
               <i className="owned-epic-land-light owned-epic-land-light-right" />
+            </span>
+          )}
+          {compositeBird?.stage === 2 && compositeBird.rarity === 3 && (
+            <span className="owned-legendary-land-details" aria-hidden="true">
+              <img className="owned-legendary-land-item owned-legendary-land-item-left" src={asset(landLegendaryDetailAssets[compositeBird.land]?.[0] ?? landLegendaryDetailAssets[0][0])} alt="" />
+              <img className="owned-legendary-land-item owned-legendary-land-item-right" src={asset(landLegendaryDetailAssets[compositeBird.land]?.[1] ?? landLegendaryDetailAssets[0][1])} alt="" />
+              <i className="owned-legendary-land-light owned-legendary-land-light-left" />
+              <i className="owned-legendary-land-light owned-legendary-land-light-right" />
             </span>
           )}
           {compositeBird && <img
@@ -1483,19 +1723,23 @@ export default function EggoriaLanding({
           </button>
           <header className="wallet-modal-heading">
             <h2 id="wallet-modal-title">Begin Your Journey</h2>
-            <p>Choose how you’d like to enter Eggoria</p>
+            <p>Sign in to claim your free Egg.</p>
           </header>
           <div className="wallet-options">
+            {inAppBrowser && <p className="wallet-info" role="status">This browser can&apos;t sign you in. Open the link in Chrome or Safari. <button type="button" onClick={copySignInLink}>{walletLinkCopied ? "Copied" : "Copy link"}</button></p>}
             <div className="wallet-option">
-              <button className="wallet-provider wallet-provider-google" type="button" onClick={connectGoogleWallet} disabled={isConnecting}>
+              <button className="wallet-provider wallet-provider-google" type="button" onClick={connectGoogleWallet} disabled={isConnecting || Boolean(connectingProvider)} aria-busy={connectingProvider === "google"}>
                 <img className="wallet-provider-frame" src={asset("wallet-metamask-button.png")} alt="" />
                 <span className="wallet-provider-content">
                   <img src={asset("wallet-google.svg")} alt="" />
-                  <strong>Continue with Google</strong>
-                  <small>Recommended</small>
+                  <strong>{connectingProvider === "google" ? "Signing in with Google..." : "Continue with Google"}</strong>
+                  <small>Easiest</small>
                 </span>
               </button>
-              <p>Fast, secure, and no wallet setup required.</p>
+              <p>We&apos;ll set up a free wallet for you. Nothing to download.</p>
+              {walletError.startsWith("google-") && <div className={`wallet-feedback${walletError === "google-cancelled" ? " is-info" : ""}`} role="status">
+                <p>{walletError === "google-cancelled" ? "You closed the Google window." : walletError === "google-popup-blocked" ? "Your browser blocked the Google window. Allow pop-ups for this site, then try again." : "Google sign-in didn't work. Check your connection and try again."} <button type="button" onClick={connectGoogleWallet}>{walletError === "google-cancelled" ? "Sign in again" : "Try again"}</button></p>
+              </div>}
             </div>
             <div className="wallet-divider" aria-hidden="true">
               <span className="wallet-divider-side"><i /><img src={asset("wallet-spark.svg")} alt="" /></span>
@@ -1503,20 +1747,66 @@ export default function EggoriaLanding({
               <span className="wallet-divider-side"><i /><img src={asset("wallet-spark.svg")} alt="" /></span>
             </div>
             <div className="wallet-option">
-              <button className="wallet-provider wallet-provider-metamask" type="button" onClick={connectMetaMask} disabled={isConnecting}>
+              {metaMaskInstalled ? <button className="wallet-provider wallet-provider-metamask" type="button" onClick={connectMetaMask} disabled={isConnecting || Boolean(connectingProvider)} aria-busy={connectingProvider === "metamask"}>
                 <img className="wallet-provider-frame" src={asset("wallet-google-button.png")} alt="" />
                 <span className="wallet-provider-content">
                   <img src={asset("wallet-metamask.svg")} alt="" />
-                  <strong>Continue with MetaMask</strong>
+                  <strong>{connectingProvider === "metamask" ? "Check MetaMask to continue..." : "Continue with MetaMask"}</strong>
                 </span>
-              </button>
-              <p>Use your existing Web3 wallet.</p>
-              {walletError === "missing-metamask" && <p className="wallet-error">MetaMask not found. <a href="https://metamask.io/download/" target="_blank" rel="noreferrer">Install extension</a></p>}
+              </button> : <a className="wallet-provider wallet-provider-metamask" href={mobileWalletBrowser ? `https://metamask.app.link/dapp/${window.location.href.replace(/^https?:\/\//, "")}` : "https://metamask.io/download/"} target="_blank" rel="noopener noreferrer">
+                <img className="wallet-provider-frame" src={asset("wallet-google-button.png")} alt="" />
+                <span className="wallet-provider-content">
+                  <img src={asset("wallet-metamask.svg")} alt="" />
+                  <strong>{mobileWalletBrowser ? "Open in MetaMask app ↗" : "Install MetaMask"}</strong>
+                </span>
+              </a>}
+              <p>Already have a crypto wallet? Use it here.</p>
+              {!metaMaskInstalled && <div className="wallet-feedback is-info" role="status">
+                <p>{mobileWalletBrowser ? "Tap to open this page inside the MetaMask app." : "You don't have MetaMask yet."}</p>
+                {!mobileWalletBrowser && <p>Already installed it? <button type="button" onClick={() => window.location.reload()}>Refresh page</button></p>}
+              </div>}
+              {connectingProvider === "metamask" && <div className="wallet-feedback is-info" role="status"><p>{metaMaskWaitLong ? "Still there? Click the fox icon at the top of your browser." : "A window opened on the right. Approve it to connect."}</p></div>}
+              {metaMaskInstalled && walletError.startsWith("metamask-") && <div className={`wallet-feedback${walletError === "metamask-closed" || walletError === "metamask-cancelled" || walletError === "metamask-pending" || walletError === "metamask-locked" ? " is-info" : ""}`} role="status">
+                <p>{walletError === "metamask-closed" ? "You closed the MetaMask window." : walletError === "metamask-cancelled" ? "You declined in MetaMask." : walletError === "metamask-pending" ? "A MetaMask window is already open. Click the fox icon to find it." : walletError === "metamask-locked" ? "MetaMask is locked. Unlock it, then connect again." : "Something went wrong connecting to MetaMask."}
+                  {walletError !== "metamask-pending" && <> <button type="button" onClick={connectMetaMask}>{walletError === "metamask-locked" || walletError === "metamask-closed" || walletError === "metamask-cancelled" ? "Connect again" : "Try again"}</button></>}
+                </p>
+              </div>}
             </div>
           </div>
-          {walletError === "thirdweb-config" && <p className="wallet-config-error" role="alert">Wallet login is not configured yet.</p>}
+          {walletError === "thirdweb-config" && <p className="wallet-config-error" role="alert">Wallet login is not configured yet. Please try again later.</p>}
         </section>
       </div>, document.body)}
+
+      {portalReady && createPortal(<div
+        className={`wallet-modal-layer arc-network-layer${networkDialog ? " is-open" : ""}`}
+        aria-hidden={!networkDialog}
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !networkBusy) hideNetworkDialog();
+        }}
+      >
+        <section className="funds-modal arc-network-modal" role="dialog" aria-modal="true" aria-labelledby="arc-network-title">
+          <img className="funds-modal-frame" src={asset("funds-modal-frame.png")} alt="" />
+          <button className="funds-modal-close" type="button" aria-label="Close ARC Testnet setup" onClick={hideNetworkDialog}>
+            <img src={asset("wallet-close.svg")} alt="" />
+          </button>
+          <img className="arc-network-icon" src={asset("arc-testnet-icon.png")} alt="" />
+          <div className="funds-modal-copy arc-network-copy">
+            <h2 id="arc-network-title">{(networkDialog ?? lastNetworkDialog) === "add" ? "One Quick Setup" : "Wrong Network"}</h2>
+            <p>{(networkDialog ?? lastNetworkDialog) === "add"
+              ? "Eggoria runs on ARC Testnet, a free practice network. MetaMask will ask you to approve it."
+              : "Your wallet is on another network. Switch to ARC Testnet to keep going."}</p>
+          </div>
+          {networkFeedback === "error" && <p className="arc-network-feedback is-error" role="alert">MetaMask couldn&apos;t {(networkDialog ?? lastNetworkDialog) === "add" ? "add" : "switch"} the network. Try again, or do it manually.</p>}
+          <div className="funds-modal-actions arc-network-actions">
+            <button className="funds-cancel" type="button" onClick={hideNetworkDialog} disabled={networkBusy}>Not Now</button>
+            <button className="figma-button funds-confirm" type="button" onClick={requestArcNetwork} disabled={networkBusy} aria-busy={networkBusy}>
+              <img src={asset("button.png")} alt="" /><span>{networkBusy ? "Waiting..." : networkFeedback === "error" ? "Try again" : (networkDialog ?? lastNetworkDialog) === "add" ? "Add Network" : "Switch Network"}</span>
+            </button>
+          </div>
+        </section>
+      </div>, document.body)}
+
+      {portalReady && toast && createPortal(<div className="arc-flow-toast" role="status">{toast}</div>, document.body)}
 
       {portalReady && createPortal(<div
         className={`wallet-modal-layer${fundsModalOpen ? " is-open" : ""}`}
@@ -1547,13 +1837,18 @@ export default function EggoriaLanding({
               <h2 id="funds-modal-title">Get Free Test USDC</h2>
               <p>You&apos;ll receive 1 test USDC. This is testnet<br />money, not real currency</p>
             </div>
+            {fundsSending && <p className="funds-flow-feedback" role="status">{fundsPhase === "signing"
+              ? "Check MetaMask to sign. Can't see it? Click the fox icon at the top of your browser."
+              : fundsPhase === "updating"
+                ? "Updating your balance..."
+                : "Sending your test USDC. This usually takes a few seconds."}</p>}
+            {fundsError && <p className={`funds-flow-feedback${fundsErrorKind === "cancelled" || fundsErrorKind === "cooldown" ? " is-neutral" : " is-error"}`} role={fundsErrorKind === "cancelled" || fundsErrorKind === "cooldown" ? "status" : "alert"}>{fundsError}</p>}
             <div className="funds-modal-actions">
-              <button className="funds-cancel" type="button" onClick={closeFundsModal}>Cancel</button>
-              <button className="figma-button funds-confirm" type="button" onClick={claimTestFunds} disabled={fundsSending}>
-                <img src={asset("button.png")} alt="" /><span>{fundsSending ? "Sending..." : "Confirm"}</span>
-              </button>
+              <button className="funds-cancel" type="button" onClick={closeFundsModal}>{fundsErrorKind === "cooldown" ? "Close" : "Cancel"}</button>
+              {fundsErrorKind !== "cooldown" && <button className="figma-button funds-confirm" type="button" onClick={claimTestFunds} disabled={fundsSending} aria-busy={fundsSending}>
+                <img src={asset("button.png")} alt="" /><span>{fundsSending ? fundsPhase === "signing" ? "Waiting..." : fundsPhase === "updating" ? "Updating..." : "Sending..." : fundsErrorKind === "empty" || fundsErrorKind === "timeout" || fundsErrorKind === "error" ? "Try again" : fundsErrorKind === "cancelled" ? "Get test USDC" : "Confirm"}</span>
+              </button>}
             </div>
-            {fundsError && <p className="funds-modal-error" role="alert">{fundsError}</p>}
           </>}
         </section>
       </div>, document.body)}
@@ -1749,14 +2044,30 @@ export default function EggoriaLanding({
             <h2 id="soarling-complete-title">Your Bird Has Evolved!</h2>
             <p>Congratulations, your bird is now a Soarling.</p>
           </header>
-          <div className={`hatch-complete-artwork soarling-result-artwork${soarlingResult.rarity === 2 ? " has-epic-magic" : ""}`}>
+          <div className={`hatch-complete-artwork soarling-result-artwork${soarlingResult.rarity === 2 ? " has-epic-magic" : soarlingResult.rarity === 3 ? " has-legendary-magic" : soarlingResult.rarity === 4 ? " has-mythic-magic" : ""}`}>
             <span className="soarling-artwork-glow" aria-hidden="true" />
+            {soarlingResult.rarity === 4 && soarlingResult.land === 0 && <span className="mythic-forest-leaves" aria-hidden="true">
+              <img className="mythic-forest-leaf mythic-forest-leaf-left" src={asset("soarling-mythic-forest-leaf-left.png")} alt="" />
+              <img className="mythic-forest-leaf mythic-forest-leaf-right" src={asset("soarling-mythic-forest-leaf-right.png")} alt="" />
+            </span>}
+            {soarlingResult.rarity === 4 && soarlingResult.land === 1 && <span className="mythic-wind-feathers" aria-hidden="true">
+              <img className="mythic-wind-feather mythic-wind-feather-left" src={asset("soarling-mythic-wind-feather-left.png")} alt="" />
+              <img className="mythic-wind-feather mythic-wind-feather-right" src={asset("soarling-mythic-wind-feather-right.png")} alt="" />
+            </span>}
+            {soarlingResult.rarity === 4 && <span className="mythic-magic-dots" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /></span>}
             {soarlingResult.rarity === 2 && <>
               <span className="epic-magic-feathers" aria-hidden="true">
                 <img className="epic-magic-feather epic-magic-feather-left" src={asset(landEpicDetailAssets[soarlingResult.land]?.[0] ?? landEpicDetailAssets[0][0])} alt="" />
                 <img className="epic-magic-feather epic-magic-feather-right" src={asset(landEpicDetailAssets[soarlingResult.land]?.[1] ?? landEpicDetailAssets[0][1])} alt="" />
               </span>
               <span className="epic-magic-dots" aria-hidden="true"><i /><i /><i /><i /><i /><i /></span>
+            </>}
+            {soarlingResult.rarity === 3 && <>
+              <span className="legendary-magic-items" aria-hidden="true">
+                <img className="legendary-magic-item legendary-magic-item-left" src={asset(landLegendaryDetailAssets[soarlingResult.land]?.[0] ?? landLegendaryDetailAssets[0][0])} alt="" />
+                <img className="legendary-magic-item legendary-magic-item-right" src={asset(landLegendaryDetailAssets[soarlingResult.land]?.[1] ?? landLegendaryDetailAssets[0][1])} alt="" />
+              </span>
+              <span className="legendary-magic-dots" aria-hidden="true"><i /><i /><i /><i /><i /><i /></span>
             </>}
             <span className="soarling-artwork-sparks" aria-hidden="true">
               {[0, 1, 2].map((particle) => (
@@ -1784,7 +2095,7 @@ export default function EggoriaLanding({
           </dl>
           <p className="hatch-complete-tip">Your journey is complete. PvP &amp; PvE arrive in Q2.</p>
           <button className="figma-button hatch-complete-action" type="button" onClick={completeSoarlingEvolution}>
-            <img src={asset("button.png")} alt="" /><span>Continue</span>
+            <img src={asset("button.png")} alt="" /><span>View Roadmap</span>
           </button>
           {soarlingTransactionHash && <a className="evolution-transaction-link" href={`https://testnet.arcscan.app/tx/${soarlingTransactionHash}`} target="_blank" rel="noreferrer">View Transaction</a>}
         </section>

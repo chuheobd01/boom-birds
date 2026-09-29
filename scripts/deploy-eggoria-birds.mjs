@@ -19,9 +19,14 @@ async function main() {
   }
 
   const deployerAddress = await deployer.getAddress();
+  const deployerBalance = await ethers.provider.getBalance(deployerAddress);
+  if (deployerBalance === 0n) {
+    throw new Error(`Deployer ${deployerAddress} has no ARC Testnet gas balance. Deployment stopped.`);
+  }
 
   console.log("Deployer address:", deployerAddress);
   console.log("Network chain ID:", currentNetwork.chainId.toString());
+  console.log("Deployer gas balance:", ethers.formatEther(deployerBalance), "native tokens");
 
   const eggoriaBirds = await ethers.deployContract(
     "EggoriaBirds",
