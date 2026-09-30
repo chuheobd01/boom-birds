@@ -13,7 +13,7 @@ export async function GET() {
     const cookieStore = await cookies();
     const session = readSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
     if (!session) {
-      return Response.json({ authenticated: false }, { status: 401 });
+      return Response.json({ authenticated: false });
     }
 
     const sql = await getDatabase();
@@ -22,7 +22,7 @@ export async function GET() {
       FROM eggoria_users WHERE google_sub = ${session.sub} LIMIT 1
     `;
     if (!rows[0]) {
-      return Response.json({ authenticated: false }, { status: 401 });
+      return Response.json({ authenticated: false });
     }
 
     const user = rows[0];

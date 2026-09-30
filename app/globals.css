@@ -116,7 +116,7 @@
 @media(prefers-reduced-motion:reduce){.landing-header .figma-button:hover,.landing-header .figma-button:active{transform:none}}
 
 /* Google embedded-wallet egg claim dialog — Figma node 500:180 */
-.claim-modal{position:relative;width:min(651.461px,calc(100vw - 24px),calc((100dvh - 24px)*1.05757));aspect-ratio:651.461/616;overflow:hidden;color:#fff;filter:drop-shadow(0 22px 42px rgba(11,4,54,.42));opacity:0;transform:translateY(12px) scale(.98);transition:opacity 220ms ease,transform 280ms cubic-bezier(.22,1,.36,1)}
+.claim-modal{position:relative;width:min(651.461px,calc(100vw - 24px),calc((100dvh - 24px)*1.04067));aspect-ratio:651.461/626;overflow:hidden;color:#fff;filter:drop-shadow(0 22px 42px rgba(11,4,54,.42));opacity:0;transform:translateY(12px) scale(.98);transition:opacity 220ms ease,transform 280ms cubic-bezier(.22,1,.36,1)}
 .wallet-modal-layer.is-open .claim-modal{opacity:1;transform:translateY(0) scale(1)}
 .claim-modal-frame{position:absolute;z-index:-1;top:-8.73%;left:-8.36%;width:116.36%;height:117.82%;max-width:none;pointer-events:none}
 .claim-modal-close{position:absolute;z-index:4;top:4.69%;right:4.3%;display:grid;width:26.182px;height:26.182px;padding:0;border:0;background:transparent;cursor:pointer;place-items:center;transition:transform 180ms ease,filter 180ms ease}
@@ -128,6 +128,9 @@
 .claim-modal-heading h2{margin:0;font-family:"Playfair Display",serif;font-size:36px;font-weight:600;line-height:1.2;text-transform:capitalize}
 .claim-modal-heading p{margin:6px 0 0;color:#b7a0ee;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:16px;font-weight:400;line-height:1.3}
 .claim-panel{position:absolute;top:calc(22.83% + 90px);left:50%;display:flex;width:430px;flex-direction:column;gap:20px;transform:translateX(-50%)}
+.claim-panel:has(.claim-price-note){gap:9px}
+.claim-price-note{margin:0;color:#d8cff0;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:12px;line-height:1.35;text-align:center}
+@media(max-width:560px){.claim-panel:has(.claim-price-note){top:37%;gap:5px}.claim-price-note{font-size:clamp(8px,2vw,11px)}}
 .claim-details{width:100%;margin:0;padding:16px 16px;border:1px solid rgba(112,81,154,.75);border-radius:16px;background:linear-gradient(180deg,#151b38 0%,#10172e 100%);box-sizing:border-box}
 .claim-details>div{display:flex;min-height:24px;align-items:center;justify-content:space-between;padding:0 0 16px;margin:0 0 16px;border-bottom:1px solid #2f3058}
 .claim-details>div:last-child{padding:0;margin:0;border-bottom:0}
@@ -240,6 +243,7 @@
 
 /* On-chain egg minting status */
 .claim-confirm>span{display:flex;align-items:center;justify-content:center;gap:8px}
+.hero-mint-button>span{display:flex;align-items:center;justify-content:center;gap:8px}
 .claim-button-spinner{width:16px;height:16px;border:2px dotted rgba(255,255,255,.6);border-top-color:#fff;border-radius:50%;animation:minting-spin .8s linear infinite}
 .minting-modal{position:relative;width:min(651.461px,calc(100vw - 24px),calc((100dvh - 24px)*1.093));aspect-ratio:651.461/596;overflow:hidden;color:#fff;filter:drop-shadow(0 22px 42px rgba(11,4,54,.42));opacity:0;transform:translateY(12px) scale(.98);transition:opacity 220ms ease,transform 280ms cubic-bezier(.22,1,.36,1)}
 .wallet-modal-layer.is-open .minting-modal{opacity:1;transform:translateY(0) scale(1)}
@@ -430,8 +434,10 @@
 .bird-evolution-frame{position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}.bird-evolution-content{position:absolute;z-index:1;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 30px; top: 10px}
 .bird-stage-heading{display:flex;align-items:flex-start;justify-content:space-between}.bird-stage-heading>div{display:flex;flex-direction:column;gap:7px}.bird-stage-heading>div:last-child{text-align:right}.bird-stage-heading strong{font-size:14px;font-weight:500;line-height:1}.bird-stage-heading span{color:#dacff2;font-size:11px;font-weight:400;line-height:1}
 .bird-checkin-track{display:flex;width:100%;margin-top:16px;align-items:center}.bird-checkin-step{display:flex;min-width:0;flex:1;align-items:center}.bird-checkin-step.is-first{flex:0 0 auto}.bird-checkin-marker{position:relative;z-index:1;width:24px;height:24px;flex:none;object-fit:contain}.bird-checkin-line{position:relative;z-index:0;width:auto;height:4px;min-width:0;flex:1;margin-inline:-2px;object-fit:fill}
+.bird-checkin-step{position:relative}.bird-checkin-button>span{display:flex;align-items:center;justify-content:center;gap:8px}.bird-checkin-step.is-newly-complete::after{position:absolute;z-index:2;top:50%;right:-4px;width:32px;height:32px;border:2px solid #d6a0ff;border-radius:50%;content:"";pointer-events:none;animation:checkin-ripple 600ms ease-out both}.bird-checkin-step.is-first.is-newly-complete::after{right:auto;left:-4px}.bird-checkin-step.is-newly-complete .bird-checkin-marker{animation:checkin-marker-awaken 650ms ease-out both}.bird-checkin-step.is-newly-complete .bird-checkin-line{animation:checkin-line-awaken 600ms ease-out both}@keyframes checkin-ripple{from{opacity:.9;transform:translateY(-50%) scale(.5)}to{opacity:0;transform:translateY(-50%) scale(1.8)}}@keyframes checkin-marker-awaken{0%{transform:scale(.8);filter:drop-shadow(0 0 0 #b66bff)}45%{transform:scale(1.3);filter:drop-shadow(0 0 9px #d7a7ff)}100%{transform:scale(1);filter:drop-shadow(0 0 5px #aa64f5)}}@keyframes checkin-line-awaken{from{clip-path:inset(0 100% 0 0);filter:brightness(1)}to{clip-path:inset(0);filter:brightness(1.25)}}@media(prefers-reduced-motion:reduce){.bird-checkin-step.is-newly-complete::after{display:none}.bird-checkin-step.is-newly-complete .bird-checkin-marker,.bird-checkin-step.is-newly-complete .bird-checkin-line{animation:none}}
 .bird-checkin-message{display:flex;min-height:20px;margin:12px 0 0;align-items:center;gap:8px;color:#e6dcf8;font-size:12px;font-weight:400;line-height:20px}.bird-checkin-message>img{display:block;width:20px;height:20px;flex:none;object-fit:contain}.bird-checkin-message>p{margin:0;font:inherit;transform:translateY(2px)}
 .bird-checkin-button{width:340px;height:66px;margin-top:8px;font-size:24px}.bird-checkin-button:disabled{cursor:not-allowed;filter:saturate(.7);opacity:.72}.bird-checkin-button:disabled:hover{transform:none}
+.bird-checkin-button.is-countdown{font-size:19px}@media(max-width:460px){.bird-checkin-button.is-countdown{font-size:15px}}
 .hero-copy>.bird-owner-wrap .login-note{display:block;width:auto;margin:0;color:var(--text-secondary-strong);font-family:"Be Vietnam Pro",sans-serif;font-size:14px;font-weight:400;white-space:nowrap}.bird-checkin-error{max-width:448px;margin:0;color:#8a2453;font-family:"Be Vietnam Pro",sans-serif;font-size:11px;text-align:center}
 .bird-owner-wrap:has(.funds-guide.is-open) .bird-checkin-button{z-index:13;filter:brightness(1.16) saturate(1.06) drop-shadow(0 0 12px rgba(211,157,255,.65));pointer-events:none}.bird-owner-wrap:has(.funds-guide.is-open) .funds-guide-help{pointer-events:none}.bird-owner-wrap:has(.funds-guide.is-open) .funds-guide-help::after{opacity:0;visibility:hidden;transition:none}.bird-checkin-guide{top:203px;left:calc(50% + 208px)}
 .hero-art.bird-owned{animation:none}.hero-new:has(.hero-art.bird-owned)>.spark-field,.hero-new:has(.hero-art.bird-owned)>.balloon{display:none}.hero-art.bird-owned .egg-glow-new{opacity:.52}.bird-land-composite{position:absolute;z-index:5;top:0;left:645px;width:850px;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));animation:bird-island-float 5.6s ease-in-out infinite;will-change:transform}.hero-art.bird-owned::after{display:none}.hero-art.bird-owned .egg-glow-new{display:none}.bird-new{position:absolute;z-index:5;top:-15px;left:900px;width:450px;height:450px;object-fit:contain;scale:-1 1;filter:drop-shadow(0 14px 18px rgba(31,12,78,.28));animation:bird-owner-enter 700ms cubic-bezier(.22,1,.36,1) both,bird-owner-float 4.8s ease-in-out 700ms infinite}.bird-new.is-metadata-pending{top:70px;left:1010px;width:150px;height:210px;scale:1}.hero-art.bird-owned .island-new{top:265px;left:675px;width:830px;height:470px;object-fit:contain;filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));animation:none}
@@ -441,6 +447,50 @@
 @keyframes bird-island-float{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(0,-7px,0)}}
 @media(max-width:760px){.bird-owner-wrap,.bird-evolution-card{width:min(94vw,448px)}.bird-evolution-card{height:auto;aspect-ratio:448/154}.bird-evolution-content{padding-inline:5.3%}.bird-checkin-marker{width:clamp(17px,5vw,24px);height:clamp(17px,5vw,24px)}.bird-checkin-guide{top:auto;left:auto}.bird-land-composite{top:10px;left:0;width:100%;height:auto}.bird-new{top:20px;left:28%;width:46%;height:auto;aspect-ratio:1}.bird-new.is-metadata-pending{top:15px;left:43%;width:18%;height:auto}.hero-art.bird-owned .island-new{top:250px;left:1%;width:98%;height:auto}.owned-soarling-sparks i:nth-child(1){top:135px;left:61%}.owned-soarling-sparks i:nth-child(2){top:14%;left:82%}.owned-soarling-sparks i:nth-child(3){top:38%;left:87%}}
 @media(max-width:460px){.bird-stage-heading strong{font-size:12px}.bird-stage-heading span,.bird-checkin-message{font-size:12px}.bird-checkin-track{margin-top:10px}.bird-checkin-message{margin-top:8px}.bird-checkin-button{width:min(78vw,340px);height:58px}.hero-copy>.bird-owner-wrap .login-note{white-space:normal;text-align:center}}
+/* Keep the mint and owned-bird hero CTAs the same size at each breakpoint. */
+.hero-connect,.bird-checkin-button,.bird-checkin-button.is-countdown{width:300px;height:60px;font-size:20px}
+@media(max-width:440px){.hero-connect,.bird-checkin-button,.bird-checkin-button.is-countdown{width:290px;height:62px;font-size:18px}}
+/* Completed Soarling hero uses the same desktop .hero-copy position as Get Your Egg. */
+.hero-new.is-final-form .hero-copy h1{width:100%;font-family:"Playfair Display",serif;font-size:60px;font-weight:600;line-height:1.15;letter-spacing:0}
+.final-form-panel{display:flex;width:100%;flex-direction:column;align-items:center}
+.final-stage-card{position:relative;width:480px;height:180px;flex:none;color:#fff9f3}
+.final-stage-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.final-stage-journey{position:relative;z-index:1;display:grid;height:100%;grid-template-columns:76px 90px 76px 90px 100px;justify-content: center;column-gap: 0;padding:18px 25px 22px}
+.final-stage-item{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:end;gap:2px;font-family:"Be Vietnam Pro",sans-serif;font-size:15px;font-weight:500;line-height:1.2}
+.final-stage-picture{display:grid;width:96px;height:90px;overflow:hidden;place-items:end center}
+.final-stage-picture img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain}
+.final-stage-item:first-child .final-stage-picture img{height:65px}
+.final-stage-item:nth-of-type(2) .final-stage-picture img{height:65px}
+.final-stage-item:last-child .final-stage-picture img{height:90px}
+.final-stage-connector{align-self:center;margin-top:28px}
+.final-stage-connector img{display:block;width:100%;height:auto;filter:drop-shadow(0 0 5px rgba(255,222,139,.5))}
+.final-form-actions{display:flex;gap:20px;margin-top:28px}
+.final-form-action{width:300px;height:60px;font-family:"Be Vietnam Pro",sans-serif;font-size:20px;font-weight:500;text-decoration:none;transition:filter 180ms ease}
+.figma-button.final-form-action:not(:disabled):hover,.figma-button.final-form-action:not(:disabled):active{transform:none;filter:brightness(1.08)}
+.final-form-action-secondary{overflow:hidden;border-radius:999px;color:var(--text-default)}
+.final-form-action-secondary>img{top:-25.59%;left:-1.92%;width:103.94%;height:153.97%}
+.final-form-action-secondary>span:not(.google-hitbox){text-shadow:none}
+.final-form-note{margin:12px 0 0;color:var(--text-secondary-strong);font-family:"Be Vietnam Pro",sans-serif;font-size:14px;font-weight:400;line-height:1.4;text-align:center}
+.final-form-rarity{--final-rarity-color:#ffe099;position:absolute;z-index:9;top:-8px;left:calc(73% - 75px);display:grid;min-width:150px;height:31px;padding:0 12px;border:2px solid #efa92b;border-radius:7px;background:linear-gradient(180deg,#422073 0%,#160c3f 55%,#32205b 100%);box-shadow:0 0 0 2px #6b338f,0 3px 10px #1b0d54a8,inset 0 0 8px #ffc35280;color:var(--final-rarity-color);font-family:"Be Vietnam Pro",sans-serif;font-size:15px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;white-space:nowrap;place-items:center;pointer-events:none}
+.final-form-rarity.rarity-common{--final-rarity-color:#86efac}.final-form-rarity.rarity-rare{--final-rarity-color:#93c5fd}.final-form-rarity.rarity-epic{--final-rarity-color:#f0abfc}.final-form-rarity.rarity-legendary{--final-rarity-color:#fca5a5}
+.hero-new.is-final-form:has(.hero-art.bird-owned)>.spark-field,.hero-new.is-final-form:has(.hero-art.bird-owned)>.balloon{display:block}
+@media(max-width:760px){
+  .landing:has(.hero-new.is-final-form){min-height:1320px}
+  .hero-new.is-final-form{min-height:1230px}
+  .hero-new.is-final-form .hero-copy{top:24px;left:4%;width:92%}
+  .hero-new.is-final-form .hero-copy h1{width:100%;font-size:clamp(34px,8vw,52px)}
+  .final-form-panel{margin-top:24px}
+  .final-stage-card{width:min(92vw,480px);height:auto;aspect-ratio:480/165}
+  .final-stage-journey{padding:3.75% 5.2% 4.5%;grid-template-columns:76px 90px 76px 90px 100px;justify-content: center;column-gap: 0}
+  .final-stage-item{font-size:clamp(10px,2.7vw,14px)}
+  .final-stage-picture{width:100%;height:clamp(54px,17vw,90px)}
+  .final-stage-picture img,.final-stage-item:first-child .final-stage-picture img,.final-stage-item:nth-of-type(2) .final-stage-picture img,.final-stage-item:last-child .final-stage-picture img{max-width:100%;max-height:100%}
+  .final-form-actions{flex-wrap:wrap;justify-content:center;gap:12px;margin-top:20px}
+  .final-form-note{max-width:90vw;font-size:12px}
+  .final-form-rarity{top:565px;left:50%;transform:translateX(-50%)}
+  .hero-new.is-final-form .hero-art{top:625px}
+}
+@media(max-width:440px){.final-form-action{width:290px;height:62px;font-size:18px}.final-form-rarity{top:565px}.hero-new.is-final-form .hero-art{top:625px}}
 @media(prefers-reduced-motion:reduce){.bird-land-composite,.bird-new,.hero-art.bird-owned,.owned-soarling-sparks i{animation:none}}
 
 /* Confirmed on-chain mint: hatch the Hero egg in place without a status popup. */
@@ -715,10 +765,19 @@
 .hero-art.bird-owned.is-soarling .bird-land-composite,.hero-art.bird-owned.is-soarling .owned-epic-land-details,.hero-art.bird-owned.is-soarling .owned-legendary-land-details{top:var(--soarling-hero-top);left:705px;width:730px}
 @media(max-width:760px){.hero-art.bird-owned.is-soarling{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-forest{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-wizard{--soarling-hero-top:-25px}.hero-art.bird-owned.is-soarling.land-king{--soarling-hero-top:-20px}.hero-art.bird-owned.is-soarling .bird-land-composite,.hero-art.bird-owned.is-soarling .owned-epic-land-details,.hero-art.bird-owned.is-soarling .owned-legendary-land-details{top:var(--soarling-hero-top);left:6%;width:88%}}
 
-/* Enlarge every Mythic bird while keeping the island's lower edge in view. */
-.hero-art.bird-owned.is-mythic .bird-land-composite{top:calc(var(--soarling-hero-top) - 25px);scale:1.25 1.13}
-.hero-art.bird-owned.is-mythic.land-wind{--soarling-hero-top:-53px}
-@media(max-width:760px){.hero-art.bird-owned.is-mythic .bird-land-composite{top:calc(var(--soarling-hero-top) - 8px);scale:1.14 1.08}.hero-art.bird-owned.is-mythic.land-wind{--soarling-hero-top:0px}}
+/* Align the visible bounds of all five local Mythic illustrations to the Artist hero. */
+.hero-art.bird-owned.is-mythic .bird-land-composite{top:var(--mythic-hero-top,-55px);left:calc(705px + var(--mythic-hero-left,0px));scale:var(--mythic-hero-scale-x,1.25) var(--mythic-hero-scale-y,1.13)}
+.hero-art.bird-owned.is-mythic.land-wind{--mythic-hero-top:-49px;--mythic-hero-left:14px;--mythic-hero-scale-x:1.245;--mythic-hero-scale-y:1.093}
+.hero-art.bird-owned.is-mythic.land-forest{--mythic-hero-top:-51px;--mythic-hero-left:9px;--mythic-hero-scale-x:1.263;--mythic-hero-scale-y:1.139}
+.hero-art.bird-owned.is-mythic.land-wizard{--mythic-hero-top:-48px;--mythic-hero-left:7px;--mythic-hero-scale-x:1.21;--mythic-hero-scale-y:1.154}
+.hero-art.bird-owned.is-mythic.land-king{--mythic-hero-top:-48px;--mythic-hero-left:-10px;--mythic-hero-scale-x:1.234;--mythic-hero-scale-y:1.15}
+@media(max-width:760px){
+  .hero-art.bird-owned.is-mythic .bird-land-composite{top:var(--mythic-mobile-top,-8px);left:calc(6% + var(--mythic-mobile-left,0%));scale:var(--mythic-mobile-scale-x,1.14) var(--mythic-mobile-scale-y,1.08)}
+  .hero-art.bird-owned.is-mythic.land-wind{--mythic-mobile-top:-5px;--mythic-mobile-left:1.7%;--mythic-mobile-scale-x:1.135;--mythic-mobile-scale-y:1.045}
+  .hero-art.bird-owned.is-mythic.land-forest{--mythic-mobile-top:-6px;--mythic-mobile-left:1.1%;--mythic-mobile-scale-x:1.152;--mythic-mobile-scale-y:1.089}
+  .hero-art.bird-owned.is-mythic.land-wizard{--mythic-mobile-top:-5px;--mythic-mobile-left:.9%;--mythic-mobile-scale-x:1.104;--mythic-mobile-scale-y:1.103}
+  .hero-art.bird-owned.is-mythic.land-king{--mythic-mobile-top:-5px;--mythic-mobile-left:-1.3%;--mythic-mobile-scale-x:1.125;--mythic-mobile-scale-y:1.099}
+}
 @media(max-width:620px){.has-legendary-magic>.soarling-artwork-glow{top:5px;width:clamp(112px,29vw,176.68px);filter:blur(60px);height:auto;aspect-ratio:1}}
 @media(prefers-reduced-motion:reduce){.has-legendary-magic>.soarling-artwork-glow{animation:none;opacity:1}}
 
@@ -764,10 +823,10 @@
 .arc-network-modal:has(.arc-network-feedback) .arc-network-actions{top:auto;bottom:24px}
 .arc-network-feedback{position:absolute;right:30px;bottom:82px;left:30px;margin:0;color:#e2d4f9;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:13px;line-height:1.35;text-align:center}
 .arc-network-feedback.is-error{color:#ffc3ce}
+.balance-alert-icon{position:absolute;top:60.95px;left:50%;display:block;width:80px;height:80px;object-fit:contain;transform:translateX(-50%)}
+.balance-alert-copy p{max-width:400px}
 .arc-flow-toast{position:fixed;z-index:10000;top:24px;left:50%;max-width:min(92vw,480px);padding:12px 20px;border:1px solid #edc76d;border-radius:12px;background:#171139;color:#fff;box-shadow:0 10px 35px rgba(16,6,45,.35);font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:14px;text-align:center;transform:translateX(-50%)}
-.funds-modal:has(.funds-flow-feedback){aspect-ratio:472.668/400}
-.funds-modal:has(.funds-flow-feedback) .funds-modal-actions{top:auto;bottom:24px}
-.funds-flow-feedback{position:absolute;right:30px;bottom:82px;left:30px;margin:0;color:#ecd599;font-family:"Be Vietnam Pro",Poppins,sans-serif;font-size:13px;line-height:1.35;text-align:center}
-.funds-flow-feedback.is-neutral{color:#e2d4f9}
-.funds-flow-feedback.is-error{color:#ffc3ce}
-@media(max-width:500px){.arc-network-icon{top:16.04%;width:20%;height:20%}.arc-network-feedback,.funds-flow-feedback{right:16px;bottom:22%;left:16px;font-size:clamp(11px,3.2vw,13px)}.arc-network-modal:has(.arc-network-feedback) .arc-network-actions,.funds-modal:has(.funds-flow-feedback) .funds-modal-actions{bottom:5%}}
+.funds-confirm>span{display:flex;align-items:center;justify-content:center;gap:8px}
+.funds-button-spinner{display:inline-block;width:16px;height:16px;flex:none;border:2px dotted rgba(255,255,255,.6);border-top-color:#fff;border-radius:50%;animation:minting-spin .8s linear infinite}
+@media(max-width:500px){.funds-modal:has(.funds-faucet-copy) .funds-usdc-icon{top:11%}.funds-faucet-copy{top:37%}.balance-alert-icon{top:11%;width:20%;height:20%}.balance-alert-copy{top:37%}.arc-network-icon{top:16.04%;width:20%;height:20%}.arc-network-feedback{right:16px;bottom:22%;left:16px;font-size:clamp(11px,3.2vw,13px)}.arc-network-modal:has(.arc-network-feedback) .arc-network-actions{bottom:5%}}
+@media(prefers-reduced-motion:reduce){.funds-button-spinner{animation:none}}

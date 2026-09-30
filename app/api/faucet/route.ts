@@ -29,6 +29,32 @@ function getConfig() {
   return { account, rpcUrl, chainId, amount, cooldownHours };
 }
 
+export async function GET(request: Request) {
+  const address = new URL(request.url).searchParams.get("address") || "";
+  if (!isAddress(address)) {
+    return Response.json({ message: "Invalid wallet address." }, { status: 400 });
+  }
+
+  try {
+    const cooldownHours = Number(process.env.FAUCET_COOLDOWN_HOURS || "24");
+    if (!Number.isFinite(cooldownHours) || cooldownHours < 0) throw new Error("Invalid faucet cooldown.");
+    const sql = await getDatabase();
+    const [claim] = await sql`
+      SELECT last_claimed_at FROM eggoria_faucet_claims
+      WHERE wallet_address = ${address.toLowerCase()} LIMIT 1
+    `;
+    const retryTime = claim ? new Date(claim.last_claimed_at).getTime() + cooldownHours * 60 * 60 * 1000 : 0;
+    return Response.json({ retryAt: retryTime > Date.now() ? new Date(retryTime).toISOString() : null }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    // The claims table is created on the first successful faucet request.
+    if (error && typeof error === "object" && "code" in error && error.code === "42P01") {
+      return Response.json({ retryAt: null }, { headers: { "Cache-Control": "no-store" } });
+    }
+    console.error("ARC faucet status failed:", error instanceof Error ? error.message : "Unknown faucet error");
+    return Response.json({ message: "Faucet status is temporarily unavailable." }, { status: 503 });
+  }
+}
+
 export async function POST(request: Request) {
   let body: { address?: unknown; message?: unknown; signature?: unknown };
   try {
@@ -113,6 +139,7 @@ export async function POST(request: Request) {
     return Response.json({
       amount,
       balance: Number(formatEther(recipientBalance)).toFixed(2),
+      retryAt: new Date(reservationTime.getTime() + cooldownHours * 60 * 60 * 1000).toISOString(),
       transactionHash,
       explorerUrl: `https://testnet.arcscan.app/tx/${transactionHash}`,
     });
