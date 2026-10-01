@@ -430,12 +430,12 @@
 /* Figma node 929:155 — connected owner evolution state. */
 .hero-wallet-state-loading{width:448px;height:230px;flex:none;visibility:hidden}.hero-art.is-state-loading .egg-glow-new,.hero-art.is-state-loading .island-new,.hero-art.is-state-loading .egg-new,.hero-art.is-state-loading .bird-new,.hero-art.is-state-loading .egg-burst-field{visibility:hidden}
 .bird-owner-wrap{position:relative;display:flex;width:448px;flex-direction:column;align-items:center;gap:8px}
-.bird-evolution-card{position:relative;width:448px;height:154px;overflow:hidden;padding:0;color:#fff;font-family:"Be Vietnam Pro",sans-serif;text-align:left}
+.bird-evolution-card{position:relative;width:448px;height:154px;overflow:hidden;padding:0;color:var(--text-on-dark-primary);font-family:"Be Vietnam Pro",sans-serif;text-align:left}
 .bird-evolution-frame{position:absolute;z-index:0;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}.bird-evolution-content{position:absolute;z-index:1;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 30px; top: 10px}
-.bird-stage-heading{display:flex;align-items:flex-start;justify-content:space-between}.bird-stage-heading>div{display:flex;flex-direction:column;gap:7px}.bird-stage-heading>div:last-child{text-align:right}.bird-stage-heading strong{font-size:14px;font-weight:500;line-height:1}.bird-stage-heading span{color:#dacff2;font-size:11px;font-weight:400;line-height:1}
+.bird-stage-heading{display:flex;align-items:flex-start;justify-content:space-between}.bird-stage-heading>div{display:flex;flex-direction:column;gap:7px}.bird-stage-heading>div:last-child{text-align:right}.bird-stage-heading strong{font-size:14px;font-weight:500;line-height:1}.bird-stage-heading span{color:var(--text-on-dark-secondary);font-size:12px;font-weight:400;line-height:1}
 .bird-checkin-track{display:flex;width:100%;margin-top:16px;align-items:center}.bird-checkin-step{display:flex;min-width:0;flex:1;align-items:center}.bird-checkin-step.is-first{flex:0 0 auto}.bird-checkin-marker{position:relative;z-index:1;width:24px;height:24px;flex:none;object-fit:contain}.bird-checkin-line{position:relative;z-index:0;width:auto;height:4px;min-width:0;flex:1;margin-inline:-2px;object-fit:fill}
 .bird-checkin-step{position:relative}.bird-checkin-button>span{display:flex;align-items:center;justify-content:center;gap:8px}.bird-checkin-step.is-newly-complete::after{position:absolute;z-index:2;top:50%;right:-4px;width:32px;height:32px;border:2px solid #d6a0ff;border-radius:50%;content:"";pointer-events:none;animation:checkin-ripple 600ms ease-out both}.bird-checkin-step.is-first.is-newly-complete::after{right:auto;left:-4px}.bird-checkin-step.is-newly-complete .bird-checkin-marker{animation:checkin-marker-awaken 650ms ease-out both}.bird-checkin-step.is-newly-complete .bird-checkin-line{animation:checkin-line-awaken 600ms ease-out both}@keyframes checkin-ripple{from{opacity:.9;transform:translateY(-50%) scale(.5)}to{opacity:0;transform:translateY(-50%) scale(1.8)}}@keyframes checkin-marker-awaken{0%{transform:scale(.8);filter:drop-shadow(0 0 0 #b66bff)}45%{transform:scale(1.3);filter:drop-shadow(0 0 9px #d7a7ff)}100%{transform:scale(1);filter:drop-shadow(0 0 5px #aa64f5)}}@keyframes checkin-line-awaken{from{clip-path:inset(0 100% 0 0);filter:brightness(1)}to{clip-path:inset(0);filter:brightness(1.25)}}@media(prefers-reduced-motion:reduce){.bird-checkin-step.is-newly-complete::after{display:none}.bird-checkin-step.is-newly-complete .bird-checkin-marker,.bird-checkin-step.is-newly-complete .bird-checkin-line{animation:none}}
-.bird-checkin-message{display:flex;min-height:20px;margin:12px 0 0;align-items:center;gap:8px;color:#e6dcf8;font-size:12px;font-weight:400;line-height:20px}.bird-checkin-message>img{display:block;width:20px;height:20px;flex:none;object-fit:contain}.bird-checkin-message>p{margin:0;font:inherit;transform:translateY(2px)}
+.bird-checkin-message{display:flex;min-height:20px;margin:12px 0 0;align-items:center;gap:8px;color:var(--text-on-dark-default);font-size:12px;font-weight:400;line-height:20px}.bird-checkin-message>img{display:block;width:20px;height:20px;flex:none;object-fit:contain}.bird-checkin-message>p{margin:0;font:inherit;transform:translateY(2px)}
 .bird-checkin-button{width:340px;height:66px;margin-top:8px;font-size:24px}.bird-checkin-button:disabled{cursor:not-allowed;filter:saturate(.7);opacity:.72}.bird-checkin-button:disabled:hover{transform:none}
 .bird-checkin-button.is-countdown{font-size:19px}@media(max-width:460px){.bird-checkin-button.is-countdown{font-size:15px}}
 .hero-copy>.bird-owner-wrap .login-note{display:block;width:auto;margin:0;color:var(--text-secondary-strong);font-family:"Be Vietnam Pro",sans-serif;font-size:14px;font-weight:400;white-space:nowrap}.bird-checkin-error{max-width:448px;margin:0;color:#8a2453;font-family:"Be Vietnam Pro",sans-serif;font-size:11px;text-align:center}
@@ -452,27 +452,29 @@
 @media(max-width:440px){.hero-connect,.bird-checkin-button,.bird-checkin-button.is-countdown{width:290px;height:62px;font-size:18px}}
 /* Completed Soarling hero uses the same desktop .hero-copy position as Get Your Egg. */
 .hero-new.is-final-form .hero-copy h1{width:100%;font-family:"Playfair Display",serif;font-size:60px;font-weight:600;line-height:1.15;letter-spacing:0}
-.final-form-panel{display:flex;width:100%;flex-direction:column;align-items:center}
-.final-stage-card{position:relative;width:480px;height:175px;flex:none;color:#fff9f3}
+.final-form-panel{display:flex;width:100%;flex-direction:column;align-items:center; gap: 16px;}
+.final-stage-card{position:relative;width:480px;height:175px;flex:none;color:var(--text-on-dark-primary)}
 .final-stage-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
 .final-stage-journey{position:relative;z-index:1;display:grid;height:100%;grid-template-columns:76px 85px 76px 85px 100px;justify-content: center;align-content:center;column-gap: 0;padding:24px 25px 22px}
 .final-stage-item{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:end;gap:2px;font-family:"Be Vietnam Pro",sans-serif;font-size:15px;font-weight:500;line-height:1.2}
 .final-stage-picture{display:grid;width:96px;height:90px;overflow:hidden;place-items:end center}
 .final-stage-picture img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain}
 .final-stage-item:first-child .final-stage-picture img{height:65px}
-.final-stage-item:nth-of-type(2) .final-stage-picture img{height:65px}
+.final-stage-picture .final-stage-fledgling{height:85px}
 .final-stage-item:last-child .final-stage-picture img{height:90px}
 .final-stage-connector{align-self:center;margin-top:28px}
 .final-stage-connector img{display:block;width:100%;height:auto;filter:drop-shadow(0 0 5px rgba(255,222,139,.5))}
-.final-form-actions{display:flex;gap:20px;margin-top:28px}
+.final-form-actions{display:flex;gap:12px}
 .final-form-action{width:300px;height:60px;font-family:"Be Vietnam Pro",sans-serif;font-size:20px;font-weight:500;text-decoration:none;transition:filter 180ms ease}
 .figma-button.final-form-action:not(:disabled):hover,.figma-button.final-form-action:not(:disabled):active{transform:none;filter:brightness(1.08)}
 .final-form-action-secondary{overflow:hidden;border-radius:999px;color:var(--text-default)}
 .final-form-action-secondary>img{top:-25.59%;left:-1.92%;width:103.94%;height:153.97%}
 .final-form-action-secondary>span:not(.google-hitbox){text-shadow:none}
-.final-form-note{margin:12px 0 0;color:var(--text-secondary-strong);font-family:"Be Vietnam Pro",sans-serif;font-size:14px;font-weight:400;line-height:1.4;text-align:center}
+.final-form-note{margin:0;color:var(--text-secondary-strong);font-family:"Be Vietnam Pro",sans-serif;font-size:14px;font-weight:400;line-height:1.4;text-align:center}
 .final-form-rarity{--final-rarity-color:#ffe099;position:absolute;z-index:9;top:-8px;left:calc(73% - 75px);display:grid;min-width:150px;height:31px;padding:0 12px;border:2px solid #efa92b;border-radius:7px;background:linear-gradient(180deg,#422073 0%,#160c3f 55%,#32205b 100%);box-shadow:0 0 0 2px #6b338f,0 3px 10px #1b0d54a8,inset 0 0 8px #ffc35280;color:var(--final-rarity-color);font-family:"Be Vietnam Pro",sans-serif;font-size:15px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;white-space:nowrap;place-items:center;pointer-events:none}
 .final-form-rarity.rarity-common{--final-rarity-color:#86efac}.final-form-rarity.rarity-rare{--final-rarity-color:#93c5fd}.final-form-rarity.rarity-epic{--final-rarity-color:#f0abfc}.final-form-rarity.rarity-legendary{--final-rarity-color:#fca5a5}
+/* Mythic hero artwork already includes its rarity badge. */
+.hero-new.is-final-form:has(.hero-art.bird-owned.is-mythic) .final-form-rarity{display:none}
 .hero-new.is-final-form:has(.hero-art.bird-owned)>.spark-field,.hero-new.is-final-form:has(.hero-art.bird-owned)>.balloon{display:block}
 @media(max-width:760px){
   .landing:has(.hero-new.is-final-form){min-height:1320px}
@@ -484,7 +486,7 @@
   .final-stage-journey{padding:3.75% 5.2% 4.5%;grid-template-columns:76px 85px 76px 85px 100px;justify-content:center;align-content:center;column-gap:0}
   .final-stage-item{font-size:clamp(10px,2.7vw,14px)}
   .final-stage-picture{width:100%;height:clamp(54px,17vw,90px)}
-  .final-stage-picture img,.final-stage-item:first-child .final-stage-picture img,.final-stage-item:nth-of-type(2) .final-stage-picture img,.final-stage-item:last-child .final-stage-picture img{max-width:100%;max-height:100%}
+  .final-stage-picture img,.final-stage-item:first-child .final-stage-picture img,.final-stage-picture .final-stage-fledgling,.final-stage-item:last-child .final-stage-picture img{max-width:100%;max-height:100%}
   .final-form-actions{flex-wrap:wrap;justify-content:center;gap:12px;margin-top:20px}
   .final-form-note{max-width:90vw;font-size:12px}
   .final-form-rarity{top:565px;left:50%;transform:translateX(-50%)}

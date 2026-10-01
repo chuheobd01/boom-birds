@@ -1931,7 +1931,7 @@ export default function EggoriaLanding({
               <div className="final-stage-journey">
                 <div className="final-stage-item"><span className="final-stage-picture"><img src={asset(landFinalStageAssets[ownedBird.land]?.[0] ?? landFinalStageAssets[2][0])} alt="" /></span><span>Hatchling</span></div>
                 <span className="final-stage-connector" aria-hidden="true"><img src={asset("final-stage-light.png")} alt="" /></span>
-                <div className="final-stage-item"><span className="final-stage-picture"><img src={asset(landFinalStageAssets[ownedBird.land]?.[1] ?? landFinalStageAssets[2][1])} alt="" /></span><span>Fledgling</span></div>
+                <div className="final-stage-item"><span className="final-stage-picture"><img className="final-stage-fledgling" src={asset(landFinalStageAssets[ownedBird.land]?.[1] ?? landFinalStageAssets[2][1])} alt="" /></span><span>Fledgling</span></div>
                 <span className="final-stage-connector" aria-hidden="true"><img src={asset("final-stage-light.png")} alt="" /></span>
                 <div className="final-stage-item"><span className="final-stage-picture"><img src={ownedBird.rarity === 4 ? asset(landFinalStageAssets[ownedBird.land]?.[2] ?? landFinalStageAssets[2][2]) : asset(getSoarlingResultAsset(ownedBird))} alt="" /></span><span>Soarling</span></div>
               </div>
