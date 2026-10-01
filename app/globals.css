@@ -773,6 +773,14 @@
 .hero-art.bird-owned.is-mythic.land-forest{--mythic-hero-top:-51px;--mythic-hero-left:9px;--mythic-hero-scale-x:1.263;--mythic-hero-scale-y:1.139}
 .hero-art.bird-owned.is-mythic.land-wizard{--mythic-hero-top:-48px;--mythic-hero-left:7px;--mythic-hero-scale-x:1.21;--mythic-hero-scale-y:1.154}
 .hero-art.bird-owned.is-mythic.land-king{--mythic-hero-top:-48px;--mythic-hero-left:-10px;--mythic-hero-scale-x:1.234;--mythic-hero-scale-y:1.15}
+/* Wind Mythic trial: compose the supplied artwork in the original hero image bounds. */
+.wind-mythic-composite{display:block;aspect-ratio:1568/1705;isolation:isolate}
+.wind-mythic-composite>img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.wind-mythic-glow{z-index:0;top:0;left:5%;width:90%}
+.wind-mythic-ring{z-index:1;top:24%;left:-1.5%;width:99%}
+.wind-mythic-island{z-index:2;top:34%;left:1%;width:94%}
+.wind-mythic-bird{z-index:3;top:11%;left:20%;width:425px}
+.wind-mythic-badge{z-index:4;top:6%;left:36.5%;width:190px}
 @media(max-width:760px){
   .hero-art.bird-owned.is-mythic .bird-land-composite{top:var(--mythic-mobile-top,-8px);left:calc(6% + var(--mythic-mobile-left,0%));scale:var(--mythic-mobile-scale-x,1.14) var(--mythic-mobile-scale-y,1.08)}
   .hero-art.bird-owned.is-mythic.land-wind{--mythic-mobile-top:-5px;--mythic-mobile-left:1.7%;--mythic-mobile-scale-x:1.135;--mythic-mobile-scale-y:1.045}

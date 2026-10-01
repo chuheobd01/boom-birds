@@ -123,6 +123,7 @@ const landEpicSoarlingResultAssets = ["soarling-epic-forest.png", "soarling-epic
 const landLegendarySoarlingResultAssets = ["soarling-legendary-forest.png", "soarling-legendary-wind.png", "soarling-legendary-wizard-v2.png", "soarling-legendary-artist.png", "soarling-legendary-king.png"] as const;
 const landMythicSoarlingResultAssets = ["soarling-mythic-forest.png", "soarling-mythic-wind.png", "soarling-mythic-wizard.png", "soarling-mythic-artist.png", "soarling-mythic-king.png"] as const;
 const landMythicHeroAssets = ["soarling-mythic-hero-forest.png", "soarling-mythic-hero-wind.png", "soarling-mythic-hero-wizard.png", "soarling-mythic-hero-artist.png", "soarling-mythic-hero-king.png"] as const;
+const windMythicHeroLayers = ["wind-mythic-layer-glow.png", "wind-mythic-layer-ring.png", "wind-mythic-layer-island.png", "wind-mythic-layer-bird.png", "wind-mythic-layer-badge.png"] as const;
 const landFinalStageAssets = [
   ["final-stage-forest-hatchling.png", "final-stage-forest-fledgling.png", "final-stage-forest-mythic.png"],
   ["final-stage-wind-hatchling.png", "final-stage-wind-fledgling.png", "final-stage-wind-mythic.png"],
@@ -1765,7 +1766,10 @@ export default function EggoriaLanding({
       } else if (stageBeforeCheckIn === 1 && evolvedBird?.stage === 2) {
         const popupArtwork = asset(getSoarlingResultAsset(evolvedBird));
         const heroArtwork = evolvedBird.rarity === 4 ? getOwnedHeroArtwork(evolvedBird) : evolvedBird.image || popupArtwork;
-        await Promise.all([decodeImage(heroArtwork), decodeImage(popupArtwork)]);
+        const heroArtworkSources = evolvedBird.rarity === 4 && evolvedBird.land === 1
+          ? windMythicHeroLayers.map((layer) => asset(layer))
+          : [heroArtwork];
+        await Promise.all([...heroArtworkSources.map(decodeImage), decodeImage(popupArtwork)]);
         setSoarlingTransactionHash(result.transactionHash);
         setSoarlingResult(evolvedBird);
       } else {
@@ -2090,12 +2094,25 @@ export default function EggoriaLanding({
               <i className="owned-legendary-land-light owned-legendary-land-light-right" />
             </span>
           )}
-          {compositeBird && <img
-            key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
-            className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
-            src={getOwnedHeroArtwork(compositeBird)}
-            alt={`${landNames[compositeBird.land]} ${stageNames[compositeBird.stage] ?? "bird"} on its island`}
-          />}
+          {compositeBird && (compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 1
+            ? <span
+              key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
+              className="bird-land-composite wind-mythic-composite"
+              role="img"
+              aria-label="Wind Soarling on its island"
+            >
+              <img className="wind-mythic-glow" src={asset("wind-mythic-layer-glow.png")} alt="" />
+              <img className="wind-mythic-ring" src={asset("wind-mythic-layer-ring.png")} alt="" />
+              <img className="wind-mythic-island" src={asset("wind-mythic-layer-island.png")} alt="" />
+              <img className="wind-mythic-bird" src={asset("wind-mythic-layer-bird.png")} alt="" />
+              <img className="wind-mythic-badge" src={asset("wind-mythic-layer-badge.png")} alt="" />
+            </span>
+            : <img
+              key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
+              className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
+              src={getOwnedHeroArtwork(compositeBird)}
+              alt={`${landNames[compositeBird.land]} ${stageNames[compositeBird.stage] ?? "bird"} on its island`}
+            />)}
           {ownedBird?.landAssigned
             ? null
             : <>
