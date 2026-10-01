@@ -2,12 +2,12 @@
 
 /* eslint-disable @next/next/no-img-element -- exact Figma exports use native image crops */
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { createThirdwebClient, defineChain, eth_estimateGas, eth_gasPrice, getContract, getRpcClient, prepareContractCall, readContract, sendTransaction, waitForReceipt } from "thirdweb";
 import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect, useIsAutoConnecting } from "thirdweb/react";
 import { getUserEmail } from "thirdweb/wallets/in-app";
-import { createWallet, getWalletBalance, inAppWallet } from "thirdweb/wallets";
+import { createWallet, getWalletBalance, inAppWallet, injectedProvider } from "thirdweb/wallets";
 import { decodeEventLog, encodeFunctionData, isAddress } from "viem";
 
 import { EGGORIA_MAX_SUPPLY, eggoriaBirdsAbi } from "@/lib/eggoria-birds";
@@ -22,6 +22,7 @@ type GoogleCredential = { credential: string };
 type WalletKind = "google" | "metamask" | "";
 type WalletErrorKind = "missing-metamask" | "thirdweb-config" | "google-cancelled" | "google-popup-blocked" | "google-failed" | "metamask-closed" | "metamask-cancelled" | "metamask-pending" | "metamask-locked" | "metamask-failed" | "";
 type NetworkDialog = "add" | "switch" | null;
+type NetworkResumeAction = "hero" | "checkin" | "mint" | "evolve" | null;
 type BalanceAlertKind = "low" | "out" | "cooldown";
 type FundsPhase = "idle" | "signing" | "sending" | "updating";
 type FundsErrorKind = "" | "cancelled" | "cooldown" | "empty" | "timeout" | "error";
@@ -68,7 +69,7 @@ const ARC_TESTNET = defineChain({
   blockExplorers: [{ name: "ArcScan", url: "https://testnet.arcscan.app" }],
   testnet: true,
 });
-const ARC_CHAIN_ID_HEX = "0x4cef52";
+const ARC_CHAIN_ID_HEX = `0x${ARC_TESTNET.id.toString(16)}`;
 const ARC_NETWORK_PARAMS = {
   chainId: ARC_CHAIN_ID_HEX,
   chainName: "ARC Testnet",
@@ -82,18 +83,23 @@ const networkName = (chainId: number | null) => {
     [ARC_TESTNET.id]: "ARC Testnet",
     1: "Ethereum",
     10: "Optimism",
-    56: "BNB Smart Chain",
+    56: "BNB Chain",
     137: "Polygon",
     8453: "Base",
-    42161: "Arbitrum",
+    42161: "Arbitrum One",
     11155111: "Sepolia",
   };
-  return names[chainId] ?? `Chain ${chainId}`;
+  return names[chainId] ?? `network (chain ID ${chainId})`;
 };
 const parseChainId = (value: unknown) => {
   const chainId = Number(value);
   return Number.isSafeInteger(chainId) && chainId > 0 ? chainId : null;
 };
+const normalizeChainId = (value: unknown) => {
+  const chainId = parseChainId(value);
+  return chainId === null ? null : `0x${chainId.toString(16)}`.toLowerCase();
+};
+const isArcChainId = (value: unknown) => normalizeChainId(value) === ARC_CHAIN_ID_HEX.toLowerCase();
 const googleInAppWallet = inAppWallet({ auth: { mode: "popup", options: ["google"] } });
 const metaMaskWallet = createWallet("io.metamask");
 const supportedWallets = [googleInAppWallet, metaMaskWallet];
@@ -304,6 +310,9 @@ export default function EggoriaLanding({
   const [networkBusy, setNetworkBusy] = useState(false);
   const [networkFeedback, setNetworkFeedback] = useState<"" | "error">("");
   const [metaMaskChainId, setMetaMaskChainId] = useState<number | null>(null);
+  const [arcNetworkMissing, setArcNetworkMissing] = useState(false);
+  const [networkCtaOverride, setNetworkCtaOverride] = useState(false);
+  const [networkResumeAction, setNetworkResumeAction] = useState<NetworkResumeAction>(null);
   const [toast, setToast] = useState("");
   const [fundsModalOpen, setFundsModalOpen] = useState(false);
   const [balanceAlertKind, setBalanceAlertKind] = useState<BalanceAlertKind>("low");
@@ -387,6 +396,11 @@ export default function EggoriaLanding({
   const hideNetworkDialog = useCallback(() => {
     setNetworkDialog(null);
   }, []);
+  const dismissNetworkDialog = useCallback(() => {
+    setNetworkResumeAction(null);
+    setNetworkCtaOverride(true);
+    hideNetworkDialog();
+  }, [hideNetworkDialog]);
   const thirdwebClient = useMemo(
     () => thirdwebClientId ? createThirdwebClient({ clientId: thirdwebClientId }) : null,
     [thirdwebClientId],
@@ -399,7 +413,9 @@ export default function EggoriaLanding({
   );
   const activeAccount = useActiveAccount();
   const activeWallet = useActiveWallet();
-  const isMetaMaskWallet = walletKind === "metamask" || activeWallet?.id === "io.metamask";
+  // Only the embedded Google wallet is exempt; an unidentified connected wallet
+  // must never bypass the network guard while its type is still resolving.
+  const isMetaMaskWallet = Boolean(activeAccount) && (activeWallet ? activeWallet.id !== "inApp" : walletKind !== "google");
   const isAutoConnecting = useIsAutoConnecting();
   const { connect, isConnecting } = useConnect();
   const { disconnect } = useDisconnect();
@@ -547,7 +563,10 @@ export default function EggoriaLanding({
           if (!checkInSubmitting) setEvolutionCheckInOpen(false);
           return;
         }
-        hideNetworkDialog();
+        if (networkDialog) {
+          if (!networkBusy) dismissNetworkDialog();
+          return;
+        }
         closeBalanceAlert();
         setMintBlocker(null);
         setWalletModalOpen(false);
@@ -561,7 +580,7 @@ export default function EggoriaLanding({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", closeOnEscape);
     };
-  }, [balanceAlertOpen, mintBlocker, claimModalOpen, checkInSubmitting, closeBalanceAlert, closeFundsModal, completeEvolution, completeHatch, completeSoarlingEvolution, evolutionCheckInOpen, evolutionResult, fundsModalOpen, hatchResult, hideNetworkDialog, networkDialog, soarlingResult, walletModalOpen]);
+  }, [balanceAlertOpen, mintBlocker, claimModalOpen, checkInSubmitting, closeBalanceAlert, closeFundsModal, completeEvolution, completeHatch, completeSoarlingEvolution, dismissNetworkDialog, evolutionCheckInOpen, evolutionResult, fundsModalOpen, hatchResult, networkBusy, networkDialog, soarlingResult, walletModalOpen]);
 
   useEffect(() => {
     if (!walletMenuOpen) return;
@@ -603,6 +622,10 @@ export default function EggoriaLanding({
   };
 
   const getMetaMaskProvider = useCallback(() => {
+    // thirdweb connects io.metamask through this EIP-6963 provider. window.ethereum
+    // may point to a different installed wallet (and therefore a different chain).
+    const connectedProvider = injectedProvider("io.metamask");
+    if (connectedProvider) return connectedProvider as EthereumProvider;
     const injected = window.ethereum;
     if (!injected) return undefined;
     return injected.providers?.find((provider) => provider.isMetaMask)
@@ -628,10 +651,10 @@ export default function EggoriaLanding({
     }
     const chainId = parseChainId(await provider.request({ method: "eth_chainId" }));
     setMetaMaskChainId(chainId);
-    return chainId === ARC_TESTNET.id;
+    return isArcChainId(chainId);
   }, [getMetaMaskProvider]);
 
-  const requireArcNetwork = useCallback(async () => {
+  const requireArcNetwork = useCallback(async (resumeAction: NetworkResumeAction = null) => {
     if (!isMetaMaskWallet) return true;
     try {
       if (await checkArcNetwork() === true) return true;
@@ -643,9 +666,10 @@ export default function EggoriaLanding({
     closeBalanceAlert();
     setClaimModalOpen(false);
     setEvolutionCheckInOpen(false);
-    showNetworkDialog("switch");
+    if (resumeAction) setNetworkResumeAction(resumeAction);
+    showNetworkDialog(arcNetworkMissing ? "add" : "switch");
     return false;
-  }, [checkArcNetwork, closeBalanceAlert, isMetaMaskWallet, showNetworkDialog]);
+  }, [arcNetworkMissing, checkArcNetwork, closeBalanceAlert, isMetaMaskWallet, showNetworkDialog]);
 
   const requestArcNetwork = async () => {
     if (!networkDialog || networkBusy) return;
@@ -657,22 +681,30 @@ export default function EggoriaLanding({
     setNetworkBusy(true);
     setNetworkFeedback("");
     try {
-      if (networkDialog === "add") {
-        await provider.request({ method: "wallet_addEthereumChain", params: [ARC_NETWORK_PARAMS] });
-      }
       if (!await checkArcNetwork()) {
-        await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_ID_HEX }] });
+        try {
+          await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_ID_HEX }] });
+        } catch (error) {
+          if (readProviderErrorCode(error) !== 4902) throw error;
+          setArcNetworkMissing(true);
+          showNetworkDialog("add");
+          await provider.request({ method: "wallet_addEthereumChain", params: [ARC_NETWORK_PARAMS] });
+          if (!await checkArcNetwork()) {
+            await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_ID_HEX }] });
+          }
+        }
       }
       if (!await checkArcNetwork()) throw new Error("ARC Testnet is not active yet.");
+      setArcNetworkMissing(false);
+      setNetworkCtaOverride(false);
       hideNetworkDialog();
       setToast("You're on ARC Testnet.");
     } catch (error) {
-      if (networkDialog === "switch" && readProviderErrorCode(error) === 4902) {
-        showNetworkDialog("add");
-      } else {
-        const code = readProviderErrorCode(error);
-        setNetworkFeedback(code === 4001 || code === -32002 ? "" : "error");
-      }
+      const code = readProviderErrorCode(error);
+      if (code === 4001) {
+        dismissNetworkDialog();
+        setToast("You closed the MetaMask window.");
+      } else setNetworkFeedback("error");
     } finally {
       setNetworkBusy(false);
     }
@@ -684,7 +716,7 @@ export default function EggoriaLanding({
   const normalizedWalletAddress = walletAddress.toLowerCase();
   const connectionLabel = walletAddress ? shortAddress(walletAddress) : "Get Your Egg";
   const hasTestFunds = Boolean(walletAddress) && Number(arcBalance) >= requiredMintBalance;
-  const wrongMetaMaskNetwork = Boolean(walletAddress && isMetaMaskWallet && metaMaskChainId !== null && metaMaskChainId !== ARC_TESTNET.id);
+  const wrongMetaMaskNetwork = Boolean(walletAddress && isMetaMaskWallet && !isArcChainId(metaMaskChainId));
   const walletNetworkName = isMetaMaskWallet ? networkName(metaMaskChainId) : ARC_TESTNET.name;
   const faucetCooldownActive = Boolean(faucetRetryAt && new Date(faucetRetryAt).getTime() > currentTimeMs);
   const eggoriaStateLoading = Boolean(walletAddress) && eggoriaStateAddress !== normalizedWalletAddress;
@@ -696,6 +728,9 @@ export default function EggoriaLanding({
     if (!walletAddress || !isMetaMaskWallet) {
       Promise.resolve().then(() => {
         setMetaMaskChainId(null);
+        setArcNetworkMissing(false);
+        setNetworkCtaOverride(false);
+        setNetworkResumeAction(null);
         hideNetworkDialog();
         closeBalanceAlert();
       });
@@ -713,15 +748,21 @@ export default function EggoriaLanding({
           : parseChainId(reportedChainId);
         if (!active || currentRevision !== revision) return;
         setMetaMaskChainId(chainId);
-        const ready = chainId === ARC_TESTNET.id;
+        const ready = isArcChainId(chainId);
         if (!ready) {
           setFundsModalOpen(false);
           closeBalanceAlert();
           setClaimModalOpen(false);
           setEvolutionCheckInOpen(false);
           setNetworkFeedback("");
+          if (claimModalOpen || evolutionCheckInOpen) {
+            setNetworkResumeAction(claimModalOpen ? "mint" : "evolve");
+            showNetworkDialog(arcNetworkMissing ? "add" : "switch");
+          }
         } else {
-          hideNetworkDialog();
+          setArcNetworkMissing(false);
+          setNetworkCtaOverride(false);
+          if (!networkBusy) hideNetworkDialog();
         }
       } catch {
         if (!active || currentRevision !== revision) return;
@@ -729,6 +770,10 @@ export default function EggoriaLanding({
         setFundsModalOpen(false);
         setClaimModalOpen(false);
         setEvolutionCheckInOpen(false);
+        if (claimModalOpen || evolutionCheckInOpen) {
+          setNetworkResumeAction(claimModalOpen ? "mint" : "evolve");
+          showNetworkDialog(arcNetworkMissing ? "add" : "switch");
+        }
       }
     };
     void updateNetwork();
@@ -750,7 +795,7 @@ export default function EggoriaLanding({
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [activeWallet, closeBalanceAlert, getMetaMaskProvider, hideNetworkDialog, isMetaMaskWallet, walletAddress]);
+  }, [activeWallet, arcNetworkMissing, claimModalOpen, closeBalanceAlert, evolutionCheckInOpen, getMetaMaskProvider, hideNetworkDialog, isMetaMaskWallet, networkBusy, showNetworkDialog, walletAddress]);
 
   const findOwnedTokenId = useCallback(async (address: string, supply: number) => {
     if (!eggoriaContract || !isAddress(address)) return null;
@@ -1098,22 +1143,27 @@ export default function EggoriaLanding({
     const updateNetworkFee = async () => {
       if (networkFeeRequestRef.current) return;
       networkFeeRequestRef.current = true;
-      const provider = getMetaMaskProvider();
-      if (!provider) {
+      const provider = isMetaMaskWallet ? getMetaMaskProvider() : undefined;
+      if (isMetaMaskWallet && !provider) {
         if (active && !lastNetworkFeeRef.current) setNetworkFee("Unavailable");
         networkFeeRequestRef.current = false;
         return;
       }
 
       try {
-        const chainId = await provider.request({ method: "eth_chainId" });
-        if (chainId !== "0x4cef52") throw new Error("MetaMask is not connected to ARC Testnet");
-
         const data = encodeFunctionData({ abi: eggoriaBirdsAbi, functionName: "mint", args: [] });
-        const transaction = { from: walletAddress, to: eggoriaBirdsAddress, data };
-        const [gasLimitResult, gasPriceResult] = await Promise.all([
+        const transaction = { from: walletAddress as `0x${string}`, to: eggoriaBirdsAddress, data };
+        const rpcRequest = thirdwebClient ? getRpcClient({ client: thirdwebClient, chain: ARC_TESTNET }) : null;
+        if (!provider && !rpcRequest) throw new Error("Network fee estimate is unavailable");
+        if (provider && !isArcChainId(await provider.request({ method: "eth_chainId" }))) {
+          throw new Error("MetaMask is not connected to ARC Testnet");
+        }
+        const [gasLimitResult, gasPriceResult] = provider ? await Promise.all([
           provider.request({ method: "eth_estimateGas", params: [transaction] }),
           provider.request({ method: "eth_gasPrice" }),
+        ]) : await Promise.all([
+          rpcRequest!({ method: "eth_estimateGas", params: [transaction] }),
+          rpcRequest!({ method: "eth_gasPrice" }),
         ]);
         if (typeof gasLimitResult !== "string" || typeof gasPriceResult !== "string") {
           throw new Error("MetaMask fee estimate is unavailable");
@@ -1143,7 +1193,7 @@ export default function EggoriaLanding({
       active = false;
       window.clearInterval(interval);
     };
-  }, [claimModalOpen, claimSubmitting, eggoriaBirdsAddress, getMetaMaskProvider, walletAddress]);
+  }, [claimModalOpen, claimSubmitting, eggoriaBirdsAddress, getMetaMaskProvider, isMetaMaskWallet, thirdwebClient, walletAddress]);
 
   useEffect(() => {
     if (!evolutionCheckInOpen || !ownedBird || !walletAddress || !thirdwebClient || !isAddress(eggoriaBirdsAddress)) return;
@@ -1277,7 +1327,8 @@ export default function EggoriaLanding({
     setFundsModalOpen(true);
   };
 
-  const openMintModal = () => {
+  const openMintModal = async () => {
+    if (!await requireArcNetwork("mint")) return;
     if (walletAlreadyMinted) {
       setMintBlocker("already");
       return;
@@ -1325,14 +1376,14 @@ export default function EggoriaLanding({
       openWallet();
       return;
     }
-    if (wrongMetaMaskNetwork) {
-      showNetworkDialog("switch");
+    if (networkCtaOverride && wrongMetaMaskNetwork) {
+      await requireArcNetwork("hero");
       return;
     }
     heroCheckingRef.current = true;
     setHeroChecking(true);
     try {
-      if (!await requireArcNetwork()) return;
+      if (!await requireArcNetwork("hero")) return;
       if (!hasTestFunds) {
         const retryAt = await readFaucetRetryAt(walletAddress);
         setFaucetRetryAt(retryAt);
@@ -1346,7 +1397,7 @@ export default function EggoriaLanding({
         showBalanceAlert(alertKind, balance);
         return;
       }
-      openMintModal();
+      void openMintModal();
     } finally {
       heroCheckingRef.current = false;
       setHeroChecking(false);
@@ -1354,13 +1405,13 @@ export default function EggoriaLanding({
   };
 
   const handleBalanceAlertAction = async () => {
-    if (!walletAddress || !await requireArcNetwork()) return;
+    if (!walletAddress || !await requireArcNetwork("hero")) return;
     if (balanceAlertKind === "cooldown") {
       if (faucetCooldownActive) return;
       const balance = await getCurrentArcBalance();
       if (balance >= requiredMintBalance) {
         closeBalanceAlert();
-        openMintModal();
+        void openMintModal();
         return;
       }
       const retryAt = await readFaucetRetryAt(walletAddress);
@@ -1390,7 +1441,7 @@ export default function EggoriaLanding({
     setFundsSending(true);
     setFundsPhase("signing");
     try {
-      if (!await requireArcNetwork()) return;
+      if (!await requireArcNetwork("hero")) return;
       const message = `Eggoria ARC Testnet Faucet\nAddress: ${walletAddress}\nTimestamp: ${Date.now()}`;
       const signature = await activeAccount.signMessage({ message });
       setFundsPhase("sending");
@@ -1486,7 +1537,7 @@ export default function EggoriaLanding({
         return;
       }
 
-      if (!await requireArcNetwork()) return;
+      if (!await requireArcNetwork("mint")) return;
       const mintBalance = await getCurrentArcBalance();
       if (mintModalDismissedRef.current) return;
       if (mintBalance < requiredMintBalance) {
@@ -1499,7 +1550,7 @@ export default function EggoriaLanding({
         method: "mint",
         params: [],
       });
-      if (!await requireArcNetwork()) return;
+      if (!await requireArcNetwork("mint")) return;
       if (mintModalDismissedRef.current) return;
       setMintPhase("waiting");
       const transactionResult = await sendTransaction({ transaction, account: activeAccount });
@@ -1650,6 +1701,12 @@ export default function EggoriaLanding({
     }
   };
 
+  const currentUtcDay = BigInt(Math.floor(currentTimeMs / MILLISECONDS_PER_DAY));
+  const checkedInToday = Boolean(ownedBird && ownedBird.lastCheckInDay > BigInt(0) && ownedBird.lastCheckInDay === currentUtcDay);
+  const nextCheckInAtMs = checkedInToday && ownedBird ? (Number(ownedBird.lastCheckInDay) + 1) * MILLISECONDS_PER_DAY : null;
+  const checkInLocked = checkedInToday || checkInSyncPending !== null;
+  const nextCheckInTime = nextCheckInAtMs ? formatCooldown(new Date(nextCheckInAtMs).toISOString(), currentTimeMs) : "";
+
   const checkInBird = async () => {
     if (!activeAccount || !eggoriaContract || !ownedBird || checkInSubmittingRef.current || checkInSubmitting || checkInLocked) return false;
     if (!ownedBird.landAssigned) {
@@ -1665,7 +1722,7 @@ export default function EggoriaLanding({
     let confirmedOnChain = false;
     let transactionHash = "";
     try {
-      if (!await requireArcNetwork()) return false;
+      if (!await requireArcNetwork(evolutionCheckInOpen ? "evolve" : "checkin")) return false;
       const balance = await getCurrentArcBalance();
       const alertKind = getBalanceAlertKind(balance);
       if (alertKind === "out") {
@@ -1679,7 +1736,7 @@ export default function EggoriaLanding({
         method: "checkIn",
         params: [ownedBird.tokenId],
       });
-      if (!await requireArcNetwork()) return false;
+      if (!await requireArcNetwork(evolutionCheckInOpen ? "evolve" : "checkin")) return false;
       const result = await sendTransaction({ transaction, account: activeAccount });
       transactionHash = result.transactionHash;
       const receipt = await waitForReceipt(result);
@@ -1736,12 +1793,9 @@ export default function EggoriaLanding({
     }
   };
 
-  const handleCheckInClick = () => {
+  const handleCheckInClick = async () => {
     if (checkInSubmitting || checkInSyncPending || checkInLocked) return;
-    if (wrongMetaMaskNetwork) {
-      showNetworkDialog("switch");
-      return;
-    }
+    if (!await requireArcNetwork("checkin")) return;
     const isFledglingCheckpoint = ownedBird?.stage === 0 && ownedBird.checkIns === 9;
     const isSoarlingCheckpoint = ownedBird?.stage === 1 && ownedBird.checkIns === 19;
     if (isFledglingCheckpoint || isSoarlingCheckpoint) {
@@ -1759,6 +1813,21 @@ export default function EggoriaLanding({
     if (completed) setEvolutionCheckInOpen(false);
   };
 
+  const resumeNetworkFlow = useEffectEvent((action: Exclude<NetworkResumeAction, null>) => {
+    if (action === "hero") void handleHeroAction();
+    if (action === "checkin" || action === "evolve") void handleCheckInClick();
+    if (action === "mint") void openMintModal();
+  });
+
+  useEffect(() => {
+    if (!networkResumeAction || !isMetaMaskWallet || !isArcChainId(metaMaskChainId) || networkDialog || networkBusy) return;
+    const action = networkResumeAction;
+    queueMicrotask(() => {
+      setNetworkResumeAction(null);
+      resumeNetworkFlow(action);
+    });
+  }, [isMetaMaskWallet, metaMaskChainId, networkBusy, networkDialog, networkResumeAction]);
+
   const currentStage = ownedBird ? stageNames[ownedBird.stage] ?? "Unknown" : "";
   const nextStage = !ownedBird || ownedBird.stage === 0
     ? "Fledgling"
@@ -1775,11 +1844,6 @@ export default function EggoriaLanding({
         : 10
     : 0;
   const checkInsRemaining = Math.max(0, 10 - stageProgress);
-  const currentUtcDay = BigInt(Math.floor(currentTimeMs / MILLISECONDS_PER_DAY));
-  const checkedInToday = Boolean(ownedBird && ownedBird.lastCheckInDay > BigInt(0) && ownedBird.lastCheckInDay === currentUtcDay);
-  const nextCheckInAtMs = checkedInToday && ownedBird ? (Number(ownedBird.lastCheckInDay) + 1) * MILLISECONDS_PER_DAY : null;
-  const checkInLocked = checkedInToday || checkInSyncPending !== null;
-  const nextCheckInTime = nextCheckInAtMs ? formatCooldown(new Date(nextCheckInAtMs).toISOString(), currentTimeMs) : "";
   const ownedLandClass = ownedBird?.landAssigned
     ? landClassNames[ownedBird.land] ?? "wizard"
     : "pending";
@@ -1909,7 +1973,7 @@ export default function EggoriaLanding({
               aria-busy={checkInSubmitting || checkInSyncPending !== null}
             >
               <img src={asset("button.png")} alt="" />
-              <span>{(checkInSubmitting || checkInSyncPending) && <i className="claim-button-spinner" aria-hidden="true" />}{checkInSubmitting || checkInSyncPending ? "Checking In..." : !ownedBird.landAssigned ? "Assigning Land..." : ownedBird.stage >= 2 ? "Evolution Complete" : checkedInToday ? `Next check-in in ${nextCheckInTime}` : "Check In"}</span>
+              <span>{(checkInSubmitting || checkInSyncPending) && <i className="claim-button-spinner" aria-hidden="true" />}{checkInSubmitting || checkInSyncPending ? "Checking In..." : networkCtaOverride && wrongMetaMaskNetwork ? arcNetworkMissing ? "Add network" : "Switch network" : !ownedBird.landAssigned ? "Assigning Land..." : ownedBird.stage >= 2 ? "Evolution Complete" : checkedInToday ? `Next check-in in ${nextCheckInTime}` : "Check In"}</span>
             </button>
             <button
               className={`funds-guide-backdrop${fundsGuideOpen ? " is-open" : ""}`}
@@ -1948,7 +2012,7 @@ export default function EggoriaLanding({
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div> : <div className="hero-connect-wrap">
             <button className="figma-button hero-connect hero-mint-button" type="button" onClick={handleHeroAction} disabled={claimSubmitting || mintPhase === "pending" || isHatching || heroChecking} aria-busy={claimSubmitting || mintPhase === "pending" || isHatching || heroChecking}>
-              <img src={asset("button.png")} alt="" /><span>{(heroChecking || mintPhase !== "idle" || isHatching) && <i className="claim-button-spinner" aria-hidden="true" />}{mintPhase === "pending" || isHatching ? "Hatching..." : mintPhase === "waiting" ? "Waiting..." : mintPhase === "checking" || heroChecking ? "Checking..." : !walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
+              <img src={asset("button.png")} alt="" /><span>{(heroChecking || mintPhase !== "idle" || isHatching) && <i className="claim-button-spinner" aria-hidden="true" />}{mintPhase === "pending" || isHatching ? "Hatching..." : mintPhase === "waiting" ? "Waiting..." : mintPhase === "checking" || heroChecking ? "Checking..." : networkCtaOverride && wrongMetaMaskNetwork ? arcNetworkMissing ? "Add network" : "Switch network" : !walletAddress ? "Get Your Egg" : hasTestFunds ? "Mint Your Egg" : "Get Free Test Funds"}</span>
             </button>
             {walletAddress && <button
               className={`funds-guide-backdrop${fundsGuideOpen ? " is-open" : ""}`}
@@ -2143,26 +2207,26 @@ export default function EggoriaLanding({
         className={`wallet-modal-layer arc-network-layer${networkDialog ? " is-open" : ""}`}
         aria-hidden={!networkDialog}
         onMouseDown={(event) => {
-          if (event.target === event.currentTarget && !networkBusy) hideNetworkDialog();
+          if (event.target === event.currentTarget && !networkBusy) dismissNetworkDialog();
         }}
       >
         <section className="funds-modal arc-network-modal" role="dialog" aria-modal="true" aria-labelledby="arc-network-title">
           <img className="funds-modal-frame" src={asset("funds-modal-frame.png")} alt="" />
-          <button className="funds-modal-close" type="button" aria-label="Close ARC Testnet setup" onClick={hideNetworkDialog}>
+          <button className="funds-modal-close" type="button" aria-label="Close ARC Testnet setup" onClick={dismissNetworkDialog} disabled={networkBusy}>
             <img src={asset("wallet-close.svg")} alt="" />
           </button>
           <img className="arc-network-icon" src={asset("arc-testnet-icon.png")} alt="" />
           <div className="funds-modal-copy arc-network-copy">
-            <h2 id="arc-network-title">{(networkDialog ?? lastNetworkDialog) === "add" ? "One Quick Setup" : "Wrong Network"}</h2>
+            <h2 id="arc-network-title">{(networkDialog ?? lastNetworkDialog) === "add" ? "One quick setup" : "Wrong network"}</h2>
             <p>{(networkDialog ?? lastNetworkDialog) === "add"
               ? "Eggoria runs on ARC Testnet, a free practice network. MetaMask will ask you to approve it."
-              : "Your wallet is on another network. Switch to ARC Testnet to keep going."}</p>
+              : `Your wallet is on ${walletNetworkName === "Checking..." ? "another network" : walletNetworkName}. Switch to ARC Testnet to keep going.`}</p>
           </div>
           {networkFeedback === "error" && <p className="arc-network-feedback is-error" role="alert">MetaMask couldn&apos;t {(networkDialog ?? lastNetworkDialog) === "add" ? "add" : "switch"} the network. Try again, or do it manually.</p>}
           <div className="funds-modal-actions arc-network-actions">
-            <button className="funds-cancel" type="button" onClick={hideNetworkDialog} disabled={networkBusy}>Not Now</button>
+            <button className="funds-cancel" type="button" onClick={dismissNetworkDialog} disabled={networkBusy}>Not now</button>
             <button className="figma-button funds-confirm" type="button" onClick={requestArcNetwork} disabled={networkBusy} aria-busy={networkBusy}>
-              <img src={asset("button.png")} alt="" /><span>{networkBusy ? "Waiting..." : networkFeedback === "error" ? "Try again" : (networkDialog ?? lastNetworkDialog) === "add" ? "Add Network" : "Switch Network"}</span>
+              <img src={asset("button.png")} alt="" /><span>{networkBusy && <i className="claim-button-spinner" aria-hidden="true" />}{networkBusy ? "Waiting for MetaMask..." : networkFeedback === "error" ? "Try again" : (networkDialog ?? lastNetworkDialog) === "add" ? "Add network" : "Switch network"}</span>
             </button>
           </div>
         </section>
@@ -2194,7 +2258,7 @@ export default function EggoriaLanding({
           <div className="funds-modal-actions balance-alert-actions">
             {balanceAlertKind !== "out" && <button className="funds-cancel" type="button" onClick={() => {
               closeBalanceAlert();
-              if (balanceAlertKind === "low") openMintModal();
+               if (balanceAlertKind === "low") void openMintModal();
             }}>{balanceAlertKind === "low" ? "Not Now" : "Close"}</button>}
             <button className="figma-button funds-confirm" type="button" onClick={handleBalanceAlertAction} disabled={balanceAlertKind === "cooldown" && faucetCooldownActive}>
               <img src={asset("button.png")} alt="" /><span>{balanceAlertKind === "low" ? "Get More USDC" : balanceAlertKind === "out" ? "Get Test USDC" : "Claim"}</span>
@@ -2224,7 +2288,7 @@ export default function EggoriaLanding({
               if (action === "already") {
                 void refreshEggoriaState(walletAddress).catch(() => undefined);
                 document.getElementById("home")?.scrollIntoView({ behavior: "smooth" });
-              } else openMintModal();
+               } else void openMintModal();
             }}><img src={asset("button.png")} alt="" /><span>{mintBlocker === "already" ? "View My Egg" : "Try Again"}</span></button>}
           </div>
         </section>
@@ -2293,7 +2357,7 @@ export default function EggoriaLanding({
           <div className="claim-panel">
             <dl className="claim-details">
               <div><dt><img src={asset("claim-wallet.png")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
-              <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{ARC_TESTNET.name}</dd></div>
+              <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{walletNetworkName}</dd></div>
               <div><dt><img src={asset("claim-price.png")} alt="" />Mint price</dt><dd>Free</dd></div>
               <div><dt><img src={asset("claim-receive.png")} alt="" />You receive</dt><dd>1 Mystery Egg</dd></div>
               <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{networkFee === "Unavailable" || networkFee === "Estimating..." ? networkFee : `~${networkFee} Test USDC`}</dd></div>
@@ -2301,7 +2365,7 @@ export default function EggoriaLanding({
             <p className="claim-price-note">Free to mint. You only pay the network fee below.</p>
             <div className="claim-actions">
               {mintPhase !== "pending" && <button className="funds-cancel claim-cancel" type="button" onClick={dismissMintModal}>Not Now</button>}
-              <button className="figma-button claim-confirm" type="button" onClick={mintEgg} disabled={claimSubmitting}>
+              <button className="figma-button claim-confirm" type="button" onClick={mintEgg} disabled={claimSubmitting || wrongMetaMaskNetwork}>
                 <img src={asset("button.png")} alt="" /><span>{claimSubmitting && <i className="claim-button-spinner" aria-hidden="true" />}{mintPhase === "waiting" ? "Waiting..." : mintPhase === "pending" ? "Minting..." : mintPhase === "checking" ? "Checking..." : mintRetry ? "Try Again" : "Mint Egg"}</span>
               </button>
             </div>
@@ -2339,14 +2403,14 @@ export default function EggoriaLanding({
           <div className="claim-panel evolution-checkin-panel">
             <dl className="claim-details evolution-checkin-details">
               <div><dt><img src={asset("claim-wallet.png")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
-              <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{ARC_TESTNET.name}</dd></div>
+              <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{walletNetworkName}</dd></div>
               <div><dt><img src={asset("evolution-arrow.png")} alt="" />Evolves to</dt><dd>{evolutionTargetStage === 2 ? "Soarling" : "Fledgling"}</dd></div>
               <div><dt><img src={asset("evolution-bird.png")} alt="" />Bird</dt><dd>#{ownedBird.tokenId.toString()} - {landBadgeNames[ownedBird.land] ?? "Land Wizard"}</dd></div>
               <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{evolutionNetworkFee === "Unavailable" || evolutionNetworkFee === "Estimating..." ? evolutionNetworkFee : `~${evolutionNetworkFee} Test USDC`}</dd></div>
             </dl>
             <div className="claim-actions evolution-checkin-actions">
               <button className="funds-cancel claim-cancel evolution-checkin-cancel" type="button" onClick={() => setEvolutionCheckInOpen(false)} disabled={checkInSubmitting}>Not Now</button>
-              <button className="figma-button claim-confirm evolution-checkin-confirm" type="button" onClick={() => void confirmEvolutionCheckIn()} disabled={checkInSubmitting || checkInSyncPending !== null} aria-busy={checkInSubmitting || checkInSyncPending !== null}>
+              <button className="figma-button claim-confirm evolution-checkin-confirm" type="button" onClick={() => void confirmEvolutionCheckIn()} disabled={checkInSubmitting || checkInSyncPending !== null || wrongMetaMaskNetwork} aria-busy={checkInSubmitting || checkInSyncPending !== null}>
                 <img src={asset("button.png")} alt="" />
                 <span>{(checkInSubmitting || checkInSyncPending) && <i className="claim-button-spinner" aria-hidden="true" />}{checkInSubmitting || checkInSyncPending ? "Checking In..." : "Evolve Now"}</span>
               </button>

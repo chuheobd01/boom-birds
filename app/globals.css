@@ -453,9 +453,9 @@
 /* Completed Soarling hero uses the same desktop .hero-copy position as Get Your Egg. */
 .hero-new.is-final-form .hero-copy h1{width:100%;font-family:"Playfair Display",serif;font-size:60px;font-weight:600;line-height:1.15;letter-spacing:0}
 .final-form-panel{display:flex;width:100%;flex-direction:column;align-items:center}
-.final-stage-card{position:relative;width:480px;height:180px;flex:none;color:#fff9f3}
+.final-stage-card{position:relative;width:480px;height:175px;flex:none;color:#fff9f3}
 .final-stage-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
-.final-stage-journey{position:relative;z-index:1;display:grid;height:100%;grid-template-columns:76px 90px 76px 90px 100px;justify-content: center;column-gap: 0;padding:18px 25px 22px}
+.final-stage-journey{position:relative;z-index:1;display:grid;height:100%;grid-template-columns:76px 85px 76px 85px 100px;justify-content: center;align-content:center;column-gap: 0;padding:24px 25px 22px}
 .final-stage-item{display:flex;min-width:0;flex-direction:column;align-items:center;justify-content:end;gap:2px;font-family:"Be Vietnam Pro",sans-serif;font-size:15px;font-weight:500;line-height:1.2}
 .final-stage-picture{display:grid;width:96px;height:90px;overflow:hidden;place-items:end center}
 .final-stage-picture img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain}
@@ -481,7 +481,7 @@
   .hero-new.is-final-form .hero-copy h1{width:100%;font-size:clamp(34px,8vw,52px)}
   .final-form-panel{margin-top:24px}
   .final-stage-card{width:min(92vw,480px);height:auto;aspect-ratio:480/165}
-  .final-stage-journey{padding:3.75% 5.2% 4.5%;grid-template-columns:76px 90px 76px 90px 100px;justify-content: center;column-gap: 0}
+  .final-stage-journey{padding:3.75% 5.2% 4.5%;grid-template-columns:76px 85px 76px 85px 100px;justify-content:center;align-content:center;column-gap:0}
   .final-stage-item{font-size:clamp(10px,2.7vw,14px)}
   .final-stage-picture{width:100%;height:clamp(54px,17vw,90px)}
   .final-stage-picture img,.final-stage-item:first-child .final-stage-picture img,.final-stage-item:nth-of-type(2) .final-stage-picture img,.final-stage-item:last-child .final-stage-picture img{max-width:100%;max-height:100%}
