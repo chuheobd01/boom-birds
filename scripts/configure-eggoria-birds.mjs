@@ -29,66 +29,66 @@ const METADATA_BY_LAND = [
   {
     index: 0,
     name: "Forest",
-    primary: "ipfs://bafkreieepdc6obx6kxpzbxdwbfdxn3cm6lx46capngykl32nlbmfuhcskm",
-    intermediate: "ipfs://bafkreiclk6wlkklrbdrkjmkswisduyhqcbexfmi2t7fuhh64csjifvcjui",
+    primary: "ipfs://bafkreic6vwjfdq2mnbmubmlnnbxigtx2bcprurtb64ffoxg7hwsrq6zkbu",
+    intermediate: "ipfs://bafkreigd4xthjlzfe3xdasnwkan4cc654zwxeki6qm2f5w5hd4k2hx234m",
     soarling: {
-      Common: "ipfs://bafkreiatursharrm2zsktcnquevud4iafmtobznlk6nfuomn447rpwfqiu",
-      Rare: "ipfs://bafkreiga4by74ytlwip5d66pzvb4ijikqy7xmwtjxkvot42yxdbmkuuv5m",
-      Epic: "ipfs://bafkreihwtjhbmvo3ywcdyoyq5ifi64i4efmvm44yjcsiwucpba6my4q5wm",
-      Legendary: "ipfs://bafkreihfb77d6ocq663vssqysoizeylhmymhoqbidfosyw3syybihiszxq",
-      Mythic: "ipfs://bafkreibbm5dtxtdysnvlx5w7xy6e3jb2ukfj7hyoqw5sz2wkq2gzxou2m4",
+      Common: "ipfs://bafkreifni5edf357ux6goe3imtnsist4335heno7lujakuxahbnncptau4",
+      Rare: "ipfs://bafkreiejnjxijbhjqb63qvizw76zid75aqtv7lhx5xeuwz4fpdxy6okzha",
+      Epic: "ipfs://bafkreie2hbbds4chuzpxeudaowpfwcatp3yaotaev7aztl6cxytkwswz5e",
+      Legendary: "ipfs://bafkreihdwhbodzptnjlk4nx6iegcuzmva3smirkep6qa43vikqbse2ue64",
+      Mythic: "ipfs://bafkreiaatwtu7g5pylt7mqsu26dgoaai7wjmp7cd7egynzpen5ynixwajm",
     },
   },
   {
     index: 1,
     name: "Wind",
-    primary: "ipfs://bafkreia3kzlmumbwzdy6hcjq64di4gd6onqjyiuvqrnerr6wqh5j7fyufy",
-    intermediate: "ipfs://bafkreidbdao2ownynjaisznddvehld3quoheetbdze7i2cwj5f4balvcw4",
+    primary: "ipfs://bafkreifefqbul56z2b47jef4c42hmllhvmvjfnpkqnu77xgwksvmptcitu",
+    intermediate: "ipfs://bafkreiajfuka4ymxcjgx3fm2vp4z6g4jdaxstlbliyhyhtvfitrzijxley",
     soarling: {
-      Common: "ipfs://bafkreieguwkxirbsfjzc4cxsfcgctg2aptfs4klporxfqbt7bjhnvuvkae",
-      Rare: "ipfs://bafkreigprtlitnq33m442x6yaduc4muiqrzwuxqroicygbohiu6cxsw3yy",
-      Epic: "ipfs://bafkreigan7qm5hcrl4jnaivr6npks6433xuvupyxdynrhjtah4sn7qi5wa",
-      Legendary: "ipfs://bafkreicnhpfkvcsrkdh4h2bibxibj4lfgypeovswqal22vudyflg346ph4",
-      Mythic: "ipfs://bafkreifpk67eb2eylty522rfp4lwrynkp6hfdoc7jwwu3nul3l24ighm6e",
+      Common: "ipfs://bafkreie43pwnsjqmknxapdtavvjnb57h5kgdl5xuqpm5jby6k7tw4fckbi",
+      Rare: "ipfs://bafkreid6mpqqqi2ax7ukv2nt2cxotiul6ortqoqjdhxdslc3gqsartodi4",
+      Epic: "ipfs://bafkreih7fxfqudpzepbp2rswpso5kckmgla334v4ve4ayrtgqja56ni3eq",
+      Legendary: "ipfs://bafkreihdyxzxbe3325b7re54om5lrbnm5lvefvg6xvxedpc36uegjqyt7m",
+      Mythic: "ipfs://bafkreidzvlxfop2qrzc2enyqjeabytflrd6ebbh4dm3lnaeh67ss5ulihy",
     },
   },
   {
     index: 2,
     name: "Wizard",
-    primary: "ipfs://bafkreifr3st42sgcrcjasi2mf4vix3hx5pgvrnodl6kquvaqpypx6o2hdy",
-    intermediate: "ipfs://bafkreighjj6zo5ig6qnbsoynqrxmj247azfdv6vjq55mz2ur6h4355axvi",
+    primary: "ipfs://bafkreifs4i4fsc6ocricyhhd2zl2dho6vyt3cn7vtnxioonp22f6u6dx5i",
+    intermediate: "ipfs://bafkreiczysbbypse4tu63plhq5jpwr2xoxwxctmvowun4jov62s7kn7quy",
     soarling: {
-      Common: "ipfs://bafkreigefgqejoejbfg6crf7fhye7soyksixovv3m47zltmmgwp46u2hnu",
-      Rare: "ipfs://bafkreiduyirmi5grvx7xh4aabq6qojoklt4owrxar5mh4f7u3j7t5gnqqm",
-      Epic: "ipfs://bafkreifm6llr46wx4jw34ujn4apv7qa6f6uqeylcqx4wdkrazfszfwa77m",
-      Legendary: "ipfs://bafkreih5vpa3dhssgs6hggdjubs6edxjwnyeffpevvpwjbchbphjyo3poi",
-      Mythic: "ipfs://bafkreidgtgboj5uqjhujagla3ypeovwtuovcytmijafrutwakqnjnlzhrq",
+      Common: "ipfs://bafkreibelm3urvspamuha62etyxbeo3i6sokpovbdin2cqas33uvequczi",
+      Rare: "ipfs://bafkreierokyy2zoe5jzx6r4utxfinndj5gkazemaldwer4gtjoosdauqcu",
+      Epic: "ipfs://bafkreicvq6jwahvdbwwxvthl674hzwf7dnlikh7t6jnn4sgmvpsjpwjjle",
+      Legendary: "ipfs://bafkreihw426grb2rvwgxxhmyee5uxk6pfh276inlzgwjydgwp5svb4hv4a",
+      Mythic: "ipfs://bafkreia4gozxiut7euro76ibwqqgyom2b43wlxn74bkrsw657solbkweaa",
     },
   },
   {
     index: 3,
     name: "Artist",
-    primary: "ipfs://bafkreia6k55e7qcjgs7lma4suxt2qioon2dmv26rkxbfoxwqnwp5yqcboi",
-    intermediate: "ipfs://bafkreidqolitzhbseuqnud4yxrusj6d4oyipz57ueabk32etqwuv67b47q",
+    primary: "ipfs://bafkreigq2qmmypkuvhp2olj6ljeulntzmiuvfilrnao54lfikpuqgk7l44",
+    intermediate: "ipfs://bafkreicodanbkmxg2dif5pcl5qqo7tmq6wzo2lfsp3fuq3sq7ga4t5h2za",
     soarling: {
-      Common: "ipfs://bafkreiengdljnorecg5xz3uqsec3d5itqpji6jwy5sxtuudu3js7sxu5tm",
-      Rare: "ipfs://bafkreifspham42z4z5d4cwg74qk4tarizy47l5sq3gjsimeuuzmzzb6x4m",
-      Epic: "ipfs://bafkreic2zfsvipme57y52zxd3kyfsd2p2ypebeue5morr5k4urftsd2dkq",
-      Legendary: "ipfs://bafkreihyb2p3szcok2263pmks245v5lk753bdxxnihex7xpysyk3yuvham",
-      Mythic: "ipfs://bafkreigos4o6lpau6mcnygwfihuqalryuxhgoso7h3i4z4rdsnhhfynexe",
+      Common: "ipfs://bafkreifr4tb2p32sxnuiv3pocobxmtqlr2sjllrnxjkjf6wjhmhacdhs2m",
+      Rare: "ipfs://bafkreigaz57wlxfbnz44ldlgqaypf73o7r6ec2l4lt7gprd7njmxx7yv6a",
+      Epic: "ipfs://bafkreidloj6az6cofmwoqakpkw76tbvrmnr3r6ppdu2hxntjznglvoq6pa",
+      Legendary: "ipfs://bafkreieuwmni7zv5xowqjvxmb3ll37j2hrgups2jsu5jnmnabrgwlicoke",
+      Mythic: "ipfs://bafkreiez2ju7de7fkzim6hbabmtxx5ay7irotagpsmlq4wq3eesvmcv7yi",
     },
   },
   {
     index: 4,
     name: "King",
-    primary: "ipfs://bafkreiaaa5lmqvbi5mijpnlaqobp32vg5xdzqdskxadshw6cakp7iis2xq",
-    intermediate: "ipfs://bafkreie4eevue3zecmfnvina5toxrhdob7svxi47mohgfdfmjhchwda6mq",
+    primary: "ipfs://bafkreibrrsgpo7f5umxmzio37ulahtbf5kyxhzuxpxyyanzs7k3rk2fkly",
+    intermediate: "ipfs://bafkreib35wbd37ynpthq444eh67i5lbytoeebapo6swcmyz5xhbx4uqdeq",
     soarling: {
-      Common: "ipfs://bafkreidey7agalf7up3avun5v6rxsomj6ijeuaigoeclb4464iuek32u34",
-      Rare: "ipfs://bafkreicmh3klh2sqpoqqm3otmhdfs4bi47m7pttzi7lqn4u7hmp6mlnjsi",
-      Epic: "ipfs://bafkreigq5rel6on2mbcwnm2cfbz555yur4kjyz6brws7hx76kdxxjoo6im",
-      Legendary: "ipfs://bafkreidnmzdvo4zyyiwoebrzg35ene3bmsj75px6r4sakwimynezkd2e6y",
-      Mythic: "ipfs://bafkreidjjwulho4uk243qcsmiyxnzn6kqnitccobc7a2nkrhw3ieznhyrq",
+      Common: "ipfs://bafkreici3ohmt66diufqkqybhc4xtu6jikcgg3qj7u77f5ls4ntj66w5ji",
+      Rare: "ipfs://bafkreicleeyas2vhexwlbhuzekpv2naznzlpcydmabeekesewlvs54z5k4",
+      Epic: "ipfs://bafkreigxrmzvuvjkpecg2jtggvnojgryg4shbaphcnmva4tk3xc6i3bcmm",
+      Legendary: "ipfs://bafkreidksvijoccsynks3ktkssunm5o4di2zrcoezlssiv4k5cmt7yquxy",
+      Mythic: "ipfs://bafkreidco6ldsuppszh2puckjq3axbu4owf6wz2w33qf6mydqu727klmw4",
     },
   },
 ];
@@ -281,6 +281,41 @@ async function updateWizardMythicMetadata(eggoriaBirds) {
   const confirmedUri = await eggoriaBirds.tokenURI(5);
   if (confirmedUri !== nextUri) throw new Error(`Token #5 still points to ${confirmedUri}.`);
   console.log("Token #5 on-chain URI confirmed:", confirmedUri);
+}
+
+async function updateWindMythicMetadata(eggoriaBirds) {
+  if (process.env.CONFIRM_UPDATE_WIND_MYTHIC_URI !== "YES") {
+    throw new Error("Set CONFIRM_UPDATE_WIND_MYTHIC_URI=YES to update the existing contract.");
+  }
+
+  const wind = METADATA_BY_LAND[1];
+  const local = JSON.parse(await readFile(
+    new URL("../metadata/wind-soarling-mythic.json", import.meta.url),
+    "utf8",
+  ));
+  const nextUri = wind.soarling.Mythic;
+  await validateMetadataDocument("Wind Soarling Mythic", nextUri, local.image);
+
+  const state = await eggoriaBirds.tokenState(13);
+  if (Number(state.land) !== wind.index || Number(state.stage) !== 2 || Number(state.rarity) !== RARITY.Mythic) {
+    throw new Error("Token #13 is not an evolved Wind Mythic; refusing to update an unverified contract.");
+  }
+  const previousUri = await eggoriaBirds.tokenURI(13);
+  if (previousUri === nextUri) {
+    console.log("Wind Mythic already points to:", nextUri);
+    return;
+  }
+  const expectedPreviousUri = "ipfs://bafkreifpk67eb2eylty522rfp4lwrynkp6hfdoc7jwwu3nul3l24ighm6e";
+  if (previousUri !== expectedPreviousUri) {
+    throw new Error(`Unexpected Wind Mythic URI ${previousUri}; no transaction was sent.`);
+  }
+
+  console.log("Wind Mythic previous URI:", previousUri);
+  console.log("Wind Mythic new URI:", nextUri);
+  await sendAndConfirm("Update Wind Mythic metadata", eggoriaBirds.setAdvancedURI(wind.index, RARITY.Mythic, nextUri));
+  const confirmedUri = await eggoriaBirds.tokenURI(13);
+  if (confirmedUri !== nextUri) throw new Error(`Token #13 still points to ${confirmedUri}.`);
+  console.log("Token #13 on-chain URI confirmed:", confirmedUri);
 }
 
 async function verifyAdminContext() {
@@ -493,6 +528,24 @@ async function enableEvolutionPairRotationMode(eggoriaBirds) {
   console.log("Rarity repeats: Mythic x2 for Forest/Wind/Wizard/King; Artist Mythic then Legendary. QA does not consume production rarity quotas.");
 }
 
+async function enableEvolutionLegendaryRotationMode(eggoriaBirds) {
+  if (process.env.CONFIRM_ENABLE_EVOLUTION_LEGENDARY_ROTATION_MODE !== "YES") {
+    throw new Error("Set CONFIRM_ENABLE_EVOLUTION_LEGENDARY_ROTATION_MODE=YES to enable the repeating five-land Legendary QA rotation.");
+  }
+  if (await eggoriaBirds.totalSupply() !== 0n) {
+    throw new Error("The repeating five-land Legendary QA rotation must start on a fresh contract.");
+  }
+  if (!await eggoriaBirds.evolutionTestMode()) {
+    throw new Error("Enable evolution test mode before the Legendary rotation.");
+  }
+  await sendAndConfirm(
+    "Enable repeating five-land Legendary QA rotation",
+    eggoriaBirds.setEvolutionLegendaryRotationMode(true),
+  );
+  console.log("Land order repeats: Forest, Wind, Wizard, Artist, King.");
+  console.log("Every test evolution receives Legendary without consuming production rarity quotas.");
+}
+
 async function setEvolutionTestLand(eggoriaBirds) {
   const land = Number(process.env.EGGORIA_TEST_LAND);
   if (!Number.isInteger(land) || land < 0 || land >= METADATA_BY_LAND.length) {
@@ -518,12 +571,13 @@ async function setEvolutionTestRarity(eggoriaBirds) {
 }
 
 async function printContractStatus(eggoriaBirds) {
-  const [totalSupply, mintingEnabled, evolutionTestMode, evolutionShowcaseMode, evolutionPairRotationMode, evolutionTestLand, evolutionTestRarity] = await Promise.all([
+  const [totalSupply, mintingEnabled, evolutionTestMode, evolutionShowcaseMode, evolutionPairRotationMode, evolutionLegendaryRotationMode, evolutionTestLand, evolutionTestRarity] = await Promise.all([
     eggoriaBirds.totalSupply(),
     eggoriaBirds.mintingEnabled(),
     eggoriaBirds.evolutionTestMode(),
     eggoriaBirds.evolutionShowcaseMode(),
     eggoriaBirds.evolutionPairRotationMode(),
+    eggoriaBirds.evolutionLegendaryRotationMode(),
     eggoriaBirds.evolutionTestLand(),
     eggoriaBirds.evolutionTestRarity(),
   ]);
@@ -532,6 +586,7 @@ async function printContractStatus(eggoriaBirds) {
   console.log("Evolution test mode:", evolutionTestMode);
   console.log("12-mint QA showcase mode:", evolutionShowcaseMode);
   console.log("Two-mints-per-land QA rotation mode:", evolutionPairRotationMode);
+  console.log("Repeating five-land Legendary QA rotation mode:", evolutionLegendaryRotationMode);
   console.log("Evolution test rotation starts at:", METADATA_BY_LAND[Number(evolutionTestLand)].name);
   console.log("Evolution test preferred rarity:", Object.keys(RARITY)[Number(evolutionTestRarity)]);
   const rarityNames = Object.keys(RARITY);
@@ -566,6 +621,10 @@ async function main() {
     await updateWizardMythicMetadata(eggoriaBirds);
     return;
   }
+  if (action === "update-wind-mythic-metadata") {
+    await updateWindMythicMetadata(eggoriaBirds);
+    return;
+  }
   if (action === "configure-primary") {
     await configurePrimaryMetadata(eggoriaBirds);
     return;
@@ -590,6 +649,10 @@ async function main() {
     await enableEvolutionPairRotationMode(eggoriaBirds);
     return;
   }
+  if (action === "enable-evolution-legendary-rotation-mode") {
+    await enableEvolutionLegendaryRotationMode(eggoriaBirds);
+    return;
+  }
   if (action === "set-evolution-test-land") {
     await setEvolutionTestLand(eggoriaBirds);
     return;
@@ -604,7 +667,7 @@ async function main() {
   }
 
   throw new Error(
-    `Unknown EGGORIA_ADMIN_ACTION "${action}". Use "verify-showcase-metadata", "verify-pair-metadata", "configure-metadata", "update-wizard-mythic-metadata", "configure-primary", "configure-intermediate", "enable-minting", "enable-evolution-test-mode", "enable-evolution-showcase-mode", "enable-evolution-pair-rotation-mode", "set-evolution-test-land", "set-evolution-test-rarity", or "status".`,
+    `Unknown EGGORIA_ADMIN_ACTION "${action}". Use "verify-showcase-metadata", "verify-pair-metadata", "configure-metadata", "update-wizard-mythic-metadata", "update-wind-mythic-metadata", "configure-primary", "configure-intermediate", "enable-minting", "enable-evolution-test-mode", "enable-evolution-showcase-mode", "enable-evolution-pair-rotation-mode", "enable-evolution-legendary-rotation-mode", "set-evolution-test-land", "set-evolution-test-rarity", or "status".`,
   );
 }
 

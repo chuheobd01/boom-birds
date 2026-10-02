@@ -1,0 +1,19 @@
+{
+  "name": "Wind Bird - Soarling Mythic",
+  "description": "A Soarling Wind Bird from Eggoria.",
+  "image": "https://gateway.pinata.cloud/ipfs/bafybeifp4wi2rhfcglpffzvmerqdqk2w6sk7hz62ogxvroye4pmgyx6ehq",
+  "attributes": [
+    {
+      "trait_type": "Land",
+      "value": "Wind"
+    },
+    {
+      "trait_type": "Stage",
+      "value": "Soarling"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Mythic"
+    }
+  ]
+}

@@ -40,7 +40,7 @@
 .island-new{animation:island-enter 650ms cubic-bezier(.22,1,.36,1) 700ms both}
 .egg-new{animation:egg-enter 850ms cubic-bezier(.22,1,.36,1) 700ms both}
 .egg-glow-new{animation:egg-glow-enter 850ms ease-out 700ms both}
-.balloon{position:absolute;z-index:3;pointer-events:none;animation:egg-decor-reveal 550ms ease-out 700ms both}.balloon-one{top:25px;left:49.5%;width:5.47%;transform:rotate(-15deg);animation:egg-decor-reveal 550ms ease-out 700ms both,balloon-left-float 7.2s ease-in-out -1.4s infinite}
+.balloon{position:absolute;z-index:3;pointer-events:none;animation:egg-decor-reveal 550ms ease-out 700ms both}.balloon-one{top:91px;left:688px;width:5.47%;transform:rotate(-15deg);animation:egg-decor-reveal 550ms ease-out 700ms both,balloon-left-float 7.2s ease-in-out -1.4s infinite}
 .spark-field{position:absolute;z-index:7;inset:0;overflow:hidden;pointer-events:none;animation:egg-decor-reveal 550ms ease-out 700ms both}.spark-field img,.light-spark{position:absolute}.light-spark{margin:0;color:#fff;font-style:normal;line-height:1;text-shadow:0 0 9px #fff,0 0 15px #ddb7ff;animation:spark-twinkle 2.8s ease-in-out infinite}.light-spark-two{top:105px;left:1288px;font-size:11px;animation-delay:-.7s}.light-spark-three{top:210px;left:850px;font-size:18px;animation-delay:-1.5s}
 @media(min-width:761px){.orbit-spark{position:absolute;z-index:4;pointer-events:none}.orbit-spark-crystal{object-fit:contain;filter:drop-shadow(0 0 5px rgba(235,210,255,.58));animation:decor-float 7s ease-in-out infinite}.orbit-spark-feather{object-fit:contain;filter:drop-shadow(0 0 4px rgba(255,220,255,.5));animation:decor-float 7.4s ease-in-out infinite}.orbit-spark-bird{transform:rotate(11deg);animation:decor-float 8s ease-in-out -4.2s infinite}.orbit-spark-star{color:#fff;font:700 16px/1 Georgia,serif;font-style:normal;text-shadow:0 0 5px #fff,0 0 12px #d7adff;animation:spark-twinkle 3.2s ease-in-out infinite}}
 @media(max-width:1100px){.landing-header{gap:14px;padding-inline:2%}.brand-new{min-width:190px}.brand-new img{width:52px;height:68px}.brand-new span{font-size:42px}.header-actions{min-width:250px}.social-links{gap:6px}.social-links a{width:36px;height:36px}.social-glyph{inset:7px;width:22px;height:22px}.header-connect{width:145px;font-size:15px}.main-nav>div{gap:16px;padding-inline:20px}.hero-copy{left:6%;width:39%}.hero-art{width:62%}}
@@ -332,7 +332,7 @@
 /* Decorative composition around the hero egg. */
 .distant-island{position:absolute;z-index:1;display:none;height:auto;opacity:.42;filter:blur(.35px) drop-shadow(0 12px 18px rgba(64,34,145,.2));pointer-events:none}
 @media(min-width:761px){
-  .balloon-one{top:108px;left:730px;width:111px}
+  .balloon-one{top:90px;left:685px;width:111px}
   .spark-field{z-index:4}
   .egg-burst-field{display:none}
   .orbit-spark-crystal-left{top:300px;left:690px;width:25px;transform:rotate(-28deg);animation-delay:-2.1s}
@@ -773,14 +773,136 @@
 .hero-art.bird-owned.is-mythic.land-forest{--mythic-hero-top:-51px;--mythic-hero-left:9px;--mythic-hero-scale-x:1.263;--mythic-hero-scale-y:1.139}
 .hero-art.bird-owned.is-mythic.land-wizard{--mythic-hero-top:-48px;--mythic-hero-left:7px;--mythic-hero-scale-x:1.21;--mythic-hero-scale-y:1.154}
 .hero-art.bird-owned.is-mythic.land-king{--mythic-hero-top:-48px;--mythic-hero-left:-10px;--mythic-hero-scale-x:1.234;--mythic-hero-scale-y:1.15}
-/* Wind Mythic trial: compose the supplied artwork in the original hero image bounds. */
-.wind-mythic-composite{display:block;aspect-ratio:1568/1705;isolation:isolate}
-.wind-mythic-composite>img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
-.wind-mythic-glow{z-index:0;top:0;left:5%;width:90%}
-.wind-mythic-ring{z-index:1;top:24%;left:-1.5%;width:99%}
-.wind-mythic-island{z-index:2;top:34%;left:1%;width:94%}
-.wind-mythic-bird{z-index:3;top:11%;left:20%;width:425px}
-.wind-mythic-badge{z-index:4;top:6%;left:36.5%;width:190px}
+/* Wind Mythic: separate layers keep the bird and island moving together. */
+.wind-mythic-composite{display:block;aspect-ratio:1568/1705;isolation:isolate;animation:none}
+.wind-mythic-composite img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.wind-mythic-glow{z-index:0;top:0;left:5%;width:90%;animation:wind-mythic-glow-enter .6s ease-out both,wind-mythic-glow-idle 4.8s ease-in-out .6s infinite}
+.wind-mythic-ring{z-index:1;top:24%;left:-1.5%;width:99%;animation:wind-mythic-ring-enter .8s ease-out 1s both,wind-mythic-ring-idle 12s ease-in-out 1.8s infinite}
+.wind-mythic-orbit-motes{position:absolute;z-index:2;inset:0;pointer-events:none}
+.wind-mythic-orbit-motes i{position:absolute;width:5px;height:5px;border-radius:50%;background:#b7f6ff;box-shadow:0 0 8px 3px #66e5ff,0 0 18px 6px rgba(44,177,255,.52);animation:wind-mythic-orbit-mote 12s linear var(--mote-delay) infinite both}
+.wind-mythic-orbit-motes i:nth-child(1){--mote-delay:2.2s}.wind-mythic-orbit-motes i:nth-child(2){--mote-delay:5.4s;width:4px;height:4px}.wind-mythic-orbit-motes i:nth-child(3){--mote-delay:8.6s;width:3px;height:3px}
+.wind-mythic-core{position:absolute;z-index:3;inset:0;pointer-events:none;animation:wind-mythic-core-enter 1.1s cubic-bezier(.22,1,.36,1) .4s both,wind-mythic-core-float 5.6s ease-in-out 1.5s infinite}
+.wind-mythic-island{z-index:1;top:34%;left:1%;width:94%}
+.wind-mythic-awakening{position:absolute;z-index:2;top:11%;left:17%;width:66%;height:55%;border-radius:50%;background:radial-gradient(ellipse,rgba(225,255,255,.7) 0%,rgba(42,204,255,.38) 27%,transparent 68%);filter:blur(24px);opacity:0;mix-blend-mode:screen;animation:wind-mythic-awakening-pulse 14s ease-in-out 1.5s infinite}
+.wind-mythic-bird{z-index:4;top:11%;left:20%;width:425px;transform-origin:53% 88%;animation:wind-mythic-bird-breathe 4s ease-in-out 1.5s infinite}
+.wind-mythic-feathers{position:absolute;z-index:6;inset:0;pointer-events:none}
+.wind-mythic-feathers img{width:5%;filter:drop-shadow(0 0 5px rgba(65,214,255,.65));opacity:0;animation:wind-mythic-feather-enter .6s ease-out var(--feather-enter) both,wind-mythic-feather-idle var(--feather-cycle) ease-in-out var(--feather-idle) infinite}
+.wind-mythic-feathers img:nth-child(1){top:13%;left:75%;width:4%;--feather-enter:1.4s;--feather-idle:2s;--feather-cycle:5.8s}
+.wind-mythic-feathers img:nth-child(2){top:41%;left:12%;width:4.5%;--feather-enter:1.65s;--feather-idle:2.25s;--feather-cycle:6.6s}
+.wind-mythic-feathers img:nth-child(3){top:37%;left:80%;--feather-enter:1.9s;--feather-idle:2.5s;--feather-cycle:5.2s}
+.wind-mythic-badge{position:absolute;z-index:4;top:6%;left:36.5%;width:190px;aspect-ratio:472/120;overflow:hidden;pointer-events:none;animation:wind-mythic-badge-enter .8s ease-out 2s both}
+.wind-mythic-badge img{inset:0;width:100%}
+.hero-art.land-wind.is-mythic .owned-soarling-sparks{display:none}
+@keyframes wind-mythic-glow-enter{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes wind-mythic-glow-idle{0%,100%{opacity:.87;transform:scale(1)}50%{opacity:1;transform:scale(1.025)}}
+@keyframes wind-mythic-ring-enter{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes wind-mythic-ring-idle{0%,100%{opacity:.88;transform:scale(1)}50%{opacity:1;transform:scale(1.006)}}
+@keyframes wind-mythic-core-enter{0%{opacity:0;transform:translateY(24px)}76%{opacity:1;transform:translateY(-4px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes wind-mythic-core-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes wind-mythic-bird-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.006,1.008)}}
+@keyframes wind-mythic-orbit-mote{0%,100%{left:8%;top:57%;opacity:0}13%{left:13%;top:45%;opacity:.9}35%{left:37%;top:34%;opacity:.55}55%{left:65%;top:34%;opacity:.85}78%{left:88%;top:45%;opacity:.65}90%{left:94%;top:57%;opacity:0}}
+@keyframes wind-mythic-feather-enter{from{opacity:0;transform:translateY(12px) rotate(-12deg) scale(.7)}to{opacity:.8;transform:translateY(0) rotate(0) scale(1)}}
+@keyframes wind-mythic-feather-idle{0%,100%{opacity:.5;transform:translateY(0) rotate(-5deg)}50%{opacity:.92;transform:translateY(-10px) rotate(5deg)}}
+@keyframes wind-mythic-awakening-pulse{0%,70%,100%{opacity:0;transform:scale(.9)}78%{opacity:.12;transform:scale(1)}83%{opacity:.72;transform:scale(1.1)}91%{opacity:.2;transform:scale(1.04)}}
+@keyframes wind-mythic-badge-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){.wind-mythic-bird{width:58.2%}.wind-mythic-badge{width:26%}}
+@media(prefers-reduced-motion:reduce){.wind-mythic-composite,.wind-mythic-glow,.wind-mythic-ring,.wind-mythic-core,.wind-mythic-bird,.wind-mythic-awakening,.wind-mythic-orbit-motes i,.wind-mythic-feathers img,.wind-mythic-badge{animation:none!important;transform:none!important}.wind-mythic-glow,.wind-mythic-ring,.wind-mythic-core,.wind-mythic-badge{opacity:1}.wind-mythic-feathers img{opacity:.7}.wind-mythic-awakening,.wind-mythic-orbit-motes{display:none}}
+/* Forest Mythic uses the same layered entrance and shared float as Wind. */
+.forest-mythic-composite{display:block;aspect-ratio:1585/1634;isolation:isolate;animation:none}
+.forest-mythic-composite img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.forest-mythic-glow{z-index:0;top:0;left:5%;width:90%;animation:wind-mythic-glow-enter .6s ease-out both,wind-mythic-glow-idle 4.8s ease-in-out .6s infinite}
+.forest-mythic-ring{z-index:1;top:24%;left:-1.5%;width:99%;animation:wind-mythic-ring-enter .8s ease-out 1s both,wind-mythic-ring-idle 12s ease-in-out 1.8s infinite}
+.forest-mythic-orbit-motes{position:absolute;z-index:2;inset:0;pointer-events:none}
+.forest-mythic-orbit-motes i{position:absolute;width:5px;height:5px;border-radius:50%;background:#d7ff8a;box-shadow:0 0 8px 3px #aeef57,0 0 18px 6px rgba(111,212,45,.52);animation:wind-mythic-orbit-mote 12s linear var(--mote-delay) infinite both}
+.forest-mythic-orbit-motes i:nth-child(1){--mote-delay:2.2s}.forest-mythic-orbit-motes i:nth-child(2){--mote-delay:5.4s;width:4px;height:4px}.forest-mythic-orbit-motes i:nth-child(3){--mote-delay:8.6s;width:3px;height:3px}
+.forest-mythic-core{position:absolute;z-index:3;inset:0;pointer-events:none;animation:wind-mythic-core-enter 1.1s cubic-bezier(.22,1,.36,1) .4s both,wind-mythic-core-float 5.6s ease-in-out 1.5s infinite}
+.forest-mythic-island{z-index:1;top:34%;left:1%;width:91%}
+.forest-mythic-awakening{position:absolute;z-index:2;top:11%;left:17%;width:66%;height:55%;border-radius:50%;background:radial-gradient(ellipse,rgba(234,255,190,.7) 0%,rgba(151,237,58,.38) 27%,transparent 68%);filter:blur(24px);opacity:0;mix-blend-mode:screen;animation:wind-mythic-awakening-pulse 14s ease-in-out 1.5s infinite}
+.forest-mythic-bird{z-index:4;top:13%;left:20%;width:400px;transform-origin:53% 88%;animation:wind-mythic-bird-breathe 4s ease-in-out 1.5s infinite}
+.forest-mythic-leaves{position:absolute;z-index:6;inset:0;pointer-events:none}
+.forest-mythic-leaves img{width:5%;filter:drop-shadow(0 0 5px rgba(159,233,72,.65));opacity:0;animation:wind-mythic-feather-enter .6s ease-out var(--leaf-enter) both,wind-mythic-feather-idle var(--leaf-cycle) ease-in-out var(--leaf-idle) infinite}
+.forest-mythic-leaves img:nth-child(1){top:14%;left:75%;width:4%;--leaf-enter:1.4s;--leaf-idle:2s;--leaf-cycle:5.8s}
+.forest-mythic-leaves img:nth-child(2){top:20%;left:14%;width:4.5%;--leaf-enter:1.65s;--leaf-idle:2.25s;--leaf-cycle:6.6s}
+.forest-mythic-leaves img:nth-child(3){top:37%;left:80%;--leaf-enter:1.9s;--leaf-idle:2.5s;--leaf-cycle:5.2s}
+.forest-mythic-badge{position:absolute;z-index:4;top:7%;left:32.5%;width:190px;aspect-ratio:472/120;overflow:hidden;pointer-events:none;animation:wind-mythic-badge-enter .8s ease-out 2s both}
+.forest-mythic-badge img{inset:0;width:100%}
+.hero-art.land-forest.is-mythic .owned-soarling-sparks{display:none}
+@media(prefers-reduced-motion:reduce){.forest-mythic-composite,.forest-mythic-glow,.forest-mythic-ring,.forest-mythic-core,.forest-mythic-bird,.forest-mythic-awakening,.forest-mythic-orbit-motes i,.forest-mythic-leaves img,.forest-mythic-badge{animation:none!important;transform:none!important}.forest-mythic-glow,.forest-mythic-ring,.forest-mythic-core,.forest-mythic-badge{opacity:1}.forest-mythic-leaves img{opacity:.7}.forest-mythic-awakening,.forest-mythic-orbit-motes{display:none}}
+
+/* Wizard Mythic uses the same layered hero composition as Forest Mythic. */
+.wizard-mythic-composite{display:block;aspect-ratio:1585/1634;isolation:isolate;animation:none}
+.wizard-mythic-composite img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.wizard-mythic-glow{z-index:0;top:0;left:5%;width:90%;animation:wind-mythic-glow-enter .6s ease-out both,wind-mythic-glow-idle 4.8s ease-in-out .6s infinite}
+.wizard-mythic-ring{z-index:1;top:24%;left:-1.5%;width:99%;animation:wind-mythic-ring-enter .8s ease-out 1s both,wind-mythic-ring-idle 12s ease-in-out 1.8s infinite}
+.wizard-mythic-orbit-motes{position:absolute;z-index:2;inset:0;pointer-events:none}
+.wizard-mythic-orbit-motes i{position:absolute;width:5px;height:5px;border-radius:50%;background:#f2d8ff;box-shadow:0 0 8px 3px #bd6cff,0 0 18px 6px rgba(126,54,238,.56);animation:wind-mythic-orbit-mote 12s linear var(--mote-delay) infinite both}
+.wizard-mythic-orbit-motes i:nth-child(1){--mote-delay:2.2s}.wizard-mythic-orbit-motes i:nth-child(2){--mote-delay:5.4s;width:4px;height:4px}.wizard-mythic-orbit-motes i:nth-child(3){--mote-delay:8.6s;width:3px;height:3px}
+.wizard-mythic-core{position:absolute;z-index:3;inset:0;pointer-events:none;animation:wind-mythic-core-enter 1.1s cubic-bezier(.22,1,.36,1) .4s both,wind-mythic-core-float 5.6s ease-in-out 1.5s infinite}
+.wizard-mythic-island{z-index:1;top:37%;left:1%;width:91%}
+.wizard-mythic-awakening{position:absolute;z-index:2;top:11%;left:17%;width:66%;height:55%;border-radius:50%;background:radial-gradient(ellipse,rgba(247,222,255,.76) 0%,rgba(157,67,244,.42) 27%,transparent 68%);filter:blur(24px);opacity:0;mix-blend-mode:screen;animation:wind-mythic-awakening-pulse 14s ease-in-out 1.5s infinite}
+.wizard-mythic-bird{z-index:4;top:13%;left:20%;width:400px;transform-origin:53% 88%;animation:wind-mythic-bird-breathe 4s ease-in-out 1.5s infinite}
+.wizard-mythic-crystals{position:absolute;z-index:6;inset:0;pointer-events:none}
+.wizard-mythic-crystals img{width:4.5%;filter:drop-shadow(0 0 7px rgba(185,88,255,.78));opacity:0;animation:wizard-mythic-crystal-enter .6s ease-out var(--crystal-enter) both,wizard-mythic-crystal-idle var(--crystal-cycle) ease-in-out var(--crystal-idle) infinite}
+.wizard-mythic-crystals img:nth-child(1){top:13%;left:76%;width:4%;--crystal-enter:1.4s;--crystal-idle:2s;--crystal-cycle:5.8s}
+.wizard-mythic-crystals img:nth-child(2){top:20%;left:14%;width:4.5%;--crystal-enter:1.65s;--crystal-idle:2.25s;--crystal-cycle:6.6s}
+.wizard-mythic-crystals img:nth-child(3){top:38%;left:82%;width:3.8%;--crystal-enter:1.9s;--crystal-idle:2.5s;--crystal-cycle:5.2s}
+.wizard-mythic-badge{position:absolute;z-index:7;top:7.5%;left:32.5%;width:190px;aspect-ratio:472/120;overflow:hidden;pointer-events:none;animation:wind-mythic-badge-enter .8s ease-out 2s both}
+.wizard-mythic-badge img{inset:0;width:100%}
+.hero-art.land-wizard.is-mythic .owned-soarling-sparks{display:none}
+@keyframes wizard-mythic-crystal-enter{from{opacity:0;transform:translateY(12px) rotate(-9deg) scale(.7)}to{opacity:.9;transform:translateY(0) rotate(0) scale(1)}}
+@keyframes wizard-mythic-crystal-idle{0%,100%{opacity:.55;transform:translateY(0) rotate(-4deg) scale(.96)}50%{opacity:1;transform:translateY(-11px) rotate(5deg) scale(1.08)}}
+@media(max-width:760px){.wizard-mythic-bird{width:58.2%}.wizard-mythic-badge{width:26%}}
+@media(prefers-reduced-motion:reduce){.wizard-mythic-composite,.wizard-mythic-glow,.wizard-mythic-ring,.wizard-mythic-core,.wizard-mythic-bird,.wizard-mythic-awakening,.wizard-mythic-orbit-motes i,.wizard-mythic-crystals img,.wizard-mythic-badge{animation:none!important;transform:none!important}.wizard-mythic-glow,.wizard-mythic-ring,.wizard-mythic-core,.wizard-mythic-badge{opacity:1}.wizard-mythic-crystals img{opacity:.8}.wizard-mythic-awakening,.wizard-mythic-orbit-motes{display:none}}
+
+/* Artist Mythic uses the same layered hero composition as Forest Mythic. */
+.artist-mythic-composite{display:block;aspect-ratio:1585/1634;isolation:isolate;animation:none}
+.artist-mythic-composite img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.artist-mythic-glow{z-index:0;top:0;left:5%;width:90%;animation:wind-mythic-glow-enter .6s ease-out both,wind-mythic-glow-idle 4.8s ease-in-out .6s infinite}
+.artist-mythic-ring{z-index:1;top:19%;left:-1.5%;width:99%;animation:wind-mythic-ring-enter .8s ease-out 1s both,wind-mythic-ring-idle 12s ease-in-out 1.8s infinite}
+.artist-mythic-orbit-motes{position:absolute;z-index:2;inset:0;pointer-events:none}
+.artist-mythic-orbit-motes i{position:absolute;width:5px;height:5px;border-radius:50%;background:#fff0a3;box-shadow:0 0 8px 3px #ff9b33,0 0 18px 6px rgba(255,67,35,.55);animation:wind-mythic-orbit-mote 12s linear var(--mote-delay) infinite both}
+.artist-mythic-orbit-motes i:nth-child(1){--mote-delay:2.2s}.artist-mythic-orbit-motes i:nth-child(2){--mote-delay:5.4s;width:4px;height:4px}.artist-mythic-orbit-motes i:nth-child(3){--mote-delay:8.6s;width:3px;height:3px}
+.artist-mythic-core{position:absolute;z-index:3;inset:0;pointer-events:none;animation:wind-mythic-core-enter 1.1s cubic-bezier(.22,1,.36,1) .4s both,wind-mythic-core-float 5.6s ease-in-out 1.5s infinite}
+.artist-mythic-island{z-index:1;top:35%;left:1%;width:91%}
+.artist-mythic-awakening{position:absolute;z-index:2;top:11%;left:17%;width:66%;height:55%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,240,167,.74) 0%,rgba(255,86,35,.42) 27%,transparent 68%);filter:blur(24px);opacity:0;mix-blend-mode:screen;animation:wind-mythic-awakening-pulse 14s ease-in-out 1.5s infinite}
+.artist-mythic-bird{z-index:4;top:13%;left:20%;width:400px;transform-origin:53% 88%;animation:wind-mythic-bird-breathe 4s ease-in-out 1.5s infinite}
+.artist-mythic-flames{position:absolute;z-index:6;inset:0;pointer-events:none}
+.artist-mythic-flames img{width:5.5%;filter:drop-shadow(0 0 7px rgba(255,84,26,.78));opacity:0;animation:artist-mythic-flame-enter .6s ease-out var(--flame-enter) both,artist-mythic-flame-idle var(--flame-cycle) ease-in-out var(--flame-idle) infinite}
+.artist-mythic-flames img:nth-child(1){top:14%;left:76%;width:5%;--flame-enter:1.4s;--flame-idle:2s;--flame-cycle:5.8s}
+.artist-mythic-flames img:nth-child(2){top:21%;left:14%;width:5.5%;--flame-enter:1.65s;--flame-idle:2.25s;--flame-cycle:6.6s}
+.artist-mythic-flames img:nth-child(3){top:39%;left:82%;width:4.5%;--flame-enter:1.9s;--flame-idle:2.5s;--flame-cycle:5.2s}
+.artist-mythic-badge{position:absolute;z-index:7;top:7.5%;left:32.5%;width:190px;aspect-ratio:472/120;overflow:hidden;pointer-events:none;animation:wind-mythic-badge-enter .8s ease-out 2s both}
+.artist-mythic-badge img{inset:0;width:100%}
+.hero-art.land-artist.is-mythic .owned-soarling-sparks{display:none}
+@keyframes artist-mythic-flame-enter{from{opacity:0;transform:translateY(12px) scale(.7)}to{opacity:.9;transform:translateY(0) scale(1)}}
+@keyframes artist-mythic-flame-idle{0%,100%{opacity:.55;transform:translateY(0) rotate(-3deg) scale(.96)}50%{opacity:1;transform:translateY(-11px) rotate(4deg) scale(1.08)}}
+@media(max-width:760px){.artist-mythic-bird{width:58.2%}.artist-mythic-badge{width:26%}}
+@media(prefers-reduced-motion:reduce){.artist-mythic-composite,.artist-mythic-glow,.artist-mythic-ring,.artist-mythic-core,.artist-mythic-bird,.artist-mythic-awakening,.artist-mythic-orbit-motes i,.artist-mythic-flames img,.artist-mythic-badge{animation:none!important;transform:none!important}.artist-mythic-glow,.artist-mythic-ring,.artist-mythic-core,.artist-mythic-badge{opacity:1}.artist-mythic-flames img{opacity:.8}.artist-mythic-awakening,.artist-mythic-orbit-motes{display:none}}
+
+/* King Mythic uses the same layered hero composition as Forest Mythic. */
+.king-mythic-composite{display:block;aspect-ratio:1585/1634;isolation:isolate;animation:none}
+.king-mythic-composite img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.king-mythic-glow{z-index:0;top:0;left:5%;width:90%;animation:wind-mythic-glow-enter .6s ease-out both,wind-mythic-glow-idle 4.8s ease-in-out .6s infinite}
+.king-mythic-ring{z-index:1;top:21%;left:-1.5%;width:99%;animation:wind-mythic-ring-enter .8s ease-out 1s both,wind-mythic-ring-idle 12s ease-in-out 1.8s infinite}
+.king-mythic-orbit-motes{position:absolute;z-index:2;inset:0;pointer-events:none}
+.king-mythic-orbit-motes i{position:absolute;width:5px;height:5px;border-radius:50%;background:#fff9bf;box-shadow:0 0 8px 3px #ffd84e,0 0 18px 6px rgba(230,174,28,.58);animation:wind-mythic-orbit-mote 12s linear var(--mote-delay) infinite both}
+.king-mythic-orbit-motes i:nth-child(1){--mote-delay:2.2s}.king-mythic-orbit-motes i:nth-child(2){--mote-delay:5.4s;width:4px;height:4px}.king-mythic-orbit-motes i:nth-child(3){--mote-delay:8.6s;width:3px;height:3px}
+.king-mythic-core{position:absolute;z-index:3;inset:0;pointer-events:none;animation:wind-mythic-core-enter 1.1s cubic-bezier(.22,1,.36,1) .4s both,wind-mythic-core-float 5.6s ease-in-out 1.5s infinite}
+.king-mythic-island{z-index:1;top:40%;left:1%;width:91%}
+.king-mythic-awakening{position:absolute;z-index:2;top:11%;left:17%;width:66%;height:55%;border-radius:50%;background:radial-gradient(ellipse,rgba(255,252,198,.78) 0%,rgba(255,218,55,.42) 27%,transparent 68%);filter:blur(24px);opacity:0;mix-blend-mode:screen;animation:wind-mythic-awakening-pulse 14s ease-in-out 1.5s infinite}
+.king-mythic-bird{z-index:4;top:16%;left:22%;width:400px;transform-origin:53% 88%;animation:wind-mythic-bird-breathe 4s ease-in-out 1.5s infinite}
+.king-mythic-feathers{position:absolute;z-index:6;inset:0;pointer-events:none}
+.king-mythic-feathers img{width:5%;filter:drop-shadow(0 0 7px rgba(255,216,64,.78));opacity:0;animation:king-mythic-feather-enter .6s ease-out var(--feather-enter) both,king-mythic-feather-idle var(--feather-cycle) ease-in-out var(--feather-idle) infinite}
+.king-mythic-feathers img:nth-child(1){top:13%;left:76%;width:4.5%;--feather-enter:1.4s;--feather-idle:2s;--feather-cycle:5.8s}
+.king-mythic-feathers img:nth-child(2){top:20%;left:14%;width:5%;--feather-enter:1.65s;--feather-idle:2.25s;--feather-cycle:6.6s}
+.king-mythic-feathers img:nth-child(3){top:38%;left:82%;width:4.2%;--feather-enter:1.9s;--feather-idle:2.5s;--feather-cycle:5.2s}
+.king-mythic-badge{position:absolute;z-index:7;top:9%;left:32.5%;width:190px;aspect-ratio:472/120;overflow:hidden;pointer-events:none;animation:wind-mythic-badge-enter .8s ease-out 2s both}
+.king-mythic-badge img{inset:0;width:100%}
+.hero-art.land-king.is-mythic .owned-soarling-sparks{display:none}
+@keyframes king-mythic-feather-enter{from{opacity:0;transform:translateY(12px) rotate(-10deg) scale(.7)}to{opacity:.9;transform:translateY(0) rotate(0) scale(1)}}
+@keyframes king-mythic-feather-idle{0%,100%{opacity:.55;transform:translateY(0) rotate(-5deg) scale(.96)}50%{opacity:1;transform:translateY(-11px) rotate(6deg) scale(1.08)}}
+@media(max-width:760px){.king-mythic-bird{width:58.2%}.king-mythic-badge{width:26%}}
+@media(prefers-reduced-motion:reduce){.king-mythic-composite,.king-mythic-glow,.king-mythic-ring,.king-mythic-core,.king-mythic-bird,.king-mythic-awakening,.king-mythic-orbit-motes i,.king-mythic-feathers img,.king-mythic-badge{animation:none!important;transform:none!important}.king-mythic-glow,.king-mythic-ring,.king-mythic-core,.king-mythic-badge{opacity:1}.king-mythic-feathers img{opacity:.8}.king-mythic-awakening,.king-mythic-orbit-motes{display:none}}
 @media(max-width:760px){
   .hero-art.bird-owned.is-mythic .bird-land-composite{top:var(--mythic-mobile-top,-8px);left:calc(6% + var(--mythic-mobile-left,0%));scale:var(--mythic-mobile-scale-x,1.14) var(--mythic-mobile-scale-y,1.08)}
   .hero-art.bird-owned.is-mythic.land-wind{--mythic-mobile-top:-5px;--mythic-mobile-left:1.7%;--mythic-mobile-scale-x:1.135;--mythic-mobile-scale-y:1.045}

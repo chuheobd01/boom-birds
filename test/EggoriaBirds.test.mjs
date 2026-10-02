@@ -282,3 +282,38 @@ test("pair rotation repeats two mints per land", async () => {
     assert.equal(await birds.landRarityRemaining(land, 4), 1n);
   }
 });
+
+test("legendary rotation repeats one Legendary mint per land without consuming quotas", async () => {
+  const { ethers } = await network.connect();
+  const [admin] = await ethers.getSigners();
+  const birds = await ethers.deployContract("EggoriaBirds", [await admin.getAddress()], admin);
+  await birds.waitForDeployment();
+  await (await birds.setEvolutionTestMode(true)).wait();
+  await (await birds.setEvolutionLegendaryRotationMode(true)).wait();
+  await (await birds.setMintingEnabled(true)).wait();
+
+  for (let index = 0; index < 20; index += 1) {
+    const address = `0x${(0x70_000 + index).toString(16).padStart(40, "0")}`;
+    await ethers.provider.send("hardhat_setBalance", [address, "0x56BC75E2D63100000"]);
+    await ethers.provider.send("hardhat_impersonateAccount", [address]);
+    const owner = await ethers.getSigner(address);
+    const tokenId = index + 1;
+    await (await birds.connect(owner).mint()).wait();
+    assert.equal(await birds.tokenLand(tokenId), BigInt(index % 5));
+    await (await birds.connect(owner).checkIn(tokenId)).wait();
+    await (await birds.connect(owner).checkIn(tokenId)).wait();
+    const state = await birds.tokenState(tokenId);
+    assert.equal(state.stage, 2n);
+    assert.equal(state.rarityAssigned, true);
+    assert.equal(state.rarity, 3n);
+    await ethers.provider.send("hardhat_stopImpersonatingAccount", [address]);
+  }
+
+  for (let land = 0; land < 5; land += 1) {
+    assert.equal(await birds.landMinted(land), 4n);
+    assert.equal(await birds.landRarityRemaining(land, 3), 4n);
+    assert.equal(await birds.landRarityPoolRemaining(land), 100n);
+  }
+  assert.equal(await birds.rarityRemaining(3), 20n);
+  assert.equal(await birds.rarityPoolRemaining(), 500n);
+});

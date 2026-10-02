@@ -124,6 +124,7 @@ const landLegendarySoarlingResultAssets = ["soarling-legendary-forest.png", "soa
 const landMythicSoarlingResultAssets = ["soarling-mythic-forest.png", "soarling-mythic-wind.png", "soarling-mythic-wizard.png", "soarling-mythic-artist.png", "soarling-mythic-king.png"] as const;
 const landMythicHeroAssets = ["soarling-mythic-hero-forest.png", "soarling-mythic-hero-wind.png", "soarling-mythic-hero-wizard.png", "soarling-mythic-hero-artist.png", "soarling-mythic-hero-king.png"] as const;
 const windMythicHeroLayers = ["wind-mythic-layer-glow.png", "wind-mythic-layer-ring.png", "wind-mythic-layer-island.png", "wind-mythic-layer-bird.png", "wind-mythic-layer-badge.png"] as const;
+const forestMythicHeroLayers = ["forest-mythic-layer-glow.png", "forest-mythic-layer-ring.png", "forest-mythic-layer-island.png", "forest-mythic-layer-bird.png", "forest-mythic-layer-leaf.png", "wind-mythic-layer-badge.png"] as const;
 const landFinalStageAssets = [
   ["final-stage-forest-hatchling.png", "final-stage-forest-fledgling.png", "final-stage-forest-mythic.png"],
   ["final-stage-wind-hatchling.png", "final-stage-wind-fledgling.png", "final-stage-wind-mythic.png"],
@@ -1766,9 +1767,11 @@ export default function EggoriaLanding({
       } else if (stageBeforeCheckIn === 1 && evolvedBird?.stage === 2) {
         const popupArtwork = asset(getSoarlingResultAsset(evolvedBird));
         const heroArtwork = evolvedBird.rarity === 4 ? getOwnedHeroArtwork(evolvedBird) : evolvedBird.image || popupArtwork;
-        const heroArtworkSources = evolvedBird.rarity === 4 && evolvedBird.land === 1
-          ? windMythicHeroLayers.map((layer) => asset(layer))
-          : [heroArtwork];
+        const heroArtworkSources = evolvedBird.rarity === 4 && evolvedBird.land === 0
+          ? forestMythicHeroLayers.map((layer) => asset(layer))
+          : evolvedBird.rarity === 4 && evolvedBird.land === 1
+            ? windMythicHeroLayers.map((layer) => asset(layer))
+            : [heroArtwork];
         await Promise.all([...heroArtworkSources.map(decodeImage), decodeImage(popupArtwork)]);
         setSoarlingTransactionHash(result.transactionHash);
         setSoarlingResult(evolvedBird);
@@ -2094,7 +2097,29 @@ export default function EggoriaLanding({
               <i className="owned-legendary-land-light owned-legendary-land-light-right" />
             </span>
           )}
-          {compositeBird && (compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 1
+          {compositeBird && (compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 0
+            ? <span
+              key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
+              className="bird-land-composite forest-mythic-composite"
+              role="img"
+              aria-label="Forest Soarling on its island"
+            >
+              <img className="forest-mythic-glow" src={asset("forest-mythic-layer-glow.png")} alt="" />
+              <img className="forest-mythic-ring" src={asset("forest-mythic-layer-ring.png")} alt="" />
+              <span className="forest-mythic-orbit-motes" aria-hidden="true"><i /><i /><i /></span>
+              <span className="forest-mythic-core" aria-hidden="true">
+                <img className="forest-mythic-island" src={asset("forest-mythic-layer-island.png")} alt="" />
+                <i className="forest-mythic-awakening" />
+                <img className="forest-mythic-bird" src={asset("forest-mythic-layer-bird.png")} alt="" />
+                <span className="forest-mythic-leaves">
+                  <img src={asset("forest-mythic-layer-leaf.png")} alt="" />
+                  <img src={asset("forest-mythic-layer-leaf.png")} alt="" />
+                  <img src={asset("forest-mythic-layer-leaf.png")} alt="" />
+                </span>
+                <span className="forest-mythic-badge"><img src={asset("wind-mythic-layer-badge.png")} alt="" /></span>
+              </span>
+            </span>
+            : compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 1
             ? <span
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className="bird-land-composite wind-mythic-composite"
@@ -2103,9 +2128,84 @@ export default function EggoriaLanding({
             >
               <img className="wind-mythic-glow" src={asset("wind-mythic-layer-glow.png")} alt="" />
               <img className="wind-mythic-ring" src={asset("wind-mythic-layer-ring.png")} alt="" />
-              <img className="wind-mythic-island" src={asset("wind-mythic-layer-island.png")} alt="" />
-              <img className="wind-mythic-bird" src={asset("wind-mythic-layer-bird.png")} alt="" />
-              <img className="wind-mythic-badge" src={asset("wind-mythic-layer-badge.png")} alt="" />
+              <span className="wind-mythic-orbit-motes" aria-hidden="true"><i /><i /><i /></span>
+              <span className="wind-mythic-core" aria-hidden="true">
+                <img className="wind-mythic-island" src={asset("wind-mythic-layer-island.png")} alt="" />
+                <i className="wind-mythic-awakening" />
+                <img className="wind-mythic-bird" src={asset("wind-mythic-layer-bird.png")} alt="" />
+                <span className="wind-mythic-feathers">
+                  <img src={asset("wind-mythic-feather.png")} alt="" />
+                  <img src={asset("wind-mythic-feather.png")} alt="" />
+                  <img src={asset("wind-mythic-feather.png")} alt="" />
+                </span>
+                <span className="wind-mythic-badge"><img src={asset("wind-mythic-layer-badge.png")} alt="" /></span>
+              </span>
+            </span>
+            : compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 2
+            ? <span
+              key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
+              className="bird-land-composite wizard-mythic-composite"
+              role="img"
+              aria-label="Wizard Soarling on its island"
+            >
+              <img className="wizard-mythic-glow" src={asset("wizard-mythic-layer-glow.png")} alt="" />
+              <img className="wizard-mythic-ring" src={asset("wizard-mythic-layer-ring.png")} alt="" />
+              <span className="wizard-mythic-orbit-motes" aria-hidden="true"><i /><i /><i /></span>
+              <span className="wizard-mythic-core" aria-hidden="true">
+                <img className="wizard-mythic-island" src={asset("wizard-mythic-layer-island.png")} alt="" />
+                <i className="wizard-mythic-awakening" />
+                <img className="wizard-mythic-bird" src={asset("wizard-mythic-layer-bird.png")} alt="" />
+                <span className="wizard-mythic-crystals">
+                  <img src={asset("wizard-mythic-layer-crystal.png")} alt="" />
+                  <img src={asset("wizard-mythic-layer-crystal.png")} alt="" />
+                  <img src={asset("wizard-mythic-layer-crystal.png")} alt="" />
+                </span>
+                <span className="wizard-mythic-badge"><img src={asset("wind-mythic-layer-badge.png")} alt="" /></span>
+              </span>
+            </span>
+            : compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 3
+            ? <span
+              key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
+              className="bird-land-composite artist-mythic-composite"
+              role="img"
+              aria-label="Artist Soarling on its island"
+            >
+              <img className="artist-mythic-glow" src={asset("artist-mythic-layer-glow.png")} alt="" />
+              <img className="artist-mythic-ring" src={asset("artist-mythic-layer-ring.png")} alt="" />
+              <span className="artist-mythic-orbit-motes" aria-hidden="true"><i /><i /><i /></span>
+              <span className="artist-mythic-core" aria-hidden="true">
+                <img className="artist-mythic-island" src={asset("artist-mythic-layer-island.png")} alt="" />
+                <i className="artist-mythic-awakening" />
+                <img className="artist-mythic-bird" src={asset("artist-mythic-layer-bird.png")} alt="" />
+                <span className="artist-mythic-flames">
+                  <img src={asset("artist-mythic-layer-flame.png")} alt="" />
+                  <img src={asset("artist-mythic-layer-flame.png")} alt="" />
+                  <img src={asset("artist-mythic-layer-flame.png")} alt="" />
+                </span>
+                <span className="artist-mythic-badge"><img src={asset("wind-mythic-layer-badge.png")} alt="" /></span>
+              </span>
+            </span>
+            : compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 4
+            ? <span
+              key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
+              className="bird-land-composite king-mythic-composite"
+              role="img"
+              aria-label="King Soarling on its island"
+            >
+              <img className="king-mythic-glow" src={asset("king-mythic-layer-glow.png")} alt="" />
+              <img className="king-mythic-ring" src={asset("king-mythic-layer-ring.png")} alt="" />
+              <span className="king-mythic-orbit-motes" aria-hidden="true"><i /><i /><i /></span>
+              <span className="king-mythic-core" aria-hidden="true">
+                <img className="king-mythic-island" src={asset("king-mythic-layer-island.png")} alt="" />
+                <i className="king-mythic-awakening" />
+                <img className="king-mythic-bird" src={asset("king-mythic-layer-bird.png")} alt="" />
+                <span className="king-mythic-feathers">
+                  <img src={asset("king-mythic-layer-feather.png")} alt="" />
+                  <img src={asset("king-mythic-layer-feather.png")} alt="" />
+                  <img src={asset("king-mythic-layer-feather.png")} alt="" />
+                </span>
+                <span className="king-mythic-badge"><img src={asset("wind-mythic-layer-badge.png")} alt="" /></span>
+              </span>
             </span>
             : <img
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
