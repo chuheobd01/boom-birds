@@ -10,6 +10,7 @@ import { getUserEmail } from "thirdweb/wallets/in-app";
 import { createWallet, getWalletBalance, inAppWallet, injectedProvider } from "thirdweb/wallets";
 import { decodeEventLog, decodeFunctionResult, encodeFunctionData, isAddress, toHex } from "viem";
 
+import { BIRD_DISPLAY_CONFIG, getBirdLabel, getLandName } from "@/app/bird-display-config";
 import { EGGORIA_MAX_SUPPLY, eggoriaBirdsAbi } from "@/lib/eggoria-birds";
 import artistPrimaryMetadata from "@/metadata/artist-primary.json";
 import forestPrimaryMetadata from "@/metadata/forest-primary.json";
@@ -60,7 +61,6 @@ declare global {
     ethereum?: EthereumProvider;
   }
 }
-
 const asset = (name: string) => `/assets/landing/${name}`;
 const subscribeToClient = () => () => undefined;
 const ARC_TESTNET = defineChain({
@@ -134,10 +134,8 @@ const navItems = [
   ["home", "Home"], ["how-it-works", "How It Works"], ["lands", "Lands"],
   ["rarity", "Rarity"], ["roadmap", "Roadmap"], ["faq", "FAQ"],
 ] as const;
-const landNames = ["Forest", "Wind", "Wizard", "Artist", "King"] as const;
-const landBadgeNames = ["Land Forest", "Land Wind", "Land Wizard", "Land Artist", "Land King"] as const;
 const landRevealIcons = ["hatch-land-forest.png", "hatch-land-wind.png", "hatch-land-wizard.png", "hatch-land-fire.png", "hatch-land-king.png"] as const;
-const landClassNames = ["forest", "wind", "wizard", "artist", "king"] as const;
+const landClassNames = BIRD_DISPLAY_CONFIG.map(({ code }) => code);
 const landBirdAssets = ["forest-primary.png", "wind-primary.png", "wizard-primary.png", "artist-primary.png", "king-primary.png"] as const;
 const landHatchlingHeroBirdAssets = ["forest-primary-facing-left.png", "wind-primary-facing-left.png", "wizard-primary-facing-left.png", "artist-primary-facing-left.png", "king-primary-facing-left.png"] as const;
 const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png", "land-artist.png", "land-king.png"] as const;
@@ -322,7 +320,7 @@ const YoungBirdHeroComposite = ({ bird, isReveal = false }: { bird: OwnedBird; i
     key={`young-composite-${bird.tokenId}-${bird.stage}`}
     className={`young-hero-${landClass} ${stageClass}${isReveal ? " is-hatch-reveal" : ""}`}
     role="img"
-    aria-label={`${landNames[bird.land]} ${stageNames[bird.stage] ?? "bird"} on its island`}
+    aria-label={`${getBirdLabel(bird.land)}, ${stageNames[bird.stage] ?? "bird"}, on ${getLandName(bird.land)} island`}
   >
     <span className="young-hero-core" aria-hidden="true">
       <img className="young-hero-island" src={asset(`${landClass}-mythic-layer-island.png`)} alt="" />
@@ -340,7 +338,7 @@ const LowerRarityHeroComposite = ({ bird }: { bird: OwnedBird }) => {
     key={`owned-composite-${bird.tokenId}-${bird.stage}-${bird.rarity}`}
     className={`${rarityClass}-hero-${landClass}`}
     role="img"
-    aria-label={`${landNames[bird.land]} ${rarityNames[bird.rarity]} Soarling on its island`}
+    aria-label={`${getBirdLabel(bird.land)}, ${rarityNames[bird.rarity]} Soarling, on ${getLandName(bird.land)} island`}
   >
     <span className="lower-rarity-hero-core" aria-hidden="true">
       <img className="lower-rarity-hero-island" src={asset(`${landClass}-mythic-layer-island.png`)} alt="" />
@@ -358,7 +356,7 @@ const EpicHeroComposite = ({ bird }: { bird: OwnedBird }) => {
     key={`owned-composite-${bird.tokenId}-${bird.stage}-${bird.rarity}`}
     className={`epic-hero-${landClass}`}
     role="img"
-    aria-label={`${landNames[bird.land]} Epic Soarling on its island`}
+    aria-label={`${getBirdLabel(bird.land)}, Epic Soarling, on ${getLandName(bird.land)} island`}
   >
     <span className="epic-hero-core" aria-hidden="true">
       <img className="epic-hero-island" src={asset(`${landClass}-mythic-layer-island.png`)} alt="" />
@@ -397,7 +395,7 @@ const LegendaryHeroComposite = ({ bird }: { bird: OwnedBird }) => {
     key={`owned-composite-${bird.tokenId}-${bird.stage}-${bird.rarity}`}
     className={`legendary-hero-${landClass}`}
     role="img"
-    aria-label={`${landNames[bird.land]} Legendary Soarling on its island`}
+    aria-label={`${getBirdLabel(bird.land)}, Legendary Soarling, on ${getLandName(bird.land)} island`}
   >
     <img className="legendary-hero-glow" src={asset(`${landClass}-mythic-layer-glow.png`)} alt="" />
     <img className="legendary-hero-ring" src={asset(ringAsset)} alt="" />
@@ -2289,7 +2287,7 @@ export default function EggoriaLanding({
             <div className="wallet-menu-row"><span><img src={asset("claim-network.png")} alt="" />Network</span><strong>{walletNetworkName}</strong></div>
             <div className="wallet-menu-divider" />
             {ownedBird
-              ? <a className="wallet-menu-row wallet-menu-link wallet-menu-bird-link" href={`https://testnet.arcscan.app/token/${eggoriaBirdsAddress}/instance/${ownedBird.tokenId.toString()}`} target="_blank" rel="noreferrer"><span><img src={asset("evolution-bird.png")} alt="" />My Bird</span><strong>{ownedBird.landAssigned ? `${currentStage}: ${stageProgress}/10` : "Assigning Land"}</strong></a>
+              ? <a className="wallet-menu-row wallet-menu-link wallet-menu-bird-link" href={`https://testnet.arcscan.app/token/${eggoriaBirdsAddress}/instance/${ownedBird.tokenId.toString()}`} target="_blank" rel="noreferrer"><span><img src={asset("evolution-bird.png")} alt="" />{ownedBird.landAssigned ? `My ${getBirdLabel(ownedBird.land)}` : "My Bird"}</span><strong>{ownedBird.landAssigned ? `${currentStage}: ${stageProgress}/10` : "Assigning Land"}</strong></a>
               : <div className="wallet-menu-row"><span><img src={asset("evolution-bird.png")} alt="" />My Bird</span><strong>No NFT</strong></div>}
             <a className="wallet-menu-row wallet-menu-link" href={`https://testnet.arcscan.app/address/${walletAddress}`} target="_blank" rel="noreferrer"><span><img src={asset("wallet-menu-external.png")} alt="" />View on Explorer</span></a>
             <div className="wallet-menu-divider" />
@@ -2300,7 +2298,7 @@ export default function EggoriaLanding({
 
       <section className={`hero-new${isHatching ? " is-hatching" : ""}${postHatchOwned ? " is-post-hatch" : ""}${ownedBird?.landAssigned && ownedBird.stage >= 2 ? " is-final-form" : ""}`} id="home">
         <div className="hero-copy" data-node-id="316:52">
-          <h1>{ownedBird?.landAssigned && ownedBird.stage >= 2 ? <>Your {landNames[ownedBird.land]} Bird<br />Has Reached Its<br />Final Form</> : <>Hatch Your<br />Own Bird</>}</h1>
+          <h1>{ownedBird?.landAssigned && ownedBird.stage >= 2 ? <>Your {getBirdLabel(ownedBird.land)}<br />Has Reached Its<br />Final Form</> : <>Hatch Your<br />Own Bird</>}</h1>
           {!(ownedBird?.landAssigned && ownedBird.stage >= 2) && <><p>Mint a mysterious Egg for free, hatch your Bird,<br />and help it evolve through daily check-ins.</p>
           <div className={`mint-progress${statsLoading ? " is-loading" : ""}`} aria-busy={statsLoading}>
             <img className="progress-frame" src={asset("progress-frame.png")} alt="" />
@@ -2310,7 +2308,7 @@ export default function EggoriaLanding({
             </div>
           </div></>}
           {walletViewLoading ? <div className="hero-wallet-state-loading" aria-label="Loading your Eggoria progress" aria-busy="true" /> : ownedBird?.landAssigned && ownedBird.stage >= 2 ? <div className="final-form-panel">
-            <div className={`final-stage-card land-${ownedLandClass}`} aria-label={`${landNames[ownedBird.land]} bird evolution: Hatchling, Fledgling, Soarling`}>
+            <div className={`final-stage-card land-${ownedLandClass}`} aria-label={`${getBirdLabel(ownedBird.land)} evolution: Hatchling, Fledgling, Soarling`}>
               <img className="final-stage-frame" src={asset("checkin-frame.png")} alt="" />
               <div className="final-stage-journey">
                 <div className="final-stage-item"><span className="final-stage-picture"><img src={asset(landFinalStageAssets[ownedBird.land]?.[0] ?? landFinalStageAssets[2][0])} alt="" /></span><span>Hatchling</span></div>
@@ -2446,7 +2444,7 @@ export default function EggoriaLanding({
           </div>}
         </div>
         {ownedBird?.landAssigned && ownedBird.stage >= 2 && ownedBird.rarityAssigned && <span className={`final-form-rarity rarity-${rarityNames[ownedBird.rarity]?.toLowerCase() ?? "common"}`} aria-label={`${rarityNames[ownedBird.rarity] ?? "Common"} rarity`}>✦ {rarityNames[ownedBird.rarity] ?? "Common"} ✦</span>}
-        <div className={`hero-art${walletViewLoading ? " is-state-loading" : ownedBird ? ` bird-owned land-${ownedLandClass}${ownedBird.stage === 2 ? " is-soarling" : ""}${ownedBird.stage === 2 && ownedBird.rarity === 0 ? " is-common" : ownedBird.stage === 2 && ownedBird.rarity === 1 ? " is-rare" : ownedBird.stage === 2 && ownedBird.rarity === 2 ? " is-epic" : ownedBird.stage === 2 && ownedBird.rarity === 3 ? " is-legendary" : ownedBird.stage === 2 && ownedBird.rarity === 4 ? " is-mythic" : ""}${postHatchOwned ? " is-post-hatch" : ""}` : isHatching ? ` is-hatching hatch-${hatchPhase} land-${hatchLandClass}${hatchRarityClass}` : ""}`} aria-label={!walletViewLoading && ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : isHatching ? "Your Egg is hatching" : undefined} aria-hidden={!walletViewLoading && (ownedBird || isHatching) ? undefined : "true"}>
+        <div className={`hero-art${walletViewLoading ? " is-state-loading" : ownedBird ? ` bird-owned land-${ownedLandClass}${ownedBird.stage === 2 ? " is-soarling" : ""}${ownedBird.stage === 2 && ownedBird.rarity === 0 ? " is-common" : ownedBird.stage === 2 && ownedBird.rarity === 1 ? " is-rare" : ownedBird.stage === 2 && ownedBird.rarity === 2 ? " is-epic" : ownedBird.stage === 2 && ownedBird.rarity === 3 ? " is-legendary" : ownedBird.stage === 2 && ownedBird.rarity === 4 ? " is-mythic" : ""}${postHatchOwned ? " is-post-hatch" : ""}` : isHatching ? ` is-hatching hatch-${hatchPhase} land-${hatchLandClass}${hatchRarityClass}` : ""}`} aria-label={!walletViewLoading && ownedBird?.landAssigned ? `${getBirdLabel(ownedBird.land)} on ${getLandName(ownedBird.land)} island` : isHatching ? "Your Egg is hatching" : undefined} aria-hidden={!walletViewLoading && (ownedBird || isHatching) ? undefined : "true"}>
           <span className="egg-glow-new">
             <img src={asset("glow.svg")} alt="" />
           </span>
@@ -2466,7 +2464,7 @@ export default function EggoriaLanding({
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className="bird-land-composite forest-mythic-composite"
               role="img"
-              aria-label="Forest Soarling on its island"
+              aria-label={`${getBirdLabel(0)}, Soarling, on ${getLandName(0)} island`}
             >
               <img className="forest-mythic-glow" src={asset("forest-mythic-layer-glow.png")} alt="" />
               <img className="forest-mythic-ring" src={asset("forest-mythic-layer-ring.png")} alt="" />
@@ -2488,7 +2486,7 @@ export default function EggoriaLanding({
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className="bird-land-composite wind-mythic-composite"
               role="img"
-              aria-label="Wind Soarling on its island"
+              aria-label={`${getBirdLabel(1)}, Soarling, on ${getLandName(1)} island`}
             >
               <img className="wind-mythic-glow" src={asset("wind-mythic-layer-glow.png")} alt="" />
               <img className="wind-mythic-ring" src={asset("wind-mythic-layer-ring.png")} alt="" />
@@ -2510,7 +2508,7 @@ export default function EggoriaLanding({
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className="bird-land-composite wizard-mythic-composite"
               role="img"
-              aria-label="Wizard Soarling on its island"
+              aria-label={`${getBirdLabel(2)}, Soarling, on ${getLandName(2)} island`}
             >
               <img className="wizard-mythic-glow" src={asset("wizard-mythic-layer-glow.png")} alt="" />
               <img className="wizard-mythic-ring" src={asset("wizard-mythic-layer-ring.png")} alt="" />
@@ -2532,7 +2530,7 @@ export default function EggoriaLanding({
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className="bird-land-composite artist-mythic-composite"
               role="img"
-              aria-label="Artist Soarling on its island"
+              aria-label={`${getBirdLabel(3)}, Soarling, on ${getLandName(3)} island`}
             >
               <img className="artist-mythic-glow" src={asset("artist-mythic-layer-glow.png")} alt="" />
               <img className="artist-mythic-ring" src={asset("artist-mythic-layer-ring.png")} alt="" />
@@ -2554,7 +2552,7 @@ export default function EggoriaLanding({
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className="bird-land-composite king-mythic-composite"
               role="img"
-              aria-label="King Soarling on its island"
+              aria-label={`${getBirdLabel(4)}, Soarling, on ${getLandName(4)} island`}
             >
               <img className="king-mythic-glow" src={asset("king-mythic-layer-glow.png")} alt="" />
               <img className="king-mythic-ring" src={asset("king-mythic-layer-ring.png")} alt="" />
@@ -2575,14 +2573,14 @@ export default function EggoriaLanding({
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className={`bird-land-composite${!ownedBird ? " is-hatch-reveal" : ""}`}
               src={getOwnedHeroArtwork(compositeBird)}
-              alt={`${landNames[compositeBird.land]} ${stageNames[compositeBird.stage] ?? "bird"} on its island`}
+              alt={`${getBirdLabel(compositeBird.land)}, ${stageNames[compositeBird.stage] ?? "bird"}, on ${getLandName(compositeBird.land)} island`}
             />)}
           {ownedBird?.landAssigned
             ? null
             : <>
               <img className="island-new" src={ownedBird?.landAssigned ? asset(landIslandAssets[ownedBird.land] ?? "land-wizard.png") : asset("island.png")} alt="" />
               {ownedBird
-                ? <img className={`bird-new${ownedBird.landAssigned ? "" : " is-metadata-pending"}`} src={ownedBird.landAssigned ? ownedBird.image || asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : asset("claim-egg.png")} alt={ownedBird.landAssigned ? `${landNames[ownedBird.land]} bird` : "Mystery Egg awaiting land assignment"} />
+                ? <img className={`bird-new${ownedBird.landAssigned ? "" : " is-metadata-pending"}`} src={ownedBird.landAssigned ? ownedBird.image || asset(landBirdAssets[ownedBird.land] ?? "wizard-primary.png") : asset("claim-egg.png")} alt={ownedBird.landAssigned ? getBirdLabel(ownedBird.land) : "Mystery Egg awaiting land assignment"} />
                 : isHatching ? <>
                   <img ref={heroEggRef} className="egg-new hatch-egg-main" src={asset("egg.png")} alt="Your Egg is hatching" tabIndex={-1} />
                   <span className="hatch-aura" aria-hidden="true" />
@@ -2886,7 +2884,7 @@ export default function EggoriaLanding({
               <div><dt><img src={asset("claim-wallet.png")} alt="" />Wallet</dt><dd>{shortAddress(walletAddress)}</dd></div>
               <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{walletNetworkName}</dd></div>
               <div><dt><img src={asset("evolution-arrow.png")} alt="" />Evolves to</dt><dd>{evolutionTargetStage === 2 ? "Soarling" : "Fledgling"}</dd></div>
-              <div><dt><img src={asset("evolution-bird.png")} alt="" />Bird</dt><dd>#{ownedBird.tokenId.toString()} - {landBadgeNames[ownedBird.land] ?? "Land Wizard"}</dd></div>
+              <div><dt><img src={asset("evolution-bird.png")} alt="" />Bird</dt><dd>#{ownedBird.tokenId.toString()} - {getBirdLabel(ownedBird.land)}</dd></div>
               <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{evolutionTargetStage === 2
                 ? evolutionVrfFee === "Unavailable" || evolutionVrfFee === "Estimating..." ? evolutionVrfFee : `~${evolutionVrfFee} Test USDC`
                 : evolutionNetworkFee === "Unavailable" || evolutionNetworkFee === "Estimating..." ? evolutionNetworkFee : `~${evolutionNetworkFee} Test USDC`}</dd></div>
@@ -2927,11 +2925,11 @@ export default function EggoriaLanding({
           <div className="hatch-complete-artwork">
             <img
               src={asset(landHatchPopupAssets[hatchResult.bird.land] ?? "hatch-popup-wizard.png")}
-              alt={`${landNames[hatchResult.bird.land]} bird on its island`}
+              alt={`${getBirdLabel(hatchResult.bird.land)}, Hatchling, on ${getLandName(hatchResult.bird.land)} island`}
             />
             <span className="hatch-land-badge">
               <img src={asset(landRevealIcons[hatchResult.bird.land] ?? "hatch-land-wizard.png")} alt="" />
-              {landBadgeNames[hatchResult.bird.land] ?? "Land Wizard"}
+              {getLandName(hatchResult.bird.land)}
             </span>
           </div>
           <dl className="hatch-complete-details">
@@ -2971,11 +2969,11 @@ export default function EggoriaLanding({
           <div className="hatch-complete-artwork">
             <img
               src={asset(landEvolutionPopupAssets[evolutionResult.land] ?? "evolution-popup-wizard.png")}
-              alt={`${landNames[evolutionResult.land]} Fledgling bird on its island`}
+              alt={`${getBirdLabel(evolutionResult.land)}, Fledgling, on ${getLandName(evolutionResult.land)} island`}
             />
             <span className="hatch-land-badge">
               <img src={asset(landRevealIcons[evolutionResult.land] ?? "hatch-land-wizard.png")} alt="" />
-              {landBadgeNames[evolutionResult.land] ?? "Land Wizard"}
+              {getLandName(evolutionResult.land)}
             </span>
           </div>
           <dl className="hatch-complete-details">
@@ -3049,11 +3047,11 @@ export default function EggoriaLanding({
             <img
               className="soarling-result-image"
               src={asset(getSoarlingResultAsset(soarlingResult))}
-              alt={`${landNames[soarlingResult.land]} Soarling bird on its island`}
+              alt={`${getBirdLabel(soarlingResult.land)}, Soarling, on ${getLandName(soarlingResult.land)} island`}
             />
             <span className="hatch-land-badge">
               <img src={asset(landRevealIcons[soarlingResult.land] ?? "hatch-land-wizard.png")} alt="" />
-              {landBadgeNames[soarlingResult.land] ?? "Land Wizard"}
+              {getLandName(soarlingResult.land)}
             </span>
           </div>
           <dl className="hatch-complete-details">
