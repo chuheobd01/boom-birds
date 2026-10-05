@@ -182,6 +182,37 @@ test("admin can seed a fresh bird at zero check-ins", async () => {
   assert.ok(after.lastCheckInDay > 0n);
 });
 
+test("QA testnet contract allows real day-10 and day-20 checkpoints without waiting", async () => {
+  const { ethers } = await network.connect();
+  const [admin, owner] = await ethers.getSigners();
+  const vrf = await ethers.deployContract("MockD20VRFCoordinator", [], admin);
+  await vrf.waitForDeployment();
+  const birds = await ethers.deployContract(
+    "EggoriaBirdsTestnet",
+    [await admin.getAddress(), await vrf.getAddress()],
+    admin,
+  );
+  await birds.waitForDeployment();
+
+  await (await birds.seedTestBird(await owner.getAddress(), 2, 0)).wait();
+  await (await birds.connect(owner).checkIn(1)).wait();
+  let state = await birds.tokenState(1);
+  assert.equal(state.checkIns, 10n);
+  assert.equal(state.stage, 1n);
+
+  const fee = await vrf.FEE();
+  await (await birds.connect(owner).checkIn(1, { value: fee })).wait();
+  state = await birds.tokenState(1);
+  assert.equal(state.checkIns, 20n);
+  assert.equal(state.stage, 1n);
+  assert.equal(state.rarityAssigned, false);
+
+  await (await vrf.fulfill(1, ethers.ZeroHash)).wait();
+  state = await birds.tokenState(1);
+  assert.equal(state.stage, 2n);
+  assert.equal(state.rarityAssigned, true);
+});
+
 test("D20 callbacks alone assign land and day-20 rarity, with expired-request retry", async () => {
   const { ethers } = await network.connect();
   const [admin, owner, secondOwner] = await ethers.getSigners();

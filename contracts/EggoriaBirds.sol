@@ -246,9 +246,7 @@ contract EggoriaBirds is ERC721, AccessControl, D20VRFConsumer {
         if (bird.checkIns >= ADVANCED_CHECK_INS) revert EvolutionAlreadyComplete();
 
         uint64 today = uint64(block.timestamp / 1 days);
-        uint64 previousCheckpointDay = bird.lastCheckInDay == 0 ? mintedAtDay[tokenId] : bird.lastCheckInDay;
-        uint64 eligibleDay = previousCheckpointDay + 9;
-        if (today < eligibleDay) revert CheckpointNotReady(eligibleDay);
+        _enforceCheckpointTime(tokenId, today);
 
         bird.lastCheckInDay = today;
         bird.checkIns += INTERMEDIATE_CHECK_INS;
@@ -305,6 +303,14 @@ contract EggoriaBirds is ERC721, AccessControl, D20VRFConsumer {
                 _requestRandomness(tokenId, RandomnessPurpose.Rarity, RARITY_CALLBACK_GAS, msg.value);
             }
         }
+    }
+
+    /// @dev Enforces the production checkpoint interval. QA deployments may override this hook.
+    function _enforceCheckpointTime(uint256 tokenId, uint64 today) internal view virtual {
+        Bird storage bird = birds[tokenId];
+        uint64 previousCheckpointDay = bird.lastCheckInDay == 0 ? mintedAtDay[tokenId] : bird.lastCheckInDay;
+        uint64 eligibleDay = previousCheckpointDay + 9;
+        if (today < eligibleDay) revert CheckpointNotReady(eligibleDay);
     }
 
     /// @notice Re-requests the same unresolved draw only after the coordinator has refunded an expired request.

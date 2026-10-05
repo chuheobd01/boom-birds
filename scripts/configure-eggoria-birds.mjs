@@ -28,7 +28,8 @@ const RARITY = Object.freeze({
 const METADATA_BY_LAND = [
   {
     index: 0,
-    name: "Forest",
+    name: "Explorer",
+    code: "forest",
     primary: "ipfs://bafkreic6vwjfdq2mnbmubmlnnbxigtx2bcprurtb64ffoxg7hwsrq6zkbu",
     intermediate: "ipfs://bafkreigd4xthjlzfe3xdasnwkan4cc654zwxeki6qm2f5w5hd4k2hx234m",
     soarling: {
@@ -41,7 +42,8 @@ const METADATA_BY_LAND = [
   },
   {
     index: 1,
-    name: "Wind",
+    name: "Pilot",
+    code: "wind",
     primary: "ipfs://bafkreifefqbul56z2b47jef4c42hmllhvmvjfnpkqnu77xgwksvmptcitu",
     intermediate: "ipfs://bafkreiajfuka4ymxcjgx3fm2vp4z6g4jdaxstlbliyhyhtvfitrzijxley",
     soarling: {
@@ -55,6 +57,7 @@ const METADATA_BY_LAND = [
   {
     index: 2,
     name: "Wizard",
+    code: "wizard",
     primary: "ipfs://bafkreifs4i4fsc6ocricyhhd2zl2dho6vyt3cn7vtnxioonp22f6u6dx5i",
     intermediate: "ipfs://bafkreiczysbbypse4tu63plhq5jpwr2xoxwxctmvowun4jov62s7kn7quy",
     soarling: {
@@ -68,6 +71,7 @@ const METADATA_BY_LAND = [
   {
     index: 3,
     name: "Artist",
+    code: "artist",
     primary: "ipfs://bafkreigq2qmmypkuvhp2olj6ljeulntzmiuvfilrnao54lfikpuqgk7l44",
     intermediate: "ipfs://bafkreicodanbkmxg2dif5pcl5qqo7tmq6wzo2lfsp3fuq3sq7ga4t5h2za",
     soarling: {
@@ -81,6 +85,7 @@ const METADATA_BY_LAND = [
   {
     index: 4,
     name: "King",
+    code: "king",
     primary: "ipfs://bafkreibrrsgpo7f5umxmzio37ulahtbf5kyxhzuxpxyyanzs7k3rk2fkly",
     intermediate: "ipfs://bafkreib35wbd37ynpthq444eh67i5lbytoeebapo6swcmyz5xhbx4uqdeq",
     soarling: {
@@ -212,7 +217,7 @@ async function verifyShowcaseMetadata() {
   await Promise.all(showcase.map(async ([land, rarity]) => {
     const label = `${land.name} Soarling ${rarity}`;
     const local = JSON.parse(await readFile(
-      new URL(`../metadata/${land.name.toLowerCase()}-soarling-${rarity.toLowerCase()}.json`, import.meta.url),
+      new URL(`../metadata/${land.code}-soarling-${rarity.toLowerCase()}.json`, import.meta.url),
       "utf8",
     ));
     await validateMetadataDocument(label, land.soarling[rarity], local.image);
@@ -241,7 +246,7 @@ async function verifyPairMetadata() {
   await Promise.all(required.map(async ([land, rarity]) => {
     const label = `${land.name} Soarling ${rarity}`;
     const local = JSON.parse(await readFile(
-      new URL(`../metadata/${land.name.toLowerCase()}-soarling-${rarity.toLowerCase()}.json`, import.meta.url),
+      new URL(`../metadata/${land.code}-soarling-${rarity.toLowerCase()}.json`, import.meta.url),
       "utf8",
     ));
     await validateMetadataDocument(label, land.soarling[rarity], local.image);
@@ -344,8 +349,15 @@ async function verifyAdminContext() {
   if (!deployerPrivateKey) {
     throw new Error("DEPLOYER_PRIVATE_KEY is missing for ARC Testnet.");
   }
-  const deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
+  const configuredSignerAddress = new ethers.Wallet(deployerPrivateKey).address;
+  const [deployer] = await ethers.getSigners();
+  if (!deployer) {
+    throw new Error("No deployer signer is configured for ARC Testnet.");
+  }
   const deployerAddress = await deployer.getAddress();
+  if (deployerAddress !== ethers.getAddress(configuredSignerAddress)) {
+    throw new Error("Hardhat deployer does not match DEPLOYER_PRIVATE_KEY.");
+  }
   const eggoriaBirds = await ethers.getContractAt("EggoriaBirds", contractAddress, deployer);
 
   const [defaultAdminRole, metadataRole] = await Promise.all([
@@ -457,7 +469,7 @@ async function configurePrimaryMetadata(eggoriaBirds) {
     METADATA_BY_LAND.map(async (land) =>
       JSON.parse(
         await readFile(
-          new URL(`../metadata/${land.name.toLowerCase()}-primary.json`, import.meta.url),
+          new URL(`../metadata/${land.code}-primary.json`, import.meta.url),
           "utf8",
         ),
       ),
@@ -498,7 +510,7 @@ async function configureIntermediateMetadata(eggoriaBirds) {
     METADATA_BY_LAND.map(async (land) =>
       JSON.parse(
         await readFile(
-          new URL(`../metadata/${land.name.toLowerCase()}-intermediate.json`, import.meta.url),
+          new URL(`../metadata/${land.code}-intermediate.json`, import.meta.url),
           "utf8",
         ),
       ),
