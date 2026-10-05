@@ -6,12 +6,12 @@
 
 - Maximum supply: 500; one mint per wallet.
 - Five numeric lands (`0` through `4`), each with exactly 100 inventory slots.
-- `mint()` creates the NFT with a pending land and emits `LandRequested`.
-- `fulfillLand()` uses secure randomness to select one of all remaining land slots, then emits `BirdMinted`.
-- One check-in per UTC day.
-- Check-in 10 changes the token to `Intermediate`.
-- Check-in 20 emits `RarityRequested`. The bird remains `Intermediate` while randomness is pending.
-- `fulfillRarity` assigns rarity and changes the token directly to `Advanced` in the same transaction.
+- `mint()` creates the NFT, pays for a D20 VRF request, and emits `LandRequested`.
+- The authenticated D20 coordinator callback selects one of all remaining land slots, then emits `BirdMinted`.
+- Check-ins 1-9 are stored off-chain, at most once per UTC day.
+- Check-in 10 commits the first 10-day checkpoint on-chain and changes the token to `Intermediate`.
+- Check-ins 11-19 are stored off-chain; check-in 20 commits the second checkpoint and emits `RarityRequested`.
+- The day-20 transaction requests a second VRF word. Its authenticated callback assigns rarity and changes the token to `Advanced`.
 - Rarity uses a shrinking pool with exact final quotas: 300 Common, 125 Rare, 50 Epic, 20 Legendary, and 5 Mythic.
 
 ## Metadata setup
@@ -28,7 +28,11 @@ Each URI must point to NFT metadata JSON. Change the JSON `image` field to chang
 
 ## Randomness
 
-Do not generate land or rarity from `block.timestamp`, `blockhash`, or user input. Grant `RANDOMIZER_ROLE` to a reviewed VRF/oracle adapter. The adapter watches `LandRequested` and `RarityRequested`, then calls `fulfillLand(tokenId, randomWord)` or `fulfillRarity(tokenId, randomWord)` with a verified random word. Revoke this role from the deployer after the adapter is configured.
+The contract inherits `D20VRFConsumer` and accepts randomness callbacks only from the coordinator address supplied to the constructor. There is no admin fulfillment role or manual result setter. On ARC Testnet use the verified coordinator proxy `0xd20DA0FF9087d053f0291524Eac12abA1ADBd945`.
+
+The frontend obtains a buffered quote with `quoteFeeAt` using the latest ARC base fee, sends it with `mint()` or the day-20 `checkIn()`, and the contract returns unused buffer immediately. If a request expires after 60 seconds, anyone can call `refundRequest(requestId)` on the coordinator; after the refund callback, the token owner can call `retryRandomness(tokenId)`.
+
+Compile with Solidity 0.8.28 and EVM target `cancun`, matching the D20 SDK requirements.
 
 ## Compile
 

@@ -8,7 +8,7 @@ import { createThirdwebClient, defineChain, eth_estimateGas, eth_gasPrice, getCo
 import { AutoConnect, useActiveAccount, useActiveWallet, useConnect, useDisconnect, useIsAutoConnecting } from "thirdweb/react";
 import { getUserEmail } from "thirdweb/wallets/in-app";
 import { createWallet, getWalletBalance, inAppWallet, injectedProvider } from "thirdweb/wallets";
-import { decodeEventLog, encodeFunctionData, isAddress } from "viem";
+import { decodeEventLog, decodeFunctionResult, encodeFunctionData, isAddress, toHex } from "viem";
 
 import { EGGORIA_MAX_SUPPLY, eggoriaBirdsAbi } from "@/lib/eggoria-birds";
 import artistPrimaryMetadata from "@/metadata/artist-primary.json";
@@ -28,6 +28,7 @@ type FundsPhase = "idle" | "signing" | "sending" | "updating";
 type FundsErrorKind = "" | "cancelled" | "cooldown" | "empty" | "timeout" | "error";
 type HatchPhase = "idle" | "charge" | "shake" | "reveal";
 type MintPhase = "idle" | "checking" | "waiting" | "pending";
+type CheckInPhase = "idle" | "saving" | "wallet";
 type MintBlocker = "already" | "soldout" | "failed" | null;
 type OwnedBird = {
   tokenId: bigint;
@@ -39,6 +40,7 @@ type OwnedBird = {
   rarityAssigned: boolean;
   checkIns: number;
   lastCheckInDay: bigint;
+  lastCheckInAt: string;
   image: string;
 };
 type EthereumProvider = {
@@ -70,6 +72,31 @@ const ARC_TESTNET = defineChain({
   testnet: true,
 });
 const ARC_CHAIN_ID_HEX = `0x${ARC_TESTNET.id.toString(16)}`;
+const D20_VRF_COORDINATOR = "0xd20DA0FF9087d053f0291524Eac12abA1ADBd945" as const;
+const D20_LAND_CALLBACK_GAS = 220_000;
+const D20_RARITY_CALLBACK_GAS = 260_000;
+const d20QuoteAbi = [{
+  type: "function",
+  name: "quoteFeeAt",
+  stateMutability: "view",
+  inputs: [{ name: "callbackGasLimit", type: "uint32" }, { name: "baseFee", type: "uint256" }],
+  outputs: [{ name: "fee", type: "uint256" }],
+}] as const;
+
+type RpcRequester = (options: { method: string; params?: unknown[] }) => Promise<unknown>;
+const quoteD20Payment = async (request: RpcRequester, callbackGasLimit: number) => {
+  const block = await request({ method: "eth_getBlockByNumber", params: ["latest", false] }) as { baseFeePerGas?: string } | null;
+  if (!block?.baseFeePerGas) throw new Error("ARC base fee is unavailable");
+  const bufferedBaseFee = BigInt(block.baseFeePerGas) * BigInt(13) / BigInt(10);
+  const data = encodeFunctionData({
+    abi: d20QuoteAbi,
+    functionName: "quoteFeeAt",
+    args: [callbackGasLimit, bufferedBaseFee],
+  });
+  const result = await request({ method: "eth_call", params: [{ to: D20_VRF_COORDINATOR, data }, "latest"] });
+  if (typeof result !== "string") throw new Error("VRF fee quote is unavailable");
+  return decodeFunctionResult({ abi: d20QuoteAbi, functionName: "quoteFeeAt", data: result as `0x${string}` });
+};
 const ARC_NETWORK_PARAMS = {
   chainId: ARC_CHAIN_ID_HEX,
   chainName: "ARC Testnet",
@@ -112,15 +139,20 @@ const landBadgeNames = ["Land Forest", "Land Wind", "Land Wizard", "Land Artist"
 const landRevealIcons = ["hatch-land-forest.png", "hatch-land-wind.png", "hatch-land-wizard.png", "hatch-land-fire.png", "hatch-land-king.png"] as const;
 const landClassNames = ["forest", "wind", "wizard", "artist", "king"] as const;
 const landBirdAssets = ["forest-primary.png", "wind-primary.png", "wizard-primary.png", "artist-primary.png", "king-primary.png"] as const;
+const landHatchlingHeroBirdAssets = ["forest-primary-facing-left.png", "wind-primary-facing-left.png", "wizard-primary-facing-left.png", "artist-primary-facing-left.png", "king-primary-facing-left.png"] as const;
 const landIslandAssets = ["land-forest.png", "land-wind.png", "land-wizard.png", "land-artist.png", "land-king.png"] as const;
-const landHatchlingAssets = ["hatchling-forest.png", "hatchling-wind.png", "hatchling-wizard.png", "hatchling-artist.png", "hatchling-king.png"] as const;
 const landHatchPopupAssets = ["hatch-popup-forest.png", "hatch-popup-wind.png", "hatch-popup-wizard.png", "hatch-popup-artist.png", "hatch-popup-king.png"] as const;
 const landEvolutionPopupAssets = ["evolution-popup-forest.png", "evolution-popup-wind.png", "evolution-popup-wizard.png", "evolution-popup-artist.png", "evolution-popup-king.png"] as const;
 const landSoarlingResultAssets = ["soarling-result-forest.png", "soarling-result-wind.png", "soarling-result-wizard.png", "soarling-result-artist.png", "soarling-result-king.png"] as const;
 const landCommonSoarlingResultAssets = ["soarling-common-forest.png", "soarling-common-wind.png", "soarling-common-wizard.png", "soarling-common-artist.png", "soarling-common-king.png"] as const;
 const landRareSoarlingResultAssets = ["soarling-rare-forest.png", "soarling-rare-wind.png", "soarling-rare-wizard.png", "soarling-rare-artist.png", "soarling-rare-king.png"] as const;
+const landCommonHeroBirdAssets = ["forest-common-layer-bird.png", "wind-common-layer-bird.png", "wizard-common-layer-bird.png", "artist-common-layer-bird.png", "king-common-layer-bird.png"] as const;
+const landRareHeroBirdAssets = ["forest-rare-layer-bird.png", "wind-rare-layer-bird.png", "wizard-rare-layer-bird.png", "artist-rare-layer-bird.png", "king-rare-layer-bird.png"] as const;
 const landEpicSoarlingResultAssets = ["soarling-epic-forest.png", "soarling-epic-wind.png", "soarling-epic-wizard.png", "soarling-epic-artist.png", "soarling-epic-king.png"] as const;
+const landEpicHeroBirdAssets = ["forest-epic-layer-bird.png", "wind-epic-layer-bird.png", "wizard-epic-layer-bird.png", "artist-epic-layer-bird.png", "king-epic-layer-bird.png"] as const;
+const landEpicHeroGlowAssets = ["forest-epic-layer-glow.png", "wind-epic-layer-glow.png", "wizard-epic-layer-glow.png", "artist-epic-layer-glow.png", "king-epic-layer-glow.png"] as const;
 const landLegendarySoarlingResultAssets = ["soarling-legendary-forest.png", "soarling-legendary-wind.png", "soarling-legendary-wizard-v2.png", "soarling-legendary-artist.png", "soarling-legendary-king.png"] as const;
+const landLegendaryHeroBirdAssets = ["forest-legendary-layer-bird.png", "wind-legendary-layer-bird.png", "wizard-legendary-layer-bird.png", "artist-legendary-layer-bird.png", "king-legendary-layer-bird.png"] as const;
 const landMythicSoarlingResultAssets = ["soarling-mythic-forest.png", "soarling-mythic-wind.png", "soarling-mythic-wizard.png", "soarling-mythic-artist.png", "soarling-mythic-king.png"] as const;
 const landMythicHeroAssets = ["soarling-mythic-hero-forest.png", "soarling-mythic-hero-wind.png", "soarling-mythic-hero-wizard.png", "soarling-mythic-hero-artist.png", "soarling-mythic-hero-king.png"] as const;
 const windMythicHeroLayers = ["wind-mythic-layer-glow.png", "wind-mythic-layer-ring.png", "wind-mythic-layer-island.png", "wind-mythic-layer-bird.png", "wind-mythic-layer-badge.png"] as const;
@@ -151,13 +183,67 @@ const stageNames = ["Hatchling", "Fledgling", "Soarling"] as const;
 const rarityNames = ["Common", "Rare", "Epic", "Legendary", "Mythic"] as const;
 const rarityStarAssets = ["rarity-common-star.png", "rarity-rare-star.png", "rarity-epic-star.png", "rarity-legendary-star.png", "rarity-mythic-star.png"] as const;
 const MILLISECONDS_PER_DAY = 86_400_000;
+type StoredCheckInProgress = { checkIns: number; lastCheckInDay: string; lastCheckInAt?: string };
+type CheckInProgressResponse = { checkIns: number; lastCheckInDay: string; lastCheckInAt: string; retryAt?: string };
+const checkInProgressKey = (contractAddress: string, owner: string, tokenId: bigint) =>
+  `eggoria-checkins:${contractAddress.toLowerCase()}:${owner.toLowerCase()}:${tokenId.toString()}`;
+const readStoredCheckInProgress = (contractAddress: string, owner: string, tokenId: bigint) => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(checkInProgressKey(contractAddress, owner, tokenId));
+    if (!raw) return null;
+    const progress = JSON.parse(raw) as StoredCheckInProgress;
+    if (!Number.isInteger(progress.checkIns) || progress.checkIns < 0 || progress.checkIns > 20 || !/^\d+$/.test(progress.lastCheckInDay)) return null;
+    return { checkIns: progress.checkIns, lastCheckInDay: BigInt(progress.lastCheckInDay), lastCheckInAt: progress.lastCheckInAt || "" };
+  } catch {
+    return null;
+  }
+};
+const saveStoredCheckInProgress = (contractAddress: string, owner: string, tokenId: bigint, checkIns: number, lastCheckInDay: bigint, lastCheckInAt = "") => {
+  window.localStorage.setItem(
+    checkInProgressKey(contractAddress, owner, tokenId),
+    JSON.stringify({ checkIns, lastCheckInDay: lastCheckInDay.toString(), lastCheckInAt } satisfies StoredCheckInProgress),
+  );
+};
+const readSavedCheckInProgress = async (owner: string, tokenId: bigint) => {
+  const query = new URLSearchParams({ owner, tokenId: tokenId.toString() });
+  const response = await fetch(`/api/check-ins?${query}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("Check-in progress is unavailable.");
+  return response.json() as Promise<CheckInProgressResponse>;
+};
+const recordDailyCheckIn = async (owner: string, tokenId: bigint) => {
+  const response = await fetch("/api/check-ins", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ owner, tokenId: tokenId.toString() }),
+  });
+  const result = await response.json() as CheckInProgressResponse & { message?: string };
+  if (!response.ok) throw new Error(result.message || "Daily check-in could not be saved.");
+  return result;
+};
 const FALLBACK_MINT_FEE_USDC = 0.01;
 const MINT_FEE_BUFFER = 1.25;
 const LOW_FUNDS_WARNING_USDC = 0.2;
+const NATIVE_TOKEN_DECIMALS = BigInt(18);
+const NETWORK_FEE_DISPLAY_DECIMALS = BigInt(9);
+const NETWORK_FEE_REFRESH_MS = 1_500;
 const HATCH_CHARGE_MIN_MS = 2_200;
 const HATCH_SHAKE_MS = 1_400;
 const HATCH_REVEAL_MS = 1_400;
 const wait = (milliseconds: number) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+const formatNetworkFee = (feeWei: bigint) => {
+  const displayUnit = BigInt(10) ** (NATIVE_TOKEN_DECIMALS - NETWORK_FEE_DISPLAY_DECIMALS);
+  const roundedDisplayUnits = (feeWei + displayUnit / BigInt(2)) / displayUnit;
+  if (feeWei > BigInt(0) && roundedDisplayUnits === BigInt(0)) return "<0.000000001";
+
+  const displayBase = BigInt(10) ** NETWORK_FEE_DISPLAY_DECIMALS;
+  const whole = roundedDisplayUnits / displayBase;
+  const fraction = (roundedDisplayUnits % displayBase)
+    .toString()
+    .padStart(Number(NETWORK_FEE_DISPLAY_DECIMALS), "0")
+    .replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole.toString();
+};
 const toBrowserUri = (uri: string) => uri.startsWith("ipfs://")
   ? `https://gateway.pinata.cloud/ipfs/${uri.slice("ipfs://".length)}`
   : uri;
@@ -198,9 +284,13 @@ const decodeImage = async (src: string) => {
 
 const preloadPotentialHatchArtwork = () => Promise.all(primaryArtworkUris.map(decodeImage));
 
+const getYoungHeroArtwork = (bird: OwnedBird) => bird.stage === 1
+  ? asset(landFinalStageAssets[bird.land]?.[1] ?? landFinalStageAssets[2][1])
+  : asset(landHatchlingHeroBirdAssets[bird.land] ?? landHatchlingHeroBirdAssets[2]);
+
 const prepareBirdArtwork = async (bird: OwnedBird) => {
   await decodeImage(
-    bird.image || asset(landHatchlingAssets[bird.land] ?? "hatchling-wizard.png"),
+    bird.stage < 2 ? getYoungHeroArtwork(bird) : bird.image || asset(getSoarlingResultAsset(bird)),
   );
   return bird;
 };
@@ -224,9 +314,111 @@ const getSoarlingResultAsset = (bird: OwnedBird) => {
   return landSoarlingResultAssets[bird.land] ?? "soarling-result-wizard.png";
 };
 
+const YoungBirdHeroComposite = ({ bird, isReveal = false }: { bird: OwnedBird; isReveal?: boolean }) => {
+  const landClass = landClassNames[bird.land] ?? "wizard";
+  const stageClass = bird.stage === 1 ? "is-fledgling" : "is-hatchling";
+
+  return <span
+    key={`young-composite-${bird.tokenId}-${bird.stage}`}
+    className={`young-hero-${landClass} ${stageClass}${isReveal ? " is-hatch-reveal" : ""}`}
+    role="img"
+    aria-label={`${landNames[bird.land]} ${stageNames[bird.stage] ?? "bird"} on its island`}
+  >
+    <span className="young-hero-core" aria-hidden="true">
+      <img className="young-hero-island" src={asset(`${landClass}-mythic-layer-island.png`)} alt="" />
+      <img className="young-hero-bird" src={getYoungHeroArtwork(bird)} alt="" />
+    </span>
+  </span>;
+};
+
+const LowerRarityHeroComposite = ({ bird }: { bird: OwnedBird }) => {
+  const landClass = landClassNames[bird.land] ?? "wizard";
+  const rarityClass = bird.rarity === 1 ? "rare" : "common";
+  const birdAssets = bird.rarity === 1 ? landRareHeroBirdAssets : landCommonHeroBirdAssets;
+
+  return <span
+    key={`owned-composite-${bird.tokenId}-${bird.stage}-${bird.rarity}`}
+    className={`${rarityClass}-hero-${landClass}`}
+    role="img"
+    aria-label={`${landNames[bird.land]} ${rarityNames[bird.rarity]} Soarling on its island`}
+  >
+    <span className="lower-rarity-hero-core" aria-hidden="true">
+      <img className="lower-rarity-hero-island" src={asset(`${landClass}-mythic-layer-island.png`)} alt="" />
+      <img className="lower-rarity-hero-bird" src={asset(birdAssets[bird.land] ?? birdAssets[2])} alt="" />
+      <span className="lower-rarity-hero-badge"><img src={asset(`${rarityClass}-layer-badge.png`)} alt="" /></span>
+    </span>
+  </span>;
+};
+
+const EpicHeroComposite = ({ bird }: { bird: OwnedBird }) => {
+  const landClass = landClassNames[bird.land] ?? "forest";
+  const detailAssets = landEpicDetailAssets[bird.land] ?? landEpicDetailAssets[0];
+
+  return <span
+    key={`owned-composite-${bird.tokenId}-${bird.stage}-${bird.rarity}`}
+    className={`epic-hero-${landClass}`}
+    role="img"
+    aria-label={`${landNames[bird.land]} Epic Soarling on its island`}
+  >
+    <span className="epic-hero-core" aria-hidden="true">
+      <img className="epic-hero-island" src={asset(`${landClass}-mythic-layer-island.png`)} alt="" />
+      <img className="epic-hero-glow" src={asset(landEpicHeroGlowAssets[bird.land] ?? landEpicHeroGlowAssets[0])} alt="" />
+      <img className="epic-hero-bird" src={asset(landEpicHeroBirdAssets[bird.land] ?? landEpicHeroBirdAssets[0])} alt="" />
+      <span className="epic-hero-details">
+        <img src={asset(detailAssets[0])} alt="" />
+        <img src={asset(detailAssets[1])} alt="" />
+      </span>
+      <span className="epic-hero-dots"><i /><i /><i /><i /><i /><i /></span>
+      <span className="epic-hero-badge"><img src={asset("epic-layer-badge.png")} alt="" /></span>
+    </span>
+  </span>;
+};
+
+const LegendaryHeroComposite = ({ bird }: { bird: OwnedBird }) => {
+  const landClass = landClassNames[bird.land] ?? "forest";
+  const ringLayers = [
+    "forest-legendary-layer-ring.png",
+    "wind-legendary-layer-ring.png",
+    "wizard-legendary-layer-ring.png",
+    "artist-legendary-layer-ring.png",
+    "king-legendary-layer-ring.png",
+  ] as const;
+  const detailLayers = [
+    "forest-legendary-layer-feather.png",
+    "wind-mythic-feather.png",
+    "wizard-mythic-layer-crystal.png",
+    "artist-mythic-layer-flame.png",
+    "king-mythic-layer-feather.png",
+  ] as const;
+  const detailAsset = detailLayers[bird.land] ?? detailLayers[0];
+  const ringAsset = ringLayers[bird.land] ?? ringLayers[0];
+
+  return <span
+    key={`owned-composite-${bird.tokenId}-${bird.stage}-${bird.rarity}`}
+    className={`legendary-hero-${landClass}`}
+    role="img"
+    aria-label={`${landNames[bird.land]} Legendary Soarling on its island`}
+  >
+    <img className="legendary-hero-glow" src={asset(`${landClass}-mythic-layer-glow.png`)} alt="" />
+    <img className="legendary-hero-ring" src={asset(ringAsset)} alt="" />
+    <span className="legendary-hero-orbit-motes" aria-hidden="true"><i /><i /><i /></span>
+    <span className="legendary-hero-core" aria-hidden="true">
+      <img className="legendary-hero-island" src={asset(`${landClass}-mythic-layer-island.png`)} alt="" />
+      <i className="legendary-hero-awakening" />
+      <img className="legendary-hero-bird" src={asset(landLegendaryHeroBirdAssets[bird.land] ?? landLegendaryHeroBirdAssets[0])} alt="" />
+      <span className="legendary-hero-details">
+        <img src={asset(detailAsset)} alt="" />
+        <img src={asset(detailAsset)} alt="" />
+        <img src={asset(detailAsset)} alt="" />
+      </span>
+      <span className="legendary-hero-badge"><img src={asset("forest-legendary-layer-badge.png")} alt="" /></span>
+    </span>
+  </span>;
+};
+
 const getOwnedHeroArtwork = (bird: OwnedBird) => bird.stage === 2 && bird.rarity === 4
   ? asset(landMythicHeroAssets[bird.land] ?? "soarling-mythic-hero-wizard.png")
-  : bird.image || asset(landHatchlingAssets[bird.land] ?? "hatchling-wizard.png");
+  : bird.image || asset(getSoarlingResultAsset(bird));
 
 const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
 const formatUsdcBalance = (value: string | number) => {
@@ -235,8 +427,14 @@ const formatUsdcBalance = (value: string | number) => {
   return Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
 };
 const formatCooldown = (retryAt: string, now = Date.now()) => {
-  const minutes = Math.max(1, Math.ceil((new Date(retryAt).getTime() - now) / 60_000));
-  return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
+  const seconds = Math.max(0, Math.ceil((new Date(retryAt).getTime() - now) / 1_000));
+  if (seconds >= 3_600) {
+    const hours = Math.floor(seconds / 3_600);
+    const minutes = Math.ceil((seconds % 3_600) / 60);
+    return `${hours}h ${minutes}m`;
+  }
+  if (seconds >= 60) return `${Math.ceil(seconds / 60)}m`;
+  return `${seconds}s`;
 };
 
 const readFaucetRetryAt = async (address: string) => {
@@ -339,14 +537,17 @@ export default function EggoriaLanding({
   const [evolutionCheckInOpen, setEvolutionCheckInOpen] = useState(false);
   const [evolutionTargetStage, setEvolutionTargetStage] = useState<1 | 2>(1);
   const [evolutionNetworkFee, setEvolutionNetworkFee] = useState("Estimating...");
+  const [evolutionVrfFee, setEvolutionVrfFee] = useState("Estimating...");
   const [postHatchOwnedAddress, setPostHatchOwnedAddress] = useState("");
   const [walletAlreadyMinted, setWalletAlreadyMinted] = useState(false);
   const [ownedBird, setOwnedBird] = useState<OwnedBird | null>(null);
   const [checkInSubmitting, setCheckInSubmitting] = useState(false);
+  const [checkInPhase, setCheckInPhase] = useState<CheckInPhase>("idle");
   const [checkInSyncPending, setCheckInSyncPending] = useState<{ address: string; tokenId: string; expected: number; stageBefore: number; transactionHash: string } | null>(null);
   const [celebratedCheckIn, setCelebratedCheckIn] = useState<number | null>(null);
   const [checkInError, setCheckInError] = useState("");
-  const [networkFee, setNetworkFee] = useState("Estimating...");
+  const [, setNetworkFee] = useState("Estimating...");
+  const [mintVrfFee, setMintVrfFee] = useState("Estimating...");
   const [walletKind, setWalletKind] = useState<WalletKind>("");
   const [fundsError, setFundsError] = useState("");
   const [fundsSending, setFundsSending] = useState(false);
@@ -378,7 +579,6 @@ export default function EggoriaLanding({
   const activeGuideRef = useRef<HTMLElement>(null);
   const autoShownGuideStepsRef = useRef(new Set<string>());
   const lastNetworkFeeRef = useRef("");
-  const networkFeeRequestRef = useRef(false);
   const fundsDismissedDuringSendRef = useRef(false);
   const heroCheckingRef = useRef(false);
   const mintSubmittingRef = useRef(false);
@@ -846,6 +1046,7 @@ export default function EggoriaLanding({
     let rarityAssigned = false;
     let checkIns = 0;
     let lastCheckInDay = BigInt(0);
+    let lastCheckInAt = "";
 
     try {
       const state = await readContract({
@@ -882,8 +1083,26 @@ export default function EggoriaLanding({
       }
     }
 
-    return { tokenId, owner, land, landAssigned, stage, rarity, rarityAssigned, checkIns, lastCheckInDay, image };
-  }, [eggoriaContract]);
+    const remoteProgress = await readSavedCheckInProgress(owner, tokenId).then((progress) => ({
+      checkIns: progress.checkIns,
+      lastCheckInDay: BigInt(progress.lastCheckInDay),
+      lastCheckInAt: progress.lastCheckInAt,
+    })).catch(() => null);
+    const storedProgress = remoteProgress ?? readStoredCheckInProgress(eggoriaBirdsAddress, owner, tokenId);
+    const nextOnChainCheckpoint = Math.min(20, checkIns + 10);
+    if (storedProgress && storedProgress.checkIns >= checkIns && storedProgress.checkIns < nextOnChainCheckpoint) {
+      checkIns = storedProgress.checkIns;
+      lastCheckInDay = storedProgress.lastCheckInDay;
+      lastCheckInAt = storedProgress.lastCheckInAt;
+    } else if (storedProgress && storedProgress.checkIns === checkIns && storedProgress.lastCheckInDay > lastCheckInDay) {
+      lastCheckInDay = storedProgress.lastCheckInDay;
+      lastCheckInAt = storedProgress.lastCheckInAt;
+    } else if (storedProgress?.lastCheckInAt) {
+      lastCheckInAt = storedProgress.lastCheckInAt;
+    }
+
+    return { tokenId, owner, land, landAssigned, stage, rarity, rarityAssigned, checkIns, lastCheckInDay, lastCheckInAt, image };
+  }, [eggoriaBirdsAddress, eggoriaContract]);
 
   const readEggoriaState = useCallback(async (address = walletAddress) => {
     if (!eggoriaContract) throw new Error("Eggoria Birds contract is not configured.");
@@ -1000,10 +1219,25 @@ export default function EggoriaLanding({
       try {
         const state = await readEggoriaState(walletAddress);
         const bird = state.bird;
-        if (!active || !bird || bird.tokenId.toString() !== checkInSyncPending.tokenId || bird.checkIns < checkInSyncPending.expected) return;
+        if (!active || !bird || bird.tokenId.toString() !== checkInSyncPending.tokenId
+          || bird.checkIns < checkInSyncPending.expected
+          || (checkInSyncPending.stageBefore === 1 && bird.stage !== 2)) return;
         setMinted(state.totalSupply);
         setWalletAlreadyMinted(state.alreadyMinted);
         setCurrentTimeMs(Date.now());
+        const checkpointProgress = await recordDailyCheckIn(bird.owner, bird.tokenId).catch(() => null);
+        saveStoredCheckInProgress(
+          eggoriaBirdsAddress,
+          bird.owner,
+          bird.tokenId,
+          checkpointProgress?.checkIns ?? bird.checkIns,
+          checkpointProgress ? BigInt(checkpointProgress.lastCheckInDay) : bird.lastCheckInDay,
+          checkpointProgress?.lastCheckInAt ?? bird.lastCheckInAt,
+        );
+        if (checkpointProgress) {
+          bird.lastCheckInAt = checkpointProgress.lastCheckInAt;
+          bird.lastCheckInDay = BigInt(checkpointProgress.lastCheckInDay);
+        }
         if (checkInSyncPending.stageBefore === 0 && bird.stage === 1) {
           setEvolutionTransactionHash(checkInSyncPending.transactionHash);
           setEvolutionResult(bird);
@@ -1030,7 +1264,7 @@ export default function EggoriaLanding({
       active = false;
       window.clearInterval(interval);
     };
-  }, [checkInSyncPending, readEggoriaState, walletAddress]);
+  }, [checkInSyncPending, eggoriaBirdsAddress, readEggoriaState, walletAddress]);
 
   useEffect(() => {
     if (!walletAddress || ownedBird?.landAssigned !== false) return;
@@ -1043,7 +1277,7 @@ export default function EggoriaLanding({
   }, [ownedBird?.landAssigned, refreshEggoriaState, walletAddress]);
 
   useEffect(() => {
-    const interval = window.setInterval(() => setCurrentTimeMs(Date.now()), 30_000);
+    const interval = window.setInterval(() => setCurrentTimeMs(Date.now()), 1_000);
     return () => window.clearInterval(interval);
   }, []);
 
@@ -1119,17 +1353,21 @@ export default function EggoriaLanding({
         if (active) setBalanceStateAddress(requestedAddress);
       });
 
-    Promise.all([
-      eth_estimateGas(rpcRequest, {
-        from: walletAddress as `0x${string}`,
-        to: eggoriaBirdsAddress as `0x${string}`,
-        data: mintData,
-      }),
-      eth_gasPrice(rpcRequest),
-    ])
-      .then(([gasLimit, gasPrice]) => Number(gasLimit * gasPrice) / 1e18 * MINT_FEE_BUFFER)
-      .then((bufferedMintFee) => {
-        if (active) setRequiredMintBalance(Math.max(bufferedMintFee, Number.EPSILON));
+    quoteD20Payment(rpcRequest as RpcRequester, D20_LAND_CALLBACK_GAS)
+      .then(async (vrfPayment) => {
+        const [gasLimit, gasPrice] = await Promise.all([
+          eth_estimateGas(rpcRequest, {
+            from: walletAddress as `0x${string}`,
+            to: eggoriaBirdsAddress as `0x${string}`,
+            data: mintData,
+            value: toHex(vrfPayment),
+          }),
+          eth_gasPrice(rpcRequest),
+        ]);
+        return Number(gasLimit * gasPrice + vrfPayment) / 1e18 * MINT_FEE_BUFFER;
+      })
+      .then((bufferedMintCost) => {
+        if (active) setRequiredMintBalance(Math.max(bufferedMintCost, Number.EPSILON));
       })
       .catch(() => {
         if (active) setRequiredMintBalance(FALLBACK_MINT_FEE_USDC);
@@ -1139,27 +1377,32 @@ export default function EggoriaLanding({
   }, [eggoriaBirdsAddress, thirdwebClient, walletAddress]);
 
   useEffect(() => {
-    if (!claimModalOpen || claimSubmitting || !walletAddress || !isAddress(eggoriaBirdsAddress)) return;
+    if (!claimModalOpen || !walletAddress || !isAddress(eggoriaBirdsAddress)) return;
     let active = true;
+    let requestInFlight = false;
 
     const updateNetworkFee = async () => {
-      if (networkFeeRequestRef.current) return;
-      networkFeeRequestRef.current = true;
+      if (requestInFlight) return;
+      requestInFlight = true;
       const provider = isMetaMaskWallet ? getMetaMaskProvider() : undefined;
       if (isMetaMaskWallet && !provider) {
         if (active && !lastNetworkFeeRef.current) setNetworkFee("Unavailable");
-        networkFeeRequestRef.current = false;
+        if (active) setMintVrfFee("Unavailable");
+        requestInFlight = false;
         return;
       }
 
       try {
-        const data = encodeFunctionData({ abi: eggoriaBirdsAbi, functionName: "mint", args: [] });
-        const transaction = { from: walletAddress as `0x${string}`, to: eggoriaBirdsAddress, data };
         const rpcRequest = thirdwebClient ? getRpcClient({ client: thirdwebClient, chain: ARC_TESTNET }) : null;
         if (!provider && !rpcRequest) throw new Error("Network fee estimate is unavailable");
         if (provider && !isArcChainId(await provider.request({ method: "eth_chainId" }))) {
           throw new Error("MetaMask is not connected to ARC Testnet");
         }
+        const request = (provider?.request.bind(provider) ?? rpcRequest!) as RpcRequester;
+        const vrfPayment = await quoteD20Payment(request, D20_LAND_CALLBACK_GAS);
+        if (active) setMintVrfFee(formatNetworkFee(vrfPayment));
+        const data = encodeFunctionData({ abi: eggoriaBirdsAbi, functionName: "mint", args: [] });
+        const transaction = { from: walletAddress as `0x${string}`, to: eggoriaBirdsAddress, data, value: toHex(vrfPayment) };
         const [gasLimitResult, gasPriceResult] = provider ? await Promise.all([
           provider.request({ method: "eth_estimateGas", params: [transaction] }),
           provider.request({ method: "eth_gasPrice" }),
@@ -1171,62 +1414,96 @@ export default function EggoriaLanding({
           throw new Error("MetaMask fee estimate is unavailable");
         }
 
-        const fee = Number(BigInt(gasLimitResult) * BigInt(gasPriceResult)) / 1e18;
-        const formattedFee = fee < 0.0001
-          ? fee.toFixed(6)
-          : fee < 0.01
-            ? fee.toFixed(4)
-            : fee.toFixed(2);
+        // Read both values from the connected MetaMask provider. This is the
+        // same live chain source MetaMask uses when it prepares its fee panel.
+        const feeWei = BigInt(gasLimitResult) * BigInt(gasPriceResult);
+        const formattedFee = formatNetworkFee(feeWei);
         lastNetworkFeeRef.current = formattedFee;
-        if (active) setNetworkFee(formattedFee);
+        if (active) {
+          setNetworkFee(formattedFee);
+          setRequiredMintBalance(Math.max(Number(feeWei + vrfPayment) / 1e18 * MINT_FEE_BUFFER, Number.EPSILON));
+        }
       } catch {
         // MetaMask can temporarily reject parallel RPC requests while its
         // transaction confirmation window is open. Keep the last valid live
         // estimate instead of replacing it with a misleading error state.
         if (active && !lastNetworkFeeRef.current) setNetworkFee("Unavailable");
+        if (active && mintVrfFee === "Estimating...") setMintVrfFee("Unavailable");
       } finally {
-        networkFeeRequestRef.current = false;
+        requestInFlight = false;
       }
     };
 
     void updateNetworkFee();
-    const interval = window.setInterval(updateNetworkFee, 3_000);
+    // Keep refreshing while MetaMask's confirmation window is open. Previously
+    // claimSubmitting stopped this effect and left the modal showing a stale fee.
+    const interval = window.setInterval(updateNetworkFee, NETWORK_FEE_REFRESH_MS);
     return () => {
       active = false;
       window.clearInterval(interval);
     };
-  }, [claimModalOpen, claimSubmitting, eggoriaBirdsAddress, getMetaMaskProvider, isMetaMaskWallet, thirdwebClient, walletAddress]);
+  }, [claimModalOpen, eggoriaBirdsAddress, getMetaMaskProvider, isMetaMaskWallet, mintVrfFee, thirdwebClient, walletAddress]);
 
   useEffect(() => {
     if (!evolutionCheckInOpen || !ownedBird || !walletAddress || !thirdwebClient || !isAddress(eggoriaBirdsAddress)) return;
     let active = true;
+    let hasEstimate = false;
+    let requestInFlight = false;
 
-    const rpcRequest = getRpcClient({ client: thirdwebClient, chain: ARC_TESTNET });
-    const data = encodeFunctionData({
-      abi: eggoriaBirdsAbi,
-      functionName: "checkIn",
-      args: [ownedBird.tokenId],
-    });
+    const updateEvolutionNetworkFee = async () => {
+      if (requestInFlight) return;
+      requestInFlight = true;
+      try {
+        const provider = isMetaMaskWallet ? getMetaMaskProvider() : undefined;
+        if (provider && !isArcChainId(await provider.request({ method: "eth_chainId" }))) {
+          throw new Error("MetaMask is not connected to ARC Testnet");
+        }
+        const data = encodeFunctionData({
+          abi: eggoriaBirdsAbi,
+          functionName: "checkIn",
+          args: [ownedBird.tokenId],
+        });
+        const rpcRequest = getRpcClient({ client: thirdwebClient, chain: ARC_TESTNET });
+        const request = (provider?.request.bind(provider) ?? rpcRequest) as RpcRequester;
+        const vrfPayment = ownedBird.stage === 1
+          ? await quoteD20Payment(request, D20_RARITY_CALLBACK_GAS)
+          : BigInt(0);
+        if (active) setEvolutionVrfFee(formatNetworkFee(vrfPayment));
+        const transaction = {
+          from: walletAddress as `0x${string}`,
+          to: eggoriaBirdsAddress as `0x${string}`,
+          data,
+          value: toHex(vrfPayment),
+        };
+        const [gasLimitResult, gasPriceResult] = provider ? await Promise.all([
+          provider.request({ method: "eth_estimateGas", params: [transaction] }),
+          provider.request({ method: "eth_gasPrice" }),
+        ]) : await Promise.all([
+          rpcRequest({ method: "eth_estimateGas", params: [transaction] }),
+          rpcRequest({ method: "eth_gasPrice" }),
+        ]);
+        if (typeof gasLimitResult !== "string" || typeof gasPriceResult !== "string") {
+          throw new Error("Network fee estimate is unavailable");
+        }
 
-    Promise.all([
-      eth_estimateGas(rpcRequest, {
-        from: walletAddress as `0x${string}`,
-        to: eggoriaBirdsAddress as `0x${string}`,
-        data,
-      }),
-      eth_gasPrice(rpcRequest),
-    ])
-      .then(([gasLimit, gasPrice]) => Number(gasLimit * gasPrice) / 1e18)
-      .then((fee) => {
-        if (!active) return;
-        setEvolutionNetworkFee(fee < 0.0001 ? fee.toFixed(6) : fee < 0.01 ? fee.toFixed(4) : fee.toFixed(2));
-      })
-      .catch(() => {
-        if (active) setEvolutionNetworkFee("Unavailable");
-      });
+        const formattedFee = formatNetworkFee(BigInt(gasLimitResult) * BigInt(gasPriceResult));
+        hasEstimate = true;
+        if (active) setEvolutionNetworkFee(formattedFee);
+      } catch {
+        if (active && !hasEstimate) setEvolutionNetworkFee("Unavailable");
+        if (active) setEvolutionVrfFee("Unavailable");
+      } finally {
+        requestInFlight = false;
+      }
+    };
 
-    return () => { active = false; };
-  }, [eggoriaBirdsAddress, evolutionCheckInOpen, ownedBird, thirdwebClient, walletAddress]);
+    void updateEvolutionNetworkFee();
+    const interval = window.setInterval(updateEvolutionNetworkFee, NETWORK_FEE_REFRESH_MS);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [eggoriaBirdsAddress, evolutionCheckInOpen, getMetaMaskProvider, isMetaMaskWallet, ownedBird, thirdwebClient, walletAddress]);
   const openWallet = () => {
     if (walletAddress) {
       setWalletMenuOpen((open) => !open);
@@ -1547,10 +1824,15 @@ export default function EggoriaLanding({
         showBalanceAlert("out");
         return;
       }
+      const mintRpcRequest = getRpcClient({ client: thirdwebClient!, chain: ARC_TESTNET });
+      const mintProvider = isMetaMaskWallet ? getMetaMaskProvider() : undefined;
+      const mintRequest = (mintProvider?.request.bind(mintProvider) ?? mintRpcRequest) as RpcRequester;
+      const vrfPayment = await quoteD20Payment(mintRequest, D20_LAND_CALLBACK_GAS);
       const transaction = prepareContractCall({
         contract: eggoriaContract,
         method: "mint",
         params: [],
+        value: vrfPayment,
       });
       if (!await requireArcNetwork("mint")) return;
       if (mintModalDismissedRef.current) return;
@@ -1703,9 +1985,12 @@ export default function EggoriaLanding({
     }
   };
 
-  const currentUtcDay = BigInt(Math.floor(currentTimeMs / MILLISECONDS_PER_DAY));
-  const checkedInToday = Boolean(ownedBird && ownedBird.lastCheckInDay > BigInt(0) && ownedBird.lastCheckInDay === currentUtcDay);
-  const nextCheckInAtMs = checkedInToday && ownedBird ? (Number(ownedBird.lastCheckInDay) + 1) * MILLISECONDS_PER_DAY : null;
+  const lastCheckInAtMs = ownedBird?.lastCheckInAt ? new Date(ownedBird.lastCheckInAt).getTime() : 0;
+  const fallbackNextCheckInAtMs = ownedBird && ownedBird.lastCheckInDay > BigInt(0)
+    ? (Number(ownedBird.lastCheckInDay) + 1) * MILLISECONDS_PER_DAY
+    : 0;
+  const nextCheckInAtMs = lastCheckInAtMs ? lastCheckInAtMs + MILLISECONDS_PER_DAY : fallbackNextCheckInAtMs;
+  const checkedInToday = Boolean(nextCheckInAtMs > currentTimeMs);
   const checkInLocked = checkedInToday || checkInSyncPending !== null;
   const nextCheckInTime = nextCheckInAtMs ? formatCooldown(new Date(nextCheckInAtMs).toISOString(), currentTimeMs) : "";
 
@@ -1718,12 +2003,32 @@ export default function EggoriaLanding({
 
     checkInSubmittingRef.current = true;
     setCheckInSubmitting(true);
+    setCheckInPhase("saving");
     setCheckInError("");
     const stageBeforeCheckIn = ownedBird.stage;
     const expectedCheckIns = ownedBird.checkIns + 1;
+    const isOnChainCheckpoint = expectedCheckIns === 10 || expectedCheckIns === 20;
     let confirmedOnChain = false;
     let transactionHash = "";
     try {
+      if (!isOnChainCheckpoint) {
+        const savedProgress = await recordDailyCheckIn(ownedBird.owner, ownedBird.tokenId);
+        if (savedProgress.checkIns < expectedCheckIns) throw new Error("Check-in already saved today.");
+        const savedDay = BigInt(savedProgress.lastCheckInDay);
+        saveStoredCheckInProgress(
+          eggoriaBirdsAddress,
+          ownedBird.owner,
+          ownedBird.tokenId,
+          savedProgress.checkIns,
+          savedDay,
+          savedProgress.lastCheckInAt,
+        );
+        setOwnedBird({ ...ownedBird, checkIns: savedProgress.checkIns, lastCheckInDay: savedDay, lastCheckInAt: savedProgress.lastCheckInAt });
+        setCurrentTimeMs(Date.now());
+        setCelebratedCheckIn((savedProgress.checkIns - 1) % 10);
+        setToast("Checked in! Saved off-chain. Come back tomorrow.");
+        return true;
+      }
       if (!await requireArcNetwork(evolutionCheckInOpen ? "evolve" : "checkin")) return false;
       const balance = await getCurrentArcBalance();
       const alertKind = getBalanceAlertKind(balance);
@@ -1733,13 +2038,22 @@ export default function EggoriaLanding({
         return false;
       }
       if (alertKind === "low") setToast(`You're Almost Out — you have ${Number(balance.toFixed(2))} Test USDC left.`);
+      const checkInRpcRequest = getRpcClient({ client: thirdwebClient!, chain: ARC_TESTNET });
+      const checkInProvider = isMetaMaskWallet ? getMetaMaskProvider() : undefined;
+      const checkInRequest = (checkInProvider?.request.bind(checkInProvider) ?? checkInRpcRequest) as RpcRequester;
+      const vrfPayment = ownedBird.stage === 1
+        ? await quoteD20Payment(checkInRequest, D20_RARITY_CALLBACK_GAS)
+        : BigInt(0);
       const transaction = prepareContractCall({
         contract: eggoriaContract,
         method: "checkIn",
         params: [ownedBird.tokenId],
+        value: vrfPayment,
       });
       if (!await requireArcNetwork(evolutionCheckInOpen ? "evolve" : "checkin")) return false;
+      setCheckInPhase("wallet");
       const result = await sendTransaction({ transaction, account: activeAccount });
+      setCheckInPhase("saving");
       transactionHash = result.transactionHash;
       const receipt = await waitForReceipt(result);
       if (receipt.status !== "success") throw new Error("Check-in transaction reverted.");
@@ -1747,10 +2061,13 @@ export default function EggoriaLanding({
       let refreshedState: Awaited<ReturnType<typeof readEggoriaState>> | null = null;
       for (let attempt = 0; attempt < 12; attempt += 1) {
         refreshedState = await readEggoriaState(walletAddress).catch(() => null);
-        if (refreshedState?.bird?.tokenId === ownedBird.tokenId && refreshedState.bird.checkIns >= expectedCheckIns) break;
+        const refreshedBird = refreshedState?.bird;
+        const stageReady = stageBeforeCheckIn !== 1 || refreshedBird?.stage === 2;
+        if (refreshedBird?.tokenId === ownedBird.tokenId && refreshedBird.checkIns >= expectedCheckIns && stageReady) break;
         await wait(500);
       }
-      if (!refreshedState?.bird || refreshedState.bird.checkIns < expectedCheckIns) {
+      if (!refreshedState?.bird || refreshedState.bird.checkIns < expectedCheckIns
+        || (stageBeforeCheckIn === 1 && refreshedState.bird.stage !== 2)) {
         setCheckInSyncPending({ address: walletAddress.toLowerCase(), tokenId: ownedBird.tokenId.toString(), expected: expectedCheckIns, stageBefore: stageBeforeCheckIn, transactionHash });
         return true;
       }
@@ -1758,16 +2075,39 @@ export default function EggoriaLanding({
       setWalletAlreadyMinted(refreshedState.alreadyMinted);
       setCurrentTimeMs(Date.now());
       const evolvedBird = refreshedState.bird;
+      const checkpointProgress = await recordDailyCheckIn(evolvedBird.owner, evolvedBird.tokenId).catch(() => null);
+      const persistedCheckIns = checkpointProgress?.checkIns ?? evolvedBird.checkIns;
+      const persistedLastDay = checkpointProgress ? BigInt(checkpointProgress.lastCheckInDay) : evolvedBird.lastCheckInDay;
+      saveStoredCheckInProgress(
+        eggoriaBirdsAddress,
+        evolvedBird.owner,
+        evolvedBird.tokenId,
+        persistedCheckIns,
+        persistedLastDay,
+        checkpointProgress?.lastCheckInAt ?? evolvedBird.lastCheckInAt,
+      );
+      if (checkpointProgress) {
+        evolvedBird.lastCheckInAt = checkpointProgress.lastCheckInAt;
+        evolvedBird.lastCheckInDay = BigInt(checkpointProgress.lastCheckInDay);
+      }
       if (stageBeforeCheckIn === 0 && evolvedBird?.stage === 1) {
         const popupArtwork = asset(landEvolutionPopupAssets[evolvedBird.land] ?? "evolution-popup-wizard.png");
-        const heroArtwork = evolvedBird.image || asset(landHatchlingAssets[evolvedBird.land] ?? "hatchling-wizard.png");
-        await Promise.all([decodeImage(heroArtwork), decodeImage(popupArtwork)]);
+        const heroArtwork = getYoungHeroArtwork(evolvedBird);
+        const islandArtwork = asset(`${landClassNames[evolvedBird.land] ?? "wizard"}-mythic-layer-island.png`);
+        await Promise.all([decodeImage(heroArtwork), decodeImage(islandArtwork), decodeImage(popupArtwork)]);
         setEvolutionTransactionHash(result.transactionHash);
         setEvolutionResult(evolvedBird);
       } else if (stageBeforeCheckIn === 1 && evolvedBird?.stage === 2) {
         const popupArtwork = asset(getSoarlingResultAsset(evolvedBird));
         const heroArtwork = evolvedBird.rarity === 4 ? getOwnedHeroArtwork(evolvedBird) : evolvedBird.image || popupArtwork;
-        const heroArtworkSources = evolvedBird.rarity === 4 && evolvedBird.land === 0
+        const lowerRarityBirdAssets = evolvedBird.rarity === 1 ? landRareHeroBirdAssets : landCommonHeroBirdAssets;
+        const heroArtworkSources = evolvedBird.rarity <= 1
+          ? [
+            asset(lowerRarityBirdAssets[evolvedBird.land] ?? lowerRarityBirdAssets[2]),
+            asset(`${landClassNames[evolvedBird.land] ?? "wizard"}-mythic-layer-island.png`),
+            asset(`${evolvedBird.rarity === 1 ? "rare" : "common"}-layer-badge.png`),
+          ]
+          : evolvedBird.rarity === 4 && evolvedBird.land === 0
           ? forestMythicHeroLayers.map((layer) => asset(layer))
           : evolvedBird.rarity === 4 && evolvedBird.land === 1
             ? windMythicHeroLayers.map((layer) => asset(layer))
@@ -1787,6 +2127,9 @@ export default function EggoriaLanding({
         return true;
       }
       const message = error instanceof Error ? error.message.toLowerCase() : "";
+      setCheckInError(message.includes("alreadycheckedintoday") || message.includes("already checked")
+        ? "Your next check-in is not ready yet."
+        : "Couldn't save. Your progress is safe, try again.");
       setToast(message.includes("alreadycheckedintoday") || message.includes("already checked")
         ? "Check-in already saved today. Come back tomorrow."
         : evolutionCheckInOpen
@@ -1797,15 +2140,16 @@ export default function EggoriaLanding({
     } finally {
       checkInSubmittingRef.current = false;
       setCheckInSubmitting(false);
+      setCheckInPhase("idle");
     }
   };
 
   const handleCheckInClick = async () => {
     if (checkInSubmitting || checkInSyncPending || checkInLocked) return;
-    if (!await requireArcNetwork("checkin")) return;
     const isFledglingCheckpoint = ownedBird?.stage === 0 && ownedBird.checkIns === 9;
     const isSoarlingCheckpoint = ownedBird?.stage === 1 && ownedBird.checkIns === 19;
     if (isFledglingCheckpoint || isSoarlingCheckpoint) {
+      if (!await requireArcNetwork("checkin")) return;
       setCheckInError("");
       setEvolutionTargetStage(isSoarlingCheckpoint ? 2 : 1);
       setEvolutionNetworkFee("Estimating...");
@@ -1851,6 +2195,40 @@ export default function EggoriaLanding({
         : 10
     : 0;
   const checkInsRemaining = Math.max(0, 10 - stageProgress);
+  const evolutionCheckInReady = Boolean(ownedBird && (ownedBird.checkIns === 9 || ownedBird.checkIns === 19));
+  const checkInBusy = checkInSubmitting || checkInSyncPending !== null;
+  const checkInButtonLabel = networkCtaOverride && wrongMetaMaskNetwork
+    ? arcNetworkMissing ? "Add network" : "Switch network"
+    : !ownedBird?.landAssigned
+      ? "Assigning Land..."
+      : ownedBird.stage >= 2
+        ? "Evolution Complete"
+        : checkInPhase === "wallet"
+          ? "Waiting for MetaMask..."
+          : checkInBusy
+            ? "Checking in..."
+            : checkedInToday
+              ? "Checked In"
+              : checkInError
+                ? "Try again"
+                : evolutionCheckInReady
+                  ? "Check In & Evolve"
+                  : "Check In";
+  const checkInHelperText = !ownedBird?.landAssigned
+    ? "Your bird will appear as soon as randomness is fulfilled."
+    : ownedBird.stage >= 2
+      ? "Your Bird has completed its evolution."
+      : checkInPhase === "wallet"
+        ? "Confirm in your wallet to evolve."
+        : checkInBusy
+          ? "Saving your check-in..."
+          : checkedInToday
+            ? `Your Bird is resting. Next check-in in ${nextCheckInTime}`
+            : checkInError
+              ? "Couldn't save. Your progress is safe, try again."
+              : evolutionCheckInReady
+                ? "Your Bird is ready to evolve!"
+                : "Your Bird is waiting for you.";
   const ownedLandClass = ownedBird?.landAssigned
     ? landClassNames[ownedBird.land] ?? "wizard"
     : "pending";
@@ -1862,9 +2240,8 @@ export default function EggoriaLanding({
   const hatchRarityClass = hatchingBird?.rarityAssigned
     ? ` rarity-${rarityNames[hatchingBird.rarity]?.toLowerCase() ?? "common"}`
     : "";
-  // Every assigned-stage metadata image is a complete bird + island composition.
-  // Render Soarlings through the same full-size path as Fledglings so the metadata
-  // artwork is not shrunk into the standalone-bird slot or layered over a second island.
+  // Assigned birds use the local land-specific artwork so Hatchling, Fledgling and
+  // Soarling stay aligned with the same island system throughout the journey.
   const compositeBird = ownedBird?.landAssigned ? ownedBird : null;
 
   return (
@@ -1940,7 +2317,7 @@ export default function EggoriaLanding({
                 <span className="final-stage-connector" aria-hidden="true"><img src={asset("final-stage-light.png")} alt="" /></span>
                 <div className="final-stage-item"><span className="final-stage-picture"><img className="final-stage-fledgling" src={asset(landFinalStageAssets[ownedBird.land]?.[1] ?? landFinalStageAssets[2][1])} alt="" /></span><span>Fledgling</span></div>
                 <span className="final-stage-connector" aria-hidden="true"><img src={asset("final-stage-light.png")} alt="" /></span>
-                <div className="final-stage-item"><span className="final-stage-picture"><img src={ownedBird.rarity === 4 ? asset(landFinalStageAssets[ownedBird.land]?.[2] ?? landFinalStageAssets[2][2]) : asset(getSoarlingResultAsset(ownedBird))} alt="" /></span><span>Soarling</span></div>
+                <div className="final-stage-item"><span className="final-stage-picture"><img src={ownedBird.rarity === 4 ? asset(landFinalStageAssets[ownedBird.land]?.[2] ?? landFinalStageAssets[2][2]) : ownedBird.rarity === 3 ? asset(landLegendaryHeroBirdAssets[ownedBird.land] ?? landLegendaryHeroBirdAssets[2]) : ownedBird.rarity === 2 ? asset(landEpicHeroBirdAssets[ownedBird.land] ?? landEpicHeroBirdAssets[2]) : ownedBird.rarity === 1 ? asset(landRareHeroBirdAssets[ownedBird.land] ?? landRareHeroBirdAssets[2]) : asset(landCommonHeroBirdAssets[ownedBird.land] ?? landCommonHeroBirdAssets[2])} alt="" /></span><span>Soarling</span></div>
               </div>
             </div>
             <div className="final-form-actions">
@@ -1980,7 +2357,7 @@ export default function EggoriaLanding({
               aria-busy={checkInSubmitting || checkInSyncPending !== null}
             >
               <img src={asset("button.png")} alt="" />
-              <span>{(checkInSubmitting || checkInSyncPending) && <i className="claim-button-spinner" aria-hidden="true" />}{checkInSubmitting || checkInSyncPending ? "Checking In..." : networkCtaOverride && wrongMetaMaskNetwork ? arcNetworkMissing ? "Add network" : "Switch network" : !ownedBird.landAssigned ? "Assigning Land..." : ownedBird.stage >= 2 ? "Evolution Complete" : checkedInToday ? `Next check-in in ${nextCheckInTime}` : "Check In"}</span>
+              <span>{checkInBusy && <i className="claim-button-spinner" aria-hidden="true" />}{checkInButtonLabel}</span>
             </button>
             <button
               className={`funds-guide-backdrop${fundsGuideOpen ? " is-open" : ""}`}
@@ -1996,15 +2373,11 @@ export default function EggoriaLanding({
                 <button type="button" aria-label="Close check-in guide" onClick={() => setFundsGuideOpen(false)} />
               </div>
               <h2>Daily Check-ins</h2>
-              <p>Check in once each day. Your bird evolves after every 10 successful check-ins.</p>
+              <p>Tap once every 24 hours. Your 10th check-in evolves your Bird.</p>
             </aside>
             <p key={`checkin-helper-${ownedBird.tokenId}`} className="login-note bird-checkin-helper hero-state-helper">
               <span className="funds-note-content">
-                <span>{ownedBird.landAssigned
-                  ? checkedInToday
-                    ? `Come back in ${nextCheckInTime}.`
-                    : `Come back daily to help your ${landNames[ownedBird.land] ?? "Eggoria"} bird evolve.`
-                  : "Your bird will appear as soon as randomness is fulfilled."}</span>
+                <span>{checkInHelperText}</span>
                 <button
                   className="funds-guide-help"
                   type="button"
@@ -2015,7 +2388,6 @@ export default function EggoriaLanding({
                 >?</button>
               </span>
             </p>
-            {checkInError && <p className="bird-checkin-error" role="alert">{checkInError}</p>}
             {notice && <p className="connection-notice" role="status">{notice}</p>}
           </div> : <div className="hero-connect-wrap">
             <button className="figma-button hero-connect hero-mint-button" type="button" onClick={handleHeroAction} disabled={claimSubmitting || mintPhase === "pending" || isHatching || heroChecking} aria-busy={claimSubmitting || mintPhase === "pending" || isHatching || heroChecking}>
@@ -2074,30 +2446,22 @@ export default function EggoriaLanding({
           </div>}
         </div>
         {ownedBird?.landAssigned && ownedBird.stage >= 2 && ownedBird.rarityAssigned && <span className={`final-form-rarity rarity-${rarityNames[ownedBird.rarity]?.toLowerCase() ?? "common"}`} aria-label={`${rarityNames[ownedBird.rarity] ?? "Common"} rarity`}>✦ {rarityNames[ownedBird.rarity] ?? "Common"} ✦</span>}
-        <div className={`hero-art${walletViewLoading ? " is-state-loading" : ownedBird ? ` bird-owned land-${ownedLandClass}${ownedBird.stage === 2 ? " is-soarling" : ""}${ownedBird.stage === 2 && ownedBird.rarity === 3 ? " is-legendary" : ownedBird.stage === 2 && ownedBird.rarity === 4 ? " is-mythic" : ""}${postHatchOwned ? " is-post-hatch" : ""}` : isHatching ? ` is-hatching hatch-${hatchPhase} land-${hatchLandClass}${hatchRarityClass}` : ""}`} aria-label={!walletViewLoading && ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : isHatching ? "Your Egg is hatching" : undefined} aria-hidden={!walletViewLoading && (ownedBird || isHatching) ? undefined : "true"}>
+        <div className={`hero-art${walletViewLoading ? " is-state-loading" : ownedBird ? ` bird-owned land-${ownedLandClass}${ownedBird.stage === 2 ? " is-soarling" : ""}${ownedBird.stage === 2 && ownedBird.rarity === 0 ? " is-common" : ownedBird.stage === 2 && ownedBird.rarity === 1 ? " is-rare" : ownedBird.stage === 2 && ownedBird.rarity === 2 ? " is-epic" : ownedBird.stage === 2 && ownedBird.rarity === 3 ? " is-legendary" : ownedBird.stage === 2 && ownedBird.rarity === 4 ? " is-mythic" : ""}${postHatchOwned ? " is-post-hatch" : ""}` : isHatching ? ` is-hatching hatch-${hatchPhase} land-${hatchLandClass}${hatchRarityClass}` : ""}`} aria-label={!walletViewLoading && ownedBird?.landAssigned ? `${landNames[ownedBird.land]} bird on its island` : isHatching ? "Your Egg is hatching" : undefined} aria-hidden={!walletViewLoading && (ownedBird || isHatching) ? undefined : "true"}>
           <span className="egg-glow-new">
             <img src={asset("glow.svg")} alt="" />
           </span>
           {compositeBird?.stage === 2 && <>
             <span className="owned-soarling-sparks" aria-hidden="true"><i /><i /><i /></span>
           </>}
-          {compositeBird?.stage === 2 && compositeBird.rarity === 2 && (
-            <span className="owned-epic-land-details" aria-hidden="true">
-              <img className="owned-epic-land-item owned-epic-land-item-left" src={asset(landEpicDetailAssets[compositeBird.land]?.[0] ?? landEpicDetailAssets[0][0])} alt="" />
-              <img className="owned-epic-land-item owned-epic-land-item-right" src={asset(landEpicDetailAssets[compositeBird.land]?.[1] ?? landEpicDetailAssets[0][1])} alt="" />
-              <i className="owned-epic-land-light owned-epic-land-light-left" />
-              <i className="owned-epic-land-light owned-epic-land-light-right" />
-            </span>
-          )}
-          {compositeBird?.stage === 2 && compositeBird.rarity === 3 && (
-            <span className="owned-legendary-land-details" aria-hidden="true">
-              <img className="owned-legendary-land-item owned-legendary-land-item-left" src={asset(landLegendaryDetailAssets[compositeBird.land]?.[0] ?? landLegendaryDetailAssets[0][0])} alt="" />
-              <img className="owned-legendary-land-item owned-legendary-land-item-right" src={asset(landLegendaryDetailAssets[compositeBird.land]?.[1] ?? landLegendaryDetailAssets[0][1])} alt="" />
-              <i className="owned-legendary-land-light owned-legendary-land-light-left" />
-              <i className="owned-legendary-land-light owned-legendary-land-light-right" />
-            </span>
-          )}
-          {compositeBird && (compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 0
+          {compositeBird && (compositeBird.stage < 2
+            ? <YoungBirdHeroComposite bird={compositeBird} isReveal={postHatchOwned} />
+            : compositeBird.stage === 2 && compositeBird.rarity <= 1
+            ? <LowerRarityHeroComposite bird={compositeBird} />
+            : compositeBird.stage === 2 && compositeBird.rarity === 2
+            ? <EpicHeroComposite bird={compositeBird} />
+            : compositeBird.stage === 2 && compositeBird.rarity === 3
+            ? <LegendaryHeroComposite bird={compositeBird} />
+            : compositeBird.stage === 2 && compositeBird.rarity === 4 && compositeBird.land === 0
             ? <span
               key={`owned-composite-${compositeBird.tokenId}-${compositeBird.stage}-${compositeBird.rarity}`}
               className="bird-land-composite forest-mythic-composite"
@@ -2308,9 +2672,9 @@ export default function EggoriaLanding({
                 <p>{mobileWalletBrowser ? "Tap to open this page inside the MetaMask app." : "You don't have MetaMask yet."}</p>
                 {!mobileWalletBrowser && <p>Already installed it? <button type="button" onClick={() => window.location.reload()}>Refresh page</button></p>}
               </div>}
-              {connectingProvider === "metamask" && <div className="wallet-feedback is-info" role="status"><p>{metaMaskWaitLong ? "Still there? Click the fox icon at the top of your browser." : "A window opened on the right. Approve it to connect."}</p></div>}
+              {connectingProvider === "metamask" && <div className="wallet-feedback is-info" role="status"><p>{metaMaskWaitLong ? "Still waiting? Approve the connection request in the MetaMask panel on the right." : "A MetaMask panel opened on the right. Approve the request to connect."}</p></div>}
               {metaMaskInstalled && walletError.startsWith("metamask-") && <div className={`wallet-feedback${walletError === "metamask-closed" || walletError === "metamask-cancelled" || walletError === "metamask-pending" || walletError === "metamask-locked" ? " is-info" : ""}`} role="status">
-                <p>{walletError === "metamask-closed" ? "You closed the MetaMask window." : walletError === "metamask-cancelled" ? "You declined in MetaMask." : walletError === "metamask-pending" ? "A MetaMask window is already open. Click the fox icon to find it." : walletError === "metamask-locked" ? "MetaMask is locked. Unlock it, then connect again." : "Something went wrong connecting to MetaMask."}
+                <p>{walletError === "metamask-closed" ? "You closed the MetaMask window." : walletError === "metamask-cancelled" ? "You declined in MetaMask." : walletError === "metamask-pending" ? "A MetaMask request is already open. Approve it in the panel on the right." : walletError === "metamask-locked" ? "MetaMask is locked. Unlock it, then connect again." : "Something went wrong connecting to MetaMask."}
                   {walletError !== "metamask-pending" && <> <button type="button" onClick={connectMetaMask}>{walletError === "metamask-locked" || walletError === "metamask-closed" || walletError === "metamask-cancelled" ? "Connect again" : "Try again"}</button></>}
                 </p>
               </div>}
@@ -2477,7 +2841,7 @@ export default function EggoriaLanding({
               <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{walletNetworkName}</dd></div>
               <div><dt><img src={asset("claim-price.png")} alt="" />Mint price</dt><dd>Free</dd></div>
               <div><dt><img src={asset("claim-receive.png")} alt="" />You receive</dt><dd>1 Mystery Egg</dd></div>
-              <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{networkFee === "Unavailable" || networkFee === "Estimating..." ? networkFee : `~${networkFee} Test USDC`}</dd></div>
+              <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{mintVrfFee === "Unavailable" || mintVrfFee === "Estimating..." ? mintVrfFee : `~${mintVrfFee} Test USDC`}</dd></div>
             </dl>
             <p className="claim-price-note">Free to mint. You only pay the network fee below.</p>
             <div className="claim-actions">
@@ -2523,13 +2887,15 @@ export default function EggoriaLanding({
               <div><dt><img src={asset("claim-network.png")} alt="" />Network</dt><dd>{walletNetworkName}</dd></div>
               <div><dt><img src={asset("evolution-arrow.png")} alt="" />Evolves to</dt><dd>{evolutionTargetStage === 2 ? "Soarling" : "Fledgling"}</dd></div>
               <div><dt><img src={asset("evolution-bird.png")} alt="" />Bird</dt><dd>#{ownedBird.tokenId.toString()} - {landBadgeNames[ownedBird.land] ?? "Land Wizard"}</dd></div>
-              <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{evolutionNetworkFee === "Unavailable" || evolutionNetworkFee === "Estimating..." ? evolutionNetworkFee : `~${evolutionNetworkFee} Test USDC`}</dd></div>
+              <div><dt><img src={asset("claim-network-fee.png")} alt="" />Network fee</dt><dd>{evolutionTargetStage === 2
+                ? evolutionVrfFee === "Unavailable" || evolutionVrfFee === "Estimating..." ? evolutionVrfFee : `~${evolutionVrfFee} Test USDC`
+                : evolutionNetworkFee === "Unavailable" || evolutionNetworkFee === "Estimating..." ? evolutionNetworkFee : `~${evolutionNetworkFee} Test USDC`}</dd></div>
             </dl>
             <div className="claim-actions evolution-checkin-actions">
               <button className="funds-cancel claim-cancel evolution-checkin-cancel" type="button" onClick={() => setEvolutionCheckInOpen(false)} disabled={checkInSubmitting}>Not Now</button>
               <button className="figma-button claim-confirm evolution-checkin-confirm" type="button" onClick={() => void confirmEvolutionCheckIn()} disabled={checkInSubmitting || checkInSyncPending !== null || wrongMetaMaskNetwork} aria-busy={checkInSubmitting || checkInSyncPending !== null}>
                 <img src={asset("button.png")} alt="" />
-                <span>{(checkInSubmitting || checkInSyncPending) && <i className="claim-button-spinner" aria-hidden="true" />}{checkInSubmitting || checkInSyncPending ? "Checking In..." : "Evolve Now"}</span>
+                <span>{checkInBusy && <i className="claim-button-spinner" aria-hidden="true" />}{checkInPhase === "wallet" ? "Waiting for MetaMask..." : checkInBusy ? "Checking in..." : "Evolve Now"}</span>
               </button>
             </div>
           </div>

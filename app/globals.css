@@ -6,7 +6,7 @@
 @font-face{font-family:"Be Vietnam Pro";src:url("/assets/fonts/be-vietnam-pro-regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
 @font-face{font-family:"Be Vietnam Pro";src:url("/assets/fonts/be-vietnam-pro-medium.ttf") format("truetype");font-weight:500;font-style:normal;font-display:swap}
 @font-face{font-family:"Be Vietnam Pro";src:url("/assets/fonts/be-vietnam-pro-semibold.ttf") format("truetype");font-weight:600;font-style:normal;font-display:swap}
-:root{color-scheme:light;font-family:"Be Vietnam Pro",Arial,sans-serif;background:#df9ee0;--text-primary:#211052;--text-default:#40356b;--text-secondary:#51466f;--text-muted:#665b84;--text-secondary-strong:#40356b;--text-on-dark-primary:#fff9f3;--text-on-dark-default:#d8cff0;--text-on-dark-secondary:#b7a9d8;--text-on-dark-muted:#8f82b3;--brand-purple-50:#a061f0;--brand-purple-60:#853de7;--brand-purple-70:#6a2cd7;--brand-purple-80:#541db8;--accent-gold-40:#ffd978;--accent-gold-50:#f0b84a;--rarity-common:#86efac;--rarity-rare:#93c5fd;--rarity-epic:#f0abfc;--rarity-legendary:#fca5a5;--rarity-mythic:#fde68a;--surface-cream:#fff8ee;--surface-lavender:#f5eefa;--surface-soft-purple:#f7f2ff;--surface-dark:#1b1246;--surface-dark-2:#17103d;--progress-container:#eee8f8;--progress-track:#6a58a7;--progress-fill-start:#c156f3;--progress-fill-end:#823dda}*{box-sizing:border-box}html{scroll-behavior:smooth}body{min-width:320px;margin:0;background:#df9ee0;color:var(--text-primary)}button,a{font:inherit}
+:root{color-scheme:light;font-family:"Be Vietnam Pro",Arial,sans-serif;background:#df9ee0;--text-primary:#211052;--text-default:#3c2d66;--text-secondary:#51466f;--text-muted:#665b84;--text-secondary-strong:#45376c;--text-on-dark-primary:#fff9f3;--text-on-dark-default:#d8cff0;--text-on-dark-secondary:#b7a9d8;--text-on-dark-muted:#8f82b3;--brand-purple-50:#a061f0;--brand-purple-60:#853de7;--brand-purple-70:#6a2cd7;--brand-purple-80:#541db8;--accent-gold-40:#ffd978;--accent-gold-50:#f0b84a;--rarity-common:#86efac;--rarity-rare:#93c5fd;--rarity-epic:#f0abfc;--rarity-legendary:#fca5a5;--rarity-mythic:#fde68a;--surface-cream:#fff8ee;--surface-lavender:#f5eefa;--surface-soft-purple:#f7f2ff;--surface-dark:#1b1246;--surface-dark-2:#17103d;--progress-container:#eee8f8;--progress-track:#6a58a7;--progress-fill-start:#c156f3;--progress-fill-end:#823dda}*{box-sizing:border-box}html{scroll-behavior:smooth}body{min-width:320px;margin:0;background:#df9ee0;color:var(--text-primary)}button,a{font:inherit}
 .landing{position:relative;min-height:max(100vh,97.13vw);overflow:hidden;background:#10105d}
 .landing::before{position:fixed;z-index:0;inset:0;background:#df9ee0 url("/assets/landing/background.png") center top/cover no-repeat;content:"";opacity:0;transform-origin:center center;animation:world-opening 450ms ease-out 1 both;pointer-events:none}
 .landing-header{position:relative;z-index:20;display:flex;width:100%;height:119px;align-items:center;gap:30px;padding:14px 2.78% 0}
@@ -702,51 +702,7 @@
 @media(max-width:620px){.legendary-magic-item{width:clamp(18px,6vw,34px)}.land-king .legendary-magic-item-left{width:20px}.land-king .legendary-magic-item-right{width:27px}}
 @media(prefers-reduced-motion:reduce){.has-legendary-magic>.soarling-result-image,.legendary-magic-item,.legendary-magic-dots i{animation:none!important}.legendary-magic-item{opacity:1;transform:none}.legendary-magic-dots i{opacity:.7;transform:none}}
 
-/* Carry each Epic land's popup items and lights into the owned-bird hero. */
-.owned-epic-land-details{position:absolute;z-index:6;top:0;left:645px;display:block;width:850px;aspect-ratio:1080/682;pointer-events:none}
-.owned-epic-land-item{position:absolute;display:block;width:70px;height:auto;object-fit:contain;filter:drop-shadow(0 0 6px color-mix(in srgb,var(--owned-land-glow) 58%,transparent));will-change:transform,opacity}
-.owned-epic-land-item-left{top:27%;left:79%;animation:epic-feather-left-enter .7s cubic-bezier(.2,.75,.25,1) both,epic-feather-left-idle 2.8s ease-in-out .7s infinite}
-.owned-epic-land-item-right{top:21%;right:78%;animation:epic-feather-right-enter .7s cubic-bezier(.2,.75,.25,1) both,epic-feather-right-idle 3.1s ease-in-out .9s infinite}
-.owned-epic-land-light{position:absolute;display:block;width:6px;height:6px;border-radius:50%;background:color-mix(in srgb,var(--owned-land-glow) 65%,#fff 35%);box-shadow:0 0 8px 2px color-mix(in srgb,var(--owned-land-glow) 82%,transparent),0 0 17px 4px color-mix(in srgb,var(--owned-land-glow) 40%,transparent);animation:owned-soarling-spark 2.6s ease-in-out infinite}
-.owned-epic-land-light-left{top:8%;left:23%;animation-delay:-.7s}
-.owned-epic-land-light-right{top:16%;right:22%;width:5px;height:5px;animation-delay:-1.8s}
-.hero-art.land-wind .owned-epic-land-item-left{top:25%;left:81%;width:clamp(20px,7vw,64px)}
-.hero-art.land-wind .owned-epic-land-item-right{top:18%;right:76%;width:clamp(20px,7vw,64px)}
-.hero-art.land-wind .owned-epic-land-light-left{top:12%;left:20%}
-.hero-art.land-wind .owned-epic-land-light-right{top:11%;right:24%}
-.hero-art.land-wizard .owned-epic-land-item-left{top:20%;left:80%;width:clamp(20px,7vw,54px)}
-.hero-art.land-wizard .owned-epic-land-item-right{top:30%;right:81%;width:clamp(20px,7vw,66px)}
-.hero-art.land-wizard .owned-epic-land-light-left{top:6%;left:28%}
-.hero-art.land-wizard .owned-epic-land-light-right{top:20%;right:20%}
-.hero-art.land-artist .owned-epic-land-item-left{top:31%;left:76%;width:clamp(20px,7vw,62px)}
-.hero-art.land-artist .owned-epic-land-item-right{top:18%;right:79%;width:clamp(20px,7vw,68px)}
-.hero-art.land-artist .owned-epic-land-light-left{top:13%;left:25%}
-.hero-art.land-artist .owned-epic-land-light-right{top:9%;right:27%}
-.hero-art.land-king .owned-epic-land-item-left{top:26%;left:80%;width:clamp(16px,5vw,42px)}
-.hero-art.land-king .owned-epic-land-item-right{top:20%;right:78%;width:clamp(20px,6vw,56px)}
-.hero-art.land-king .owned-epic-land-light-left{top:9%;left:26%}
-.hero-art.land-king .owned-epic-land-light-right{top:13%;right:19%}
-@media(max-width:760px){.owned-epic-land-details{top:10px;left:0;width:100%}.owned-epic-land-item{width:clamp(20px,7vw,34px)}.owned-epic-land-light{width:4px;height:4px}}
-@media(prefers-reduced-motion:reduce){.owned-epic-land-item,.owned-epic-land-light{animation:none}}
-
 /* Legendary owned-bird decorations are independent of the Epic hero styles. */
-.owned-legendary-land-details{position:absolute;z-index:6;top:0;left:645px;display:block;width:850px;aspect-ratio:1080/682;pointer-events:none}
-.owned-legendary-land-item{position:absolute;display:block;width:62px;height:auto;object-fit:contain;filter:drop-shadow(0 0 7px color-mix(in srgb,var(--owned-land-glow) 62%,transparent));will-change:transform,opacity}
-.owned-legendary-land-item-left{top:26%;left:79%;animation:legendary-item-left-enter .75s cubic-bezier(.2,.75,.25,1) both,legendary-item-left-idle 3.2s ease-in-out .75s infinite}
-.owned-legendary-land-item-right{top:20%;right:78%;animation:legendary-item-right-enter .75s cubic-bezier(.2,.75,.25,1) both,legendary-item-right-idle 3.5s ease-in-out .9s infinite}
-.owned-legendary-land-light{position:absolute;display:block;width:6px;height:6px;border-radius:50%;background:color-mix(in srgb,var(--owned-land-glow) 65%,#fff 35%);box-shadow:0 0 8px 2px color-mix(in srgb,var(--owned-land-glow) 82%,transparent),0 0 17px 4px color-mix(in srgb,var(--owned-land-glow) 40%,transparent);animation:owned-soarling-spark 2.8s ease-in-out infinite}
-.owned-legendary-land-light-left{top:10%;left:24%;animation-delay:-.8s}
-.owned-legendary-land-light-right{top:17%;right:24%;width:5px;height:5px;animation-delay:-1.9s}
-.hero-art.land-wind .owned-legendary-land-item-left{top:24%;left:81%}
-.hero-art.land-wind .owned-legendary-land-item-right{top:18%;right:77%}
-.hero-art.land-wizard .owned-legendary-land-item-left{top:22%;left:80%}
-.hero-art.land-wizard .owned-legendary-land-item-right{top:29%;right:81%}
-.hero-art.land-artist .owned-legendary-land-item-left{top:30%;left:78%}
-.hero-art.land-artist .owned-legendary-land-item-right{top:18%;right:79%}
-.hero-art.land-king .owned-legendary-land-item-left{top:25%;left:80%;width:44px}
-.hero-art.land-king .owned-legendary-land-item-right{top:20%;right:79%;width:55px}
-@media(max-width:760px){.owned-legendary-land-details{top:10px;left:0;width:100%}.owned-legendary-land-item{width:clamp(20px,7vw,34px)}.hero-art.land-king .owned-legendary-land-item-left{width:clamp(16px,5vw,25px)}.hero-art.land-king .owned-legendary-land-item-right{width:clamp(20px,6vw,32px)}.owned-legendary-land-light{width:4px;height:4px}}
-@media(prefers-reduced-motion:reduce){.owned-legendary-land-item,.owned-legendary-land-light{animation:none}}
 
 /* Legendary glow keeps the Figma radial stops, tinted to each island. */
 .has-legendary-magic{--legendary-glow-core:#a245ff;--legendary-glow-mid:rgba(117,51,216,.7);--legendary-glow-edge:rgba(97,60,153,0)}
@@ -763,9 +719,8 @@
 .hero-art.bird-owned.is-soarling.land-wizard{--soarling-hero-top:-45px}
 .hero-art.bird-owned.is-soarling.land-artist{--soarling-hero-top:-30px}
 .hero-art.bird-owned.is-soarling.land-king{--soarling-hero-top:-60px}
-.hero-art.bird-owned.is-soarling.is-legendary.land-artist{--soarling-hero-top:-10px}
-.hero-art.bird-owned.is-soarling .bird-land-composite,.hero-art.bird-owned.is-soarling .owned-epic-land-details,.hero-art.bird-owned.is-soarling .owned-legendary-land-details{top:var(--soarling-hero-top);left:705px;width:730px}
-@media(max-width:760px){.hero-art.bird-owned.is-soarling{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-forest{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-wizard{--soarling-hero-top:-25px}.hero-art.bird-owned.is-soarling.land-king{--soarling-hero-top:-20px}.hero-art.bird-owned.is-soarling .bird-land-composite,.hero-art.bird-owned.is-soarling .owned-epic-land-details,.hero-art.bird-owned.is-soarling .owned-legendary-land-details{top:var(--soarling-hero-top);left:6%;width:88%}}
+.hero-art.bird-owned.is-soarling:not(.is-legendary):not(.is-epic) .bird-land-composite{top:var(--soarling-hero-top);left:705px;width:730px}
+@media(max-width:760px){.hero-art.bird-owned.is-soarling{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-forest{--soarling-hero-top:0px}.hero-art.bird-owned.is-soarling.land-wizard{--soarling-hero-top:-25px}.hero-art.bird-owned.is-soarling.land-king{--soarling-hero-top:-20px}.hero-art.bird-owned.is-soarling:not(.is-legendary):not(.is-epic) .bird-land-composite{top:var(--soarling-hero-top);left:6%;width:88%}}
 
 /* Align the visible bounds of all five local Mythic illustrations to the Artist hero. */
 .hero-art.bird-owned.is-mythic .bird-land-composite{top:var(--mythic-hero-top,-55px);left:calc(705px + var(--mythic-hero-left,0px));scale:var(--mythic-hero-scale-x,1.25) var(--mythic-hero-scale-y,1.13)}
@@ -828,6 +783,150 @@
 .forest-mythic-badge img{inset:0;width:100%}
 .hero-art.land-forest.is-mythic .owned-soarling-sparks{display:none}
 @media(prefers-reduced-motion:reduce){.forest-mythic-composite,.forest-mythic-glow,.forest-mythic-ring,.forest-mythic-core,.forest-mythic-bird,.forest-mythic-awakening,.forest-mythic-orbit-motes i,.forest-mythic-leaves img,.forest-mythic-badge{animation:none!important;transform:none!important}.forest-mythic-glow,.forest-mythic-ring,.forest-mythic-core,.forest-mythic-badge{opacity:1}.forest-mythic-leaves img{opacity:.7}.forest-mythic-awakening,.forest-mythic-orbit-motes{display:none}}
+
+/* Hatchling and Fledgling share only the layer structure; each stage has its own tuning table. */
+:where(.young-hero-forest,.young-hero-wind,.young-hero-wizard,.young-hero-artist,.young-hero-king){position:absolute;z-index:5;top:var(--young-top);left:calc(705px + var(--young-left));display:block;width:730px;height:auto;max-width:none;aspect-ratio:var(--young-aspect);filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));isolation:isolate;scale:var(--young-scale-x) var(--young-scale-y);will-change:transform}
+:where(.young-hero-forest,.young-hero-wind,.young-hero-wizard,.young-hero-artist,.young-hero-king) img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+
+/* Hatchling: adjust these five rules without changing Fledgling. */
+.young-hero-forest.is-hatchling{--young-aspect:1585/1634;--young-top:-51px;--young-left:9px;--young-scale-x:1.263;--young-scale-y:1.139;--young-mobile-top:-6px;--young-mobile-left:1.1%;--young-mobile-scale-x:1.152;--young-mobile-scale-y:1.089;--young-island-top:34%;--young-island-width:91%;--young-bird-top:5.1%;--young-bird-left:17.4%;--young-bird-width:63.2%}
+.young-hero-wind.is-hatchling{--young-aspect:1568/1705;--young-top:-49px;--young-left:14px;--young-scale-x:1.245;--young-scale-y:1.093;--young-mobile-top:-5px;--young-mobile-left:1.7%;--young-mobile-scale-x:1.135;--young-mobile-scale-y:1.045;--young-island-top:34%;--young-island-width:94%;--young-bird-top:10.7%;--young-bird-left:22.8%;--young-bird-width:58.4%}
+.young-hero-wizard.is-hatchling{--young-aspect:1585/1634;--young-top:-48px;--young-left:7px;--young-scale-x:1.21;--young-scale-y:1.154;--young-mobile-top:-5px;--young-mobile-left:.9%;--young-mobile-scale-x:1.104;--young-mobile-scale-y:1.103;--young-island-top:37%;--young-island-width:91%;--young-bird-top:10.9%;--young-bird-left:19.4%;--young-bird-width:58.9%}
+.young-hero-artist.is-hatchling{--young-aspect:1585/1634;--young-top:-55px;--young-left:0px;--young-scale-x:1.25;--young-scale-y:1.13;--young-mobile-top:-8px;--young-mobile-left:0%;--young-mobile-scale-x:1.14;--young-mobile-scale-y:1.08;--young-island-top:35%;--young-island-width:91%;--young-bird-top:8.5%;--young-bird-left:19.4%;--young-bird-width:60.9%}
+.young-hero-king.is-hatchling{--young-aspect:1585/1634;--young-top:-48px;--young-left:-10px;--young-scale-x:1.234;--young-scale-y:1.15;--young-mobile-top:-5px;--young-mobile-left:-1.3%;--young-mobile-scale-x:1.125;--young-mobile-scale-y:1.099;--young-island-top:37%;--young-island-width:91%;--young-bird-top:10.9%;--young-bird-left:20.5%;--young-bird-width:60.4%}
+
+/* Fledgling: adjust these five rules without changing Hatchling. */
+.young-hero-forest.is-fledgling{--young-aspect:1585/1634;--young-top:-51px;--young-left:9px;--young-scale-x:1.263;--young-scale-y:1.139;--young-mobile-top:-6px;--young-mobile-left:1.1%;--young-mobile-scale-x:1.152;--young-mobile-scale-y:1.089;--young-island-top:34%;--young-island-width:91%;--young-bird-top:-2%;--young-bird-left:26%;--young-bird-width:46%}
+.young-hero-wind.is-fledgling{--young-aspect:1568/1705;--young-top:-49px;--young-left:14px;--young-scale-x:1.245;--young-scale-y:1.093;--young-mobile-top:-5px;--young-mobile-left:1.7%;--young-mobile-scale-x:1.135;--young-mobile-scale-y:1.045;--young-island-top:34%;--young-island-width:94%;--young-bird-top:0%;--young-bird-left:28%;--young-bird-width:46%}
+.young-hero-wizard.is-fledgling{--young-aspect:1585/1634;--young-top:-48px;--young-left:7px;--young-scale-x:1.21;--young-scale-y:1.154;--young-mobile-top:-5px;--young-mobile-left:.9%;--young-mobile-scale-x:1.104;--young-mobile-scale-y:1.103;--young-island-top:37%;--young-island-width:91%;--young-bird-top:0%;--young-bird-left:25%;--young-bird-width:46%}
+.young-hero-artist.is-fledgling{--young-aspect:1585/1634;--young-top:-55px;--young-left:0px;--young-scale-x:1.25;--young-scale-y:1.13;--young-mobile-top:-8px;--young-mobile-left:0%;--young-mobile-scale-x:1.14;--young-mobile-scale-y:1.08;--young-island-top:35%;--young-island-width:91%;--young-bird-top:-1%;--young-bird-left:26%;--young-bird-width:46%}
+.young-hero-king.is-fledgling{--young-aspect:1585/1634;--young-top:-48px;--young-left:-10px;--young-scale-x:1.234;--young-scale-y:1.15;--young-mobile-top:-5px;--young-mobile-left:-1.3%;--young-mobile-scale-x:1.125;--young-mobile-scale-y:1.099;--young-island-top:37%;--young-island-width:91%;--young-bird-top:1%;--young-bird-left:25%;--young-bird-width:46%}
+.young-hero-core{position:absolute;z-index:2;inset:0;pointer-events:none;animation:young-hero-float 5.6s ease-in-out infinite}
+.young-hero-island{z-index:1;top:var(--young-island-top);left:1%;width:var(--young-island-width)}
+.young-hero-bird{z-index:2;top:var(--young-bird-top);left:var(--young-bird-left);width:var(--young-bird-width);transform-origin:50% 88%;animation:young-bird-breathe 4s ease-in-out infinite}
+:where(.young-hero-forest,.young-hero-wind,.young-hero-wizard,.young-hero-artist,.young-hero-king).is-hatch-reveal{animation:owned-composite-enter 1400ms cubic-bezier(.22,.78,.28,1) both}
+@keyframes young-hero-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes young-bird-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.008)}}
+@media(max-width:760px){
+  :where(.young-hero-forest,.young-hero-wind,.young-hero-wizard,.young-hero-artist,.young-hero-king){top:var(--young-mobile-top);left:calc(6% + var(--young-mobile-left));width:88%;scale:var(--young-mobile-scale-x) var(--young-mobile-scale-y)}
+}
+@media(prefers-reduced-motion:reduce){.young-hero-core,.young-hero-bird,:where(.young-hero-forest,.young-hero-wind,.young-hero-wizard,.young-hero-artist,.young-hero-king).is-hatch-reveal{animation:none!important;transform:none!important}}
+
+/* Rare and Common share only the layer structure; each rarity has its own tuning table. */
+:where(.rare-hero-forest,.rare-hero-wind,.rare-hero-wizard,.rare-hero-artist,.rare-hero-king,.common-hero-forest,.common-hero-wind,.common-hero-wizard,.common-hero-artist,.common-hero-king){position:absolute;z-index:5;top:var(--lower-rarity-top);left:calc(705px + var(--lower-rarity-left));display:block;width:730px;height:auto;max-width:none;aspect-ratio:var(--lower-rarity-aspect);filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));isolation:isolate;scale:var(--lower-rarity-scale-x) var(--lower-rarity-scale-y);will-change:transform}
+:where(.rare-hero-forest,.rare-hero-wind,.rare-hero-wizard,.rare-hero-artist,.rare-hero-king,.common-hero-forest,.common-hero-wind,.common-hero-wizard,.common-hero-artist,.common-hero-king) img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+
+/* Rare: adjust these five rules without changing Common. */
+.rare-hero-forest{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-51px;--lower-rarity-left:9px;--lower-rarity-scale-x:1.263;--lower-rarity-scale-y:1.139;--lower-rarity-mobile-top:-6px;--lower-rarity-mobile-left:1.1%;--lower-rarity-mobile-scale-x:1.152;--lower-rarity-mobile-scale-y:1.089;--lower-rarity-island-top:34%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:14%;--lower-rarity-bird-left:20%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:8%}
+.rare-hero-wind{--lower-rarity-aspect:1568/1705;--lower-rarity-top:-49px;--lower-rarity-left:14px;--lower-rarity-scale-x:1.245;--lower-rarity-scale-y:1.093;--lower-rarity-mobile-top:-5px;--lower-rarity-mobile-left:1.7%;--lower-rarity-mobile-scale-x:1.135;--lower-rarity-mobile-scale-y:1.045;--lower-rarity-island-top:34%;--lower-rarity-island-width:94%;--lower-rarity-bird-top:14%;--lower-rarity-bird-left:25%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:8%}
+.rare-hero-wizard{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-48px;--lower-rarity-left:7px;--lower-rarity-scale-x:1.21;--lower-rarity-scale-y:1.154;--lower-rarity-mobile-top:-5px;--lower-rarity-mobile-left:.9%;--lower-rarity-mobile-scale-x:1.104;--lower-rarity-mobile-scale-y:1.103;--lower-rarity-island-top:37%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:15%;--lower-rarity-bird-left:21%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:10%}
+.rare-hero-artist{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-55px;--lower-rarity-left:0px;--lower-rarity-scale-x:1.25;--lower-rarity-scale-y:1.13;--lower-rarity-mobile-top:-8px;--lower-rarity-mobile-left:0%;--lower-rarity-mobile-scale-x:1.14;--lower-rarity-mobile-scale-y:1.08;--lower-rarity-island-top:36%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:16%;--lower-rarity-bird-left:22%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:9.5%}
+.rare-hero-king{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-48px;--lower-rarity-left:-10px;--lower-rarity-scale-x:1.234;--lower-rarity-scale-y:1.15;--lower-rarity-mobile-top:-5px;--lower-rarity-mobile-left:-1.3%;--lower-rarity-mobile-scale-x:1.125;--lower-rarity-mobile-scale-y:1.099;--lower-rarity-island-top:37%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:17%;--lower-rarity-bird-left:22%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:11%}
+
+/* Common: adjust these five rules without changing Rare. */
+.common-hero-forest{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-51px;--lower-rarity-left:9px;--lower-rarity-scale-x:1.263;--lower-rarity-scale-y:1.139;--lower-rarity-mobile-top:-6px;--lower-rarity-mobile-left:1.1%;--lower-rarity-mobile-scale-x:1.152;--lower-rarity-mobile-scale-y:1.089;--lower-rarity-island-top:34%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:14%;--lower-rarity-bird-left:22%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:8%}
+.common-hero-wind{--lower-rarity-aspect:1568/1705;--lower-rarity-top:-49px;--lower-rarity-left:14px;--lower-rarity-scale-x:1.245;--lower-rarity-scale-y:1.093;--lower-rarity-mobile-top:-5px;--lower-rarity-mobile-left:1.7%;--lower-rarity-mobile-scale-x:1.135;--lower-rarity-mobile-scale-y:1.045;--lower-rarity-island-top:34%;--lower-rarity-island-width:94%;--lower-rarity-bird-top:15%;--lower-rarity-bird-left:24%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:9%}
+.common-hero-wizard{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-48px;--lower-rarity-left:7px;--lower-rarity-scale-x:1.21;--lower-rarity-scale-y:1.154;--lower-rarity-mobile-top:-5px;--lower-rarity-mobile-left:.9%;--lower-rarity-mobile-scale-x:1.104;--lower-rarity-mobile-scale-y:1.103;--lower-rarity-island-top:37%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:15%;--lower-rarity-bird-left:21%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:9%}
+.common-hero-artist{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-55px;--lower-rarity-left:0px;--lower-rarity-scale-x:1.25;--lower-rarity-scale-y:1.13;--lower-rarity-mobile-top:-8px;--lower-rarity-mobile-left:0%;--lower-rarity-mobile-scale-x:1.14;--lower-rarity-mobile-scale-y:1.08;--lower-rarity-island-top:36%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:16%;--lower-rarity-bird-left:22%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:9.5%}
+.common-hero-king{--lower-rarity-aspect:1585/1634;--lower-rarity-top:-48px;--lower-rarity-left:-10px;--lower-rarity-scale-x:1.234;--lower-rarity-scale-y:1.15;--lower-rarity-mobile-top:-5px;--lower-rarity-mobile-left:-1.3%;--lower-rarity-mobile-scale-x:1.125;--lower-rarity-mobile-scale-y:1.099;--lower-rarity-island-top:37%;--lower-rarity-island-width:91%;--lower-rarity-bird-top:17%;--lower-rarity-bird-left:22%;--lower-rarity-bird-width:52%;--lower-rarity-badge-top:10%}
+.lower-rarity-hero-core{position:absolute;z-index:2;inset:0;pointer-events:none;animation:lower-rarity-hero-enter 1.1s cubic-bezier(.22,1,.36,1) .2s both,lower-rarity-hero-float 5.6s ease-in-out 1.3s infinite}
+.lower-rarity-hero-island{z-index:1;top:var(--lower-rarity-island-top);left:1%;width:var(--lower-rarity-island-width)}
+.lower-rarity-hero-bird{z-index:4;top:var(--lower-rarity-bird-top);left:var(--lower-rarity-bird-left);width:var(--lower-rarity-bird-width);transform-origin:53% 88%;animation:lower-rarity-bird-breathe 4s ease-in-out 1.3s infinite}
+.lower-rarity-hero-badge{position:absolute;z-index:7;top:var(--lower-rarity-badge-top);left:34.5%;width:190px;aspect-ratio:640/163;pointer-events:none;animation:lower-rarity-badge-enter .8s ease-out 1.4s both}
+.lower-rarity-hero-badge img{inset:0;width:100%}
+.hero-new.is-final-form:has(.hero-art.bird-owned:is(.is-rare,.is-common)) .final-form-rarity{display:none}
+.hero-art:is(.is-rare,.is-common) .owned-soarling-sparks{display:none}
+@keyframes lower-rarity-hero-enter{0%{opacity:0;transform:translateY(24px)}76%{opacity:1;transform:translateY(-4px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes lower-rarity-hero-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes lower-rarity-bird-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.006,1.008)}}
+@keyframes lower-rarity-badge-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){:where(.rare-hero-forest,.rare-hero-wind,.rare-hero-wizard,.rare-hero-artist,.rare-hero-king,.common-hero-forest,.common-hero-wind,.common-hero-wizard,.common-hero-artist,.common-hero-king){top:var(--lower-rarity-mobile-top);left:calc(6% + var(--lower-rarity-mobile-left));width:88%;scale:var(--lower-rarity-mobile-scale-x) var(--lower-rarity-mobile-scale-y)}.lower-rarity-hero-badge{width:26%}}
+@media(prefers-reduced-motion:reduce){.lower-rarity-hero-core,.lower-rarity-hero-bird,.lower-rarity-hero-badge{animation:none!important;transform:none!important}}
+
+/* Epic mirrors each Legendary island layout, but uses Epic bird, glow and badge layers with no ring. */
+:where(.epic-hero-forest,.epic-hero-wind,.epic-hero-wizard,.epic-hero-artist,.epic-hero-king){position:absolute;z-index:5;top:var(--epic-top);left:calc(705px + var(--epic-left));display:block;width:730px;height:auto;max-width:none;aspect-ratio:var(--epic-aspect);filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));isolation:isolate;scale:var(--epic-scale-x) var(--epic-scale-y);animation:none;will-change:transform}
+:where(.epic-hero-forest,.epic-hero-wind,.epic-hero-wizard,.epic-hero-artist,.epic-hero-king) img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.epic-hero-forest{--epic-accent:#91ff4d;--epic-aspect:1585/1634;--epic-top:-51px;--epic-left:9px;--epic-scale-x:1.263;--epic-scale-y:1.139;--epic-mobile-top:-6px;--epic-mobile-left:1.1%;--epic-mobile-scale-x:1.152;--epic-mobile-scale-y:1.089;--epic-island-top:34%;--epic-island-width:91%;--epic-bird-top:14%;--epic-bird-left:24%;--epic-bird-width:52%;--epic-glow-top:10%;--epic-glow-left:17%;--epic-glow-width:62%;--epic-badge-top:10%;--epic-detail-left-top:25%;--epic-detail-left-left:14%;--epic-detail-left-width:7%;--epic-detail-right-top:34%;--epic-detail-right-right:15%;--epic-detail-right-width:7%}
+.epic-hero-wind{--epic-accent:#66e5ff;--epic-aspect:1568/1705;--epic-top:-49px;--epic-left:14px;--epic-scale-x:1.245;--epic-scale-y:1.093;--epic-mobile-top:-5px;--epic-mobile-left:1.7%;--epic-mobile-scale-x:1.135;--epic-mobile-scale-y:1.045;--epic-island-top:34%;--epic-island-width:94%;--epic-bird-top:14%;--epic-bird-left:25%;--epic-bird-width:52%;--epic-glow-top:10%;--epic-glow-left:19%;--epic-glow-width:62%;--epic-badge-top:8%;--epic-detail-left-top:23%;--epic-detail-left-left:13%;--epic-detail-left-width:9%;--epic-detail-right-top:20%;--epic-detail-right-right:13%;--epic-detail-right-width:8%}
+.epic-hero-wizard{--epic-accent:#bd6cff;--epic-aspect:1585/1634;--epic-top:-48px;--epic-left:7px;--epic-scale-x:1.21;--epic-scale-y:1.154;--epic-mobile-top:-5px;--epic-mobile-left:.9%;--epic-mobile-scale-x:1.104;--epic-mobile-scale-y:1.103;--epic-island-top:37%;--epic-island-width:91%;--epic-bird-top:15%;--epic-bird-left:21%;--epic-bird-width:52%;--epic-glow-top:11%;--epic-glow-left:14%;--epic-glow-width:62%;--epic-badge-top:9%;--epic-detail-left-top:21%;--epic-detail-left-left:12%;--epic-detail-left-width:7%;--epic-detail-right-top:30%;--epic-detail-right-right:15%;--epic-detail-right-width:7%}
+.epic-hero-artist{--epic-accent:#ff6252;--epic-aspect:1585/1634;--epic-top:-55px;--epic-left:0px;--epic-scale-x:1.25;--epic-scale-y:1.13;--epic-mobile-top:-8px;--epic-mobile-left:0%;--epic-mobile-scale-x:1.14;--epic-mobile-scale-y:1.08;--epic-island-top:36%;--epic-island-width:91%;--epic-bird-top:16%;--epic-bird-left:22%;--epic-bird-width:52%;--epic-glow-top:11%;--epic-glow-left:17%;--epic-glow-width:62%;--epic-badge-top:9.5%;--epic-detail-left-top:27%;--epic-detail-left-left:13%;--epic-detail-left-width:8%;--epic-detail-right-top:20%;--epic-detail-right-right:12%;--epic-detail-right-width:9%}
+.epic-hero-king{--epic-accent:#ffe35c;--epic-aspect:1585/1634;--epic-top:-48px;--epic-left:-10px;--epic-scale-x:1.234;--epic-scale-y:1.15;--epic-mobile-top:-5px;--epic-mobile-left:-1.3%;--epic-mobile-scale-x:1.125;--epic-mobile-scale-y:1.099;--epic-island-top:37%;--epic-island-width:91%;--epic-bird-top:17%;--epic-bird-left:22%;--epic-bird-width:52%;--epic-glow-top:13%;--epic-glow-left:16%;--epic-glow-width:62%;--epic-badge-top:12%;--epic-detail-left-top:27%;--epic-detail-left-left:14%;--epic-detail-left-width:6%;--epic-detail-right-top:23%;--epic-detail-right-right:13%;--epic-detail-right-width:7%}
+.hero-new.is-final-form:has(.hero-art.bird-owned.is-epic) .final-form-rarity{display:none}
+.hero-art.is-epic .owned-soarling-sparks{display:none}
+.epic-hero-core{position:absolute;z-index:1;inset:0;pointer-events:none;animation:epic-hero-enter 1.1s cubic-bezier(.22,1,.36,1) .2s both,epic-hero-float 5.6s ease-in-out 1.3s infinite}
+.epic-hero-island{z-index:1;top:var(--epic-island-top);left:1%;width:var(--epic-island-width)}
+.epic-hero-glow{z-index:2;top:var(--epic-glow-top);left:var(--epic-glow-left);width:var(--epic-glow-width);mix-blend-mode:screen;animation:epic-hero-glow 4.8s ease-in-out infinite}
+.epic-hero-bird{z-index:4;top:var(--epic-bird-top);left:var(--epic-bird-left);width:var(--epic-bird-width);transform-origin:53% 88%;animation:epic-hero-bird-breathe 4s ease-in-out 1.3s infinite}
+.epic-hero-details,.epic-hero-dots{position:absolute;z-index:6;inset:0;pointer-events:none}
+.epic-hero-details img{filter:drop-shadow(0 0 7px color-mix(in srgb,var(--epic-accent) 75%,transparent));opacity:0}
+.epic-hero-details img:first-child{top:var(--epic-detail-left-top);left:var(--epic-detail-left-left);width:var(--epic-detail-left-width);animation:epic-hero-detail-left-enter .65s ease-out 1s both,epic-hero-detail-left-idle 5.8s ease-in-out 1.65s infinite}
+.epic-hero-details img:last-child{top:var(--epic-detail-right-top);right:var(--epic-detail-right-right);width:var(--epic-detail-right-width);animation:epic-hero-detail-right-enter .65s ease-out 1.18s both,epic-hero-detail-right-idle 6.4s ease-in-out 1.83s infinite}
+.epic-hero-dots i{position:absolute;width:5px;height:5px;border-radius:50%;background:color-mix(in srgb,var(--epic-accent) 55%,#fff 45%);box-shadow:0 0 7px 2px var(--epic-accent),0 0 15px 4px color-mix(in srgb,var(--epic-accent) 48%,transparent);opacity:0;animation:epic-hero-dot-enter .25s ease-out var(--epic-dot-enter) both,epic-hero-dot-twinkle var(--epic-dot-cycle) ease-in-out var(--epic-dot-idle) infinite}
+.epic-hero-dots i:nth-child(1){top:17%;left:31%;--epic-dot-enter:1.05s;--epic-dot-idle:1.45s;--epic-dot-cycle:2.1s}
+.epic-hero-dots i:nth-child(2){top:28%;left:15%;width:3px;height:3px;--epic-dot-enter:1.2s;--epic-dot-idle:1.7s;--epic-dot-cycle:2.7s}
+.epic-hero-dots i:nth-child(3){top:45%;left:20%;width:4px;height:4px;--epic-dot-enter:1.35s;--epic-dot-idle:1.95s;--epic-dot-cycle:2.35s}
+.epic-hero-dots i:nth-child(4){top:18%;right:25%;width:3px;height:3px;--epic-dot-enter:1.12s;--epic-dot-idle:1.6s;--epic-dot-cycle:2.5s}
+.epic-hero-dots i:nth-child(5){top:30%;right:14%;--epic-dot-enter:1.27s;--epic-dot-idle:1.85s;--epic-dot-cycle:1.95s}
+.epic-hero-dots i:nth-child(6){top:46%;right:21%;width:4px;height:4px;--epic-dot-enter:1.42s;--epic-dot-idle:2.1s;--epic-dot-cycle:2.85s}
+.epic-hero-badge{position:absolute;z-index:7;top:var(--epic-badge-top);left:34.5%;width:190px;aspect-ratio:640/163;pointer-events:none;animation:epic-hero-badge-enter .8s ease-out 1.4s both}
+.epic-hero-badge img{inset:0;width:100%}
+@keyframes epic-hero-enter{0%{opacity:0;transform:translateY(24px)}76%{opacity:1;transform:translateY(-4px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes epic-hero-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes epic-hero-glow{0%,100%{opacity:.72;transform:scale(.98)}50%{opacity:1;transform:scale(1.035)}}
+@keyframes epic-hero-bird-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.006,1.008)}}
+@keyframes epic-hero-detail-left-enter{from{opacity:0;transform:translate3d(-30px,16px,0) rotate(-28deg) scale(.7)}to{opacity:.9;transform:translate3d(0,0,0) rotate(0) scale(1)}}
+@keyframes epic-hero-detail-right-enter{from{opacity:0;transform:translate3d(30px,16px,0) rotate(28deg) scale(.7)}to{opacity:.9;transform:translate3d(0,0,0) rotate(0) scale(1)}}
+@keyframes epic-hero-detail-left-idle{0%,100%{opacity:.58;transform:translateY(0) rotate(-5deg) scale(.96)}50%{opacity:1;transform:translateY(-10px) rotate(6deg) scale(1.08)}}
+@keyframes epic-hero-detail-right-idle{0%,100%{opacity:.62;transform:translateY(1px) rotate(5deg) scale(.96)}50%{opacity:1;transform:translateY(-9px) rotate(-6deg) scale(1.07)}}
+@keyframes epic-hero-dot-enter{from{opacity:0;transform:scale(.25)}to{opacity:.85;transform:scale(1)}}
+@keyframes epic-hero-dot-twinkle{0%,100%{opacity:.08;transform:translateY(2px) scale(.7)}45%{opacity:1;transform:translateY(-3px) scale(1.22)}72%{opacity:.35;transform:translateY(-5px) scale(.88)}}
+@keyframes epic-hero-badge-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){:where(.epic-hero-forest,.epic-hero-wind,.epic-hero-wizard,.epic-hero-artist,.epic-hero-king){top:var(--epic-mobile-top);left:calc(6% + var(--epic-mobile-left));width:88%;scale:var(--epic-mobile-scale-x) var(--epic-mobile-scale-y)}.epic-hero-badge{width:26%}}
+@media(prefers-reduced-motion:reduce){.epic-hero-core,.epic-hero-glow,.epic-hero-bird,.epic-hero-details img,.epic-hero-dots i,.epic-hero-badge{animation:none!important;transform:none!important}.epic-hero-core,.epic-hero-glow,.epic-hero-details img,.epic-hero-dots i,.epic-hero-badge{opacity:1}}
+
+/* Legendary hero system is fully isolated from all Mythic layout and animation rules. */
+:where(.legendary-hero-forest,.legendary-hero-wind,.legendary-hero-wizard,.legendary-hero-artist,.legendary-hero-king){position:absolute;z-index:5;top:var(--legendary-top);left:calc(705px + var(--legendary-left));display:block;width:730px;height:auto;max-width:none;aspect-ratio:var(--legendary-aspect);object-fit:contain;filter:drop-shadow(0 18px 24px rgba(50,25,103,.26));isolation:isolate;scale:var(--legendary-scale-x) var(--legendary-scale-y);animation:none;will-change:transform}
+:where(.legendary-hero-forest,.legendary-hero-wind,.legendary-hero-wizard,.legendary-hero-artist,.legendary-hero-king) img{position:absolute;display:block;height:auto;max-width:none;pointer-events:none}
+.legendary-hero-forest{--legendary-accent:#c9ff61;--legendary-aspect:1585/1634;--legendary-top:-51px;--legendary-left:9px;--legendary-scale-x:1.263;--legendary-scale-y:1.139;--legendary-mobile-top:-6px;--legendary-mobile-left:1.1%;--legendary-mobile-scale-x:1.152;--legendary-mobile-scale-y:1.089;--legendary-ring-top:18%;--legendary-ring-left:-1%;--legendary-island-top:34%;--legendary-island-width:91%;--legendary-bird-top:14%;--legendary-bird-left:22%;--legendary-bird-width:52%;--legendary-badge-top:8%;--legendary-detail-width:7%;--legendary-detail-one-top:17%;--legendary-detail-two-top:24%;--legendary-detail-two-left:13%;--legendary-detail-two-width:6%;--legendary-detail-three-width:6.5%}
+.legendary-hero-wind{--legendary-accent:#66e5ff;--legendary-aspect:1568/1705;--legendary-top:-49px;--legendary-left:14px;--legendary-scale-x:1.245;--legendary-scale-y:1.093;--legendary-mobile-top:-5px;--legendary-mobile-left:1.7%;--legendary-mobile-scale-x:1.135;--legendary-mobile-scale-y:1.045;--legendary-ring-top:24%;--legendary-ring-left:-1.5%;--legendary-island-top:34%;--legendary-island-width:94%;--legendary-bird-top:14%;--legendary-bird-left:24%;--legendary-bird-width:52%;--legendary-badge-top:8%;--legendary-detail-width:5%;--legendary-detail-one-top:14%;--legendary-detail-two-top:21%;--legendary-detail-two-left:14%;--legendary-detail-two-width:5.5%;--legendary-detail-three-width:4.5%}
+.legendary-hero-wizard{--legendary-accent:#bd6cff;--legendary-aspect:1585/1634;--legendary-top:-48px;--legendary-left:7px;--legendary-scale-x:1.21;--legendary-scale-y:1.154;--legendary-mobile-top:-5px;--legendary-mobile-left:.9%;--legendary-mobile-scale-x:1.104;--legendary-mobile-scale-y:1.103;--legendary-ring-top:24%;--legendary-ring-left:-1.5%;--legendary-island-top:37%;--legendary-island-width:91%;--legendary-bird-top:15%;--legendary-bird-left:19%;--legendary-bird-width:52%;--legendary-badge-top:9.5%;--legendary-detail-width:5%;--legendary-detail-one-top:14%;--legendary-detail-two-top:21%;--legendary-detail-two-left:14%;--legendary-detail-two-width:5.5%;--legendary-detail-three-width:4.5%}
+.legendary-hero-artist{--legendary-accent:#ff7b38;--legendary-aspect:1585/1634;--legendary-top:-55px;--legendary-left:0px;--legendary-scale-x:1.25;--legendary-scale-y:1.13;--legendary-mobile-top:-8px;--legendary-mobile-left:0%;--legendary-mobile-scale-x:1.14;--legendary-mobile-scale-y:1.08;--legendary-ring-top:19%;--legendary-ring-left:-1.5%;--legendary-island-top:36%;--legendary-island-width:91%;--legendary-bird-top:15%;--legendary-bird-left:22%;--legendary-bird-width:52%;--legendary-badge-top:8.5%;--legendary-detail-width:5%;--legendary-detail-one-top:14%;--legendary-detail-two-top:21%;--legendary-detail-two-left:14%;--legendary-detail-two-width:5.5%;--legendary-detail-three-width:4.5%}
+.legendary-hero-king{--legendary-accent:#ffd84e;--legendary-aspect:1585/1634;--legendary-top:-48px;--legendary-left:-10px;--legendary-scale-x:1.234;--legendary-scale-y:1.15;--legendary-mobile-top:-5px;--legendary-mobile-left:-1.3%;--legendary-mobile-scale-x:1.125;--legendary-mobile-scale-y:1.099;--legendary-ring-top:21%;--legendary-ring-left:-1.5%;--legendary-island-top:37%;--legendary-island-width:91%;--legendary-bird-top:17%;--legendary-bird-left:21%;--legendary-bird-width:52%;--legendary-badge-top:11%;--legendary-detail-width:5%;--legendary-detail-one-top:14%;--legendary-detail-two-top:21%;--legendary-detail-two-left:14%;--legendary-detail-two-width:5.5%;--legendary-detail-three-width:4.5%}
+.hero-new.is-final-form:has(.hero-art.bird-owned.is-legendary) .final-form-rarity{display:none}
+.hero-art.is-legendary .owned-soarling-sparks{display:none}
+.legendary-hero-glow{z-index:0;top:0;left:5%;width:90%;animation:legendary-hero-glow-enter .6s ease-out both,legendary-hero-glow-idle 4.8s ease-in-out .6s infinite}
+.legendary-hero-ring{z-index:1;top:var(--legendary-ring-top);left:var(--legendary-ring-left);width:99%;animation:legendary-hero-ring-enter .8s ease-out 1s both,legendary-hero-ring-idle 12s ease-in-out 1.8s infinite}
+.legendary-hero-orbit-motes{position:absolute;z-index:2;inset:0;pointer-events:none}
+.legendary-hero-orbit-motes i{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--legendary-accent);box-shadow:0 0 8px 3px var(--legendary-accent),0 0 18px 6px color-mix(in srgb,var(--legendary-accent) 52%,transparent);animation:legendary-hero-orbit-mote 12s linear var(--legendary-mote-delay) infinite both}
+.legendary-hero-orbit-motes i:nth-child(1){--legendary-mote-delay:2.2s}.legendary-hero-orbit-motes i:nth-child(2){--legendary-mote-delay:5.4s;width:4px;height:4px}.legendary-hero-orbit-motes i:nth-child(3){--legendary-mote-delay:8.6s;width:3px;height:3px}
+.legendary-hero-core{position:absolute;z-index:3;inset:0;pointer-events:none;animation:legendary-hero-core-enter 1.1s cubic-bezier(.22,1,.36,1) .4s both,legendary-hero-core-float 5.6s ease-in-out 1.5s infinite}
+.legendary-hero-island{z-index:1;top:var(--legendary-island-top);left:1%;width:var(--legendary-island-width)}
+.legendary-hero-awakening{position:absolute;z-index:2;top:11%;left:17%;width:66%;height:55%;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--legendary-accent) 65%,#fff 35%) 0%,color-mix(in srgb,var(--legendary-accent) 42%,transparent) 27%,transparent 68%);filter:blur(24px);opacity:0;mix-blend-mode:screen;animation:legendary-hero-awakening-pulse 14s ease-in-out 1.5s infinite}
+.legendary-hero-bird{z-index:4;top:var(--legendary-bird-top);left:var(--legendary-bird-left);width:var(--legendary-bird-width);transform-origin:53% 88%;animation:legendary-hero-bird-breathe 4s ease-in-out 1.5s infinite}
+.legendary-hero-details{position:absolute;z-index:6;inset:0;pointer-events:none}
+.legendary-hero-details img{width:var(--legendary-detail-width);filter:drop-shadow(0 0 7px color-mix(in srgb,var(--legendary-accent) 75%,transparent));opacity:0;animation:legendary-hero-detail-enter .6s ease-out var(--legendary-detail-enter) both,legendary-hero-detail-idle var(--legendary-detail-cycle) ease-in-out var(--legendary-detail-idle) infinite}
+.legendary-hero-details img:nth-child(1){top:var(--legendary-detail-one-top);left:76%;--legendary-detail-enter:1.4s;--legendary-detail-idle:2s;--legendary-detail-cycle:5.8s}
+.legendary-hero-details img:nth-child(2){top:var(--legendary-detail-two-top);left:var(--legendary-detail-two-left);width:var(--legendary-detail-two-width);--legendary-detail-enter:1.65s;--legendary-detail-idle:2.25s;--legendary-detail-cycle:6.6s}
+.legendary-hero-details img:nth-child(3){top:39%;left:82%;width:var(--legendary-detail-three-width);--legendary-detail-enter:1.9s;--legendary-detail-idle:2.5s;--legendary-detail-cycle:5.2s}
+.legendary-hero-badge{position:absolute;z-index:7;top:var(--legendary-badge-top);left:32.5%;width:190px;aspect-ratio:720/179;pointer-events:none;animation:legendary-hero-badge-enter .8s ease-out 2s both}
+.legendary-hero-badge img{inset:0;width:100%}
+@keyframes legendary-hero-glow-enter{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+@keyframes legendary-hero-glow-idle{0%,100%{opacity:.87;transform:scale(1)}50%{opacity:1;transform:scale(1.025)}}
+@keyframes legendary-hero-ring-enter{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes legendary-hero-ring-idle{0%,100%{opacity:.88;transform:scale(1)}50%{opacity:1;transform:scale(1.006)}}
+@keyframes legendary-hero-core-enter{0%{opacity:0;transform:translateY(24px)}76%{opacity:1;transform:translateY(-4px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes legendary-hero-core-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes legendary-hero-bird-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.006,1.008)}}
+@keyframes legendary-hero-orbit-mote{0%,100%{left:8%;top:57%;opacity:0}13%{left:13%;top:45%;opacity:.9}35%{left:37%;top:34%;opacity:.55}55%{left:65%;top:34%;opacity:.85}78%{left:88%;top:45%;opacity:.65}90%{left:94%;top:57%;opacity:0}}
+@keyframes legendary-hero-detail-enter{from{opacity:0;transform:translateY(12px) rotate(-10deg) scale(.7)}to{opacity:.9;transform:translateY(0) rotate(0) scale(1)}}
+@keyframes legendary-hero-detail-idle{0%,100%{opacity:.55;transform:translateY(0) rotate(-5deg) scale(.96)}50%{opacity:1;transform:translateY(-11px) rotate(6deg) scale(1.08)}}
+@keyframes legendary-hero-awakening-pulse{0%,70%,100%{opacity:0;transform:scale(.9)}78%{opacity:.12;transform:scale(1)}83%{opacity:.72;transform:scale(1.1)}91%{opacity:.2;transform:scale(1.04)}}
+@keyframes legendary-hero-badge-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:760px){
+  :where(.legendary-hero-forest,.legendary-hero-wind,.legendary-hero-wizard,.legendary-hero-artist,.legendary-hero-king){top:var(--legendary-mobile-top);left:calc(6% + var(--legendary-mobile-left));width:88%;scale:var(--legendary-mobile-scale-x) var(--legendary-mobile-scale-y)}
+  .legendary-hero-badge{width:26%}
+}
+@media(prefers-reduced-motion:reduce){.legendary-hero-glow,.legendary-hero-ring,.legendary-hero-core,.legendary-hero-bird,.legendary-hero-awakening,.legendary-hero-orbit-motes i,.legendary-hero-details img,.legendary-hero-badge{animation:none!important;transform:none!important}.legendary-hero-glow,.legendary-hero-ring,.legendary-hero-core,.legendary-hero-badge{opacity:1}.legendary-hero-details img{opacity:.8}.legendary-hero-awakening,.legendary-hero-orbit-motes{display:none}}
 
 /* Wizard Mythic uses the same layered hero composition as Forest Mythic. */
 .wizard-mythic-composite{display:block;aspect-ratio:1585/1634;isolation:isolate;animation:none}

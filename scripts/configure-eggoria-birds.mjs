@@ -340,10 +340,11 @@ async function verifyAdminContext() {
     throw new Error(`No deployed bytecode found at ${contractAddress}.`);
   }
 
-  const [deployer] = await ethers.getSigners();
-  if (!deployer) {
-    throw new Error("No deployer signer is configured for ARC Testnet.");
+  const deployerPrivateKey = process.env.DEPLOYER_PRIVATE_KEY;
+  if (!deployerPrivateKey) {
+    throw new Error("DEPLOYER_PRIVATE_KEY is missing for ARC Testnet.");
   }
+  const deployer = new ethers.Wallet(deployerPrivateKey, ethers.provider);
   const deployerAddress = await deployer.getAddress();
   const eggoriaBirds = await ethers.getContractAt("EggoriaBirds", contractAddress, deployer);
 
@@ -378,34 +379,75 @@ async function sendAndConfirm(label, transactionPromise) {
   if (!receipt || receipt.status !== 1) {
     throw new Error(`${label} failed.`);
   }
+  // ARC's public RPC can reject rapid consecutive transaction-preflight calls.
+  await new Promise((resolve) => setTimeout(resolve, 1_500));
 }
 
 async function configureMetadata(eggoriaBirds) {
   assertMetadataIsReady();
+  const startLand = Number(process.env.EGGORIA_METADATA_START_LAND ?? 0);
+  if (!Number.isInteger(startLand) || startLand < 0 || startLand >= METADATA_BY_LAND.length) {
+    throw new Error("EGGORIA_METADATA_START_LAND must be an index from 0 (Forest) to 4 (King).");
+  }
+  const endLand = Number(process.env.EGGORIA_METADATA_END_LAND ?? METADATA_BY_LAND.length - 1);
+  if (!Number.isInteger(endLand) || endLand < startLand || endLand >= METADATA_BY_LAND.length) {
+    throw new Error("EGGORIA_METADATA_END_LAND must be at least START_LAND and no greater than 4 (King).");
+  }
+  const skipStages = process.env.EGGORIA_METADATA_SKIP_STAGES === "YES";
+  const skipPrimary = skipStages || process.env.EGGORIA_METADATA_SKIP_PRIMARY === "YES";
+  const skipIntermediate = skipStages || process.env.EGGORIA_METADATA_SKIP_INTERMEDIATE === "YES";
+  const skipRarities = process.env.EGGORIA_METADATA_SKIP_RARITIES === "YES";
+  const startRarity = Number(process.env.EGGORIA_METADATA_START_RARITY ?? 0);
+  if (!Number.isInteger(startRarity) || startRarity < 0 || startRarity >= Object.keys(RARITY).length) {
+    throw new Error("EGGORIA_METADATA_START_RARITY must be an index from 0 (Common) to 4 (Mythic).");
+  }
+  const endRarity = Number(process.env.EGGORIA_METADATA_END_RARITY ?? Object.keys(RARITY).length - 1);
+  if (!Number.isInteger(endRarity) || endRarity < startRarity || endRarity >= Object.keys(RARITY).length) {
+    throw new Error("EGGORIA_METADATA_END_RARITY must be at least START_RARITY and no greater than 4 (Mythic).");
+  }
 
-  for (const land of METADATA_BY_LAND) {
-    await sendAndConfirm(
-      `${land.name} Primary`,
-      eggoriaBirds.setStageURI(land.index, STAGE.Primary, land.primary),
-    );
-    await sendAndConfirm(
-      `${land.name} Intermediate`,
-      eggoriaBirds.setStageURI(land.index, STAGE.Intermediate, land.intermediate),
-    );
-    for (const [rarityName, rarityIndex] of Object.entries(RARITY)) {
+  for (const land of METADATA_BY_LAND.slice(startLand, endLand + 1)) {
+    if ((!skipPrimary || land.index !== startLand) && !skipStages) {
       await sendAndConfirm(
-        `${land.name} Soarling ${rarityName}`,
-        eggoriaBirds.setAdvancedURI(land.index, rarityIndex, land.soarling[rarityName]),
+        `${land.name} Primary`,
+        eggoriaBirds.setStageURI(land.index, STAGE.Primary, land.primary),
       );
+    }
+    if ((!skipIntermediate || land.index !== startLand) && !skipStages) {
+      await sendAndConfirm(
+        `${land.name} Intermediate`,
+        eggoriaBirds.setStageURI(land.index, STAGE.Intermediate, land.intermediate),
+      );
+    }
+    const rarities = Object.entries(RARITY);
+    const selectedRarities = land.index === startLand && land.index === endLand
+      ? rarities.slice(startRarity, endRarity + 1)
+      : land.index === startLand
+        ? rarities.slice(startRarity)
+        : land.index === endLand
+          ? rarities.slice(0, endRarity + 1)
+          : rarities;
+    if (!skipRarities) {
+      for (const [rarityName, rarityIndex] of selectedRarities) {
+        await sendAndConfirm(
+          `${land.name} Soarling ${rarityName}`,
+          eggoriaBirds.setAdvancedURI(land.index, rarityIndex, land.soarling[rarityName]),
+        );
+      }
     }
   }
 
-  console.log("All 35 required NFT metadata URIs are configured.");
+  console.log(`NFT metadata configured from ${METADATA_BY_LAND[startLand].name} through ${METADATA_BY_LAND[endLand].name}.`);
   console.log("Minting remains disabled.");
 }
 
 async function configurePrimaryMetadata(eggoriaBirds) {
-  for (const land of METADATA_BY_LAND) {
+  const startLand = Number(process.env.EGGORIA_METADATA_START_LAND ?? 0);
+  const endLand = Number(process.env.EGGORIA_METADATA_END_LAND ?? METADATA_BY_LAND.length - 1);
+  if (!Number.isInteger(startLand) || !Number.isInteger(endLand) || startLand < 0 || endLand < startLand || endLand >= METADATA_BY_LAND.length) {
+    throw new Error("Primary metadata land range must be between Forest (0) and King (4).");
+  }
+  for (const land of METADATA_BY_LAND.slice(startLand, endLand + 1)) {
     if (!land.primary.startsWith("ipfs://") && !land.primary.startsWith("https://")) {
       throw new Error(`${land.name}.primary must be an IPFS or HTTPS metadata JSON URI.`);
     }
@@ -441,7 +483,12 @@ async function configurePrimaryMetadata(eggoriaBirds) {
 }
 
 async function configureIntermediateMetadata(eggoriaBirds) {
-  for (const land of METADATA_BY_LAND) {
+  const startLand = Number(process.env.EGGORIA_METADATA_START_LAND ?? 0);
+  const endLand = Number(process.env.EGGORIA_METADATA_END_LAND ?? METADATA_BY_LAND.length - 1);
+  if (!Number.isInteger(startLand) || !Number.isInteger(endLand) || startLand < 0 || endLand < startLand || endLand >= METADATA_BY_LAND.length) {
+    throw new Error("Intermediate metadata land range must be between Forest (0) and King (4).");
+  }
+  for (const land of METADATA_BY_LAND.slice(startLand, endLand + 1)) {
     if (!land.intermediate.startsWith("ipfs://") && !land.intermediate.startsWith("https://")) {
       throw new Error(`${land.name}.intermediate must be an IPFS or HTTPS metadata JSON URI.`);
     }
@@ -496,7 +543,7 @@ async function enableEvolutionTestMode(eggoriaBirds) {
     "Enable evolution test mode",
     eggoriaBirds.setEvolutionTestMode(true),
   );
-  console.log("Evolution test mode is enabled. New mints start at 9/10 check-ins.");
+  console.log("Evolution test mode is enabled. New mints start at 0/10 check-ins.");
 }
 
 async function enableEvolutionShowcaseMode(eggoriaBirds) {
@@ -546,6 +593,60 @@ async function enableEvolutionLegendaryRotationMode(eggoriaBirds) {
   console.log("Every test evolution receives Legendary without consuming production rarity quotas.");
 }
 
+async function enableEvolutionEpicRotationMode(eggoriaBirds) {
+  if (process.env.CONFIRM_ENABLE_EVOLUTION_EPIC_ROTATION_MODE !== "YES") {
+    throw new Error("Set CONFIRM_ENABLE_EVOLUTION_EPIC_ROTATION_MODE=YES to enable the repeating five-land Epic QA rotation.");
+  }
+  if (await eggoriaBirds.totalSupply() !== 0n) {
+    throw new Error("The repeating five-land Epic QA rotation must start on a fresh contract.");
+  }
+  if (!await eggoriaBirds.evolutionTestMode()) {
+    throw new Error("Enable evolution test mode before the Epic rotation.");
+  }
+  await sendAndConfirm(
+    "Enable repeating five-land Epic QA rotation",
+    eggoriaBirds.setEvolutionEpicRotationMode(true),
+  );
+  console.log("Land order repeats: Forest, Wind, Wizard, Artist, King.");
+  console.log("Every test evolution receives Epic without consuming production rarity quotas.");
+}
+
+async function enableEvolutionRareCommonRotationMode(eggoriaBirds) {
+  if (process.env.CONFIRM_ENABLE_EVOLUTION_RARE_COMMON_ROTATION_MODE !== "YES") {
+    throw new Error("Set CONFIRM_ENABLE_EVOLUTION_RARE_COMMON_ROTATION_MODE=YES to enable the repeating Rare/Common QA rotation.");
+  }
+  if (await eggoriaBirds.totalSupply() !== 0n) {
+    throw new Error("The repeating Rare/Common rotation must start on a fresh contract.");
+  }
+  if (!await eggoriaBirds.evolutionTestMode()) {
+    throw new Error("Enable evolution test mode before the Rare/Common rotation.");
+  }
+  await sendAndConfirm(
+    "Enable repeating Rare/Common QA rotation",
+    eggoriaBirds.setEvolutionRareCommonRotationMode(true),
+  );
+  console.log("Land order repeats: Forest, Wind, Wizard, Artist, King.");
+  console.log("Rarity order repeats: Rare x5, then Common x5. QA does not consume production rarity quotas.");
+}
+
+async function enableEvolutionAllRarityRotationMode(eggoriaBirds) {
+  if (process.env.CONFIRM_ENABLE_EVOLUTION_ALL_RARITY_ROTATION_MODE !== "YES") {
+    throw new Error("Set CONFIRM_ENABLE_EVOLUTION_ALL_RARITY_ROTATION_MODE=YES to enable the all-rarity QA rotation.");
+  }
+  if (await eggoriaBirds.totalSupply() !== 0n) {
+    throw new Error("The all-rarity rotation must start on a fresh contract.");
+  }
+  if (!await eggoriaBirds.evolutionTestMode()) {
+    throw new Error("Enable evolution test mode before the all-rarity rotation.");
+  }
+  await sendAndConfirm(
+    "Enable Common-to-Mythic QA rotation",
+    eggoriaBirds.setEvolutionAllRarityRotationMode(true),
+  );
+  console.log("Each rarity uses land order: Forest, Wind, Wizard, Artist, King.");
+  console.log("Rarity order repeats: Common, Rare, Epic, Legendary, Mythic.");
+}
+
 async function setEvolutionTestLand(eggoriaBirds) {
   const land = Number(process.env.EGGORIA_TEST_LAND);
   if (!Number.isInteger(land) || land < 0 || land >= METADATA_BY_LAND.length) {
@@ -571,13 +672,16 @@ async function setEvolutionTestRarity(eggoriaBirds) {
 }
 
 async function printContractStatus(eggoriaBirds) {
-  const [totalSupply, mintingEnabled, evolutionTestMode, evolutionShowcaseMode, evolutionPairRotationMode, evolutionLegendaryRotationMode, evolutionTestLand, evolutionTestRarity] = await Promise.all([
+  const [totalSupply, mintingEnabled, evolutionTestMode, evolutionShowcaseMode, evolutionPairRotationMode, evolutionLegendaryRotationMode, evolutionEpicRotationMode, evolutionRareCommonRotationMode, evolutionAllRarityRotationMode, evolutionTestLand, evolutionTestRarity] = await Promise.all([
     eggoriaBirds.totalSupply(),
     eggoriaBirds.mintingEnabled(),
     eggoriaBirds.evolutionTestMode(),
     eggoriaBirds.evolutionShowcaseMode(),
     eggoriaBirds.evolutionPairRotationMode(),
     eggoriaBirds.evolutionLegendaryRotationMode(),
+    eggoriaBirds.evolutionEpicRotationMode(),
+    eggoriaBirds.evolutionRareCommonRotationMode(),
+    eggoriaBirds.evolutionAllRarityRotationMode(),
     eggoriaBirds.evolutionTestLand(),
     eggoriaBirds.evolutionTestRarity(),
   ]);
@@ -587,6 +691,9 @@ async function printContractStatus(eggoriaBirds) {
   console.log("12-mint QA showcase mode:", evolutionShowcaseMode);
   console.log("Two-mints-per-land QA rotation mode:", evolutionPairRotationMode);
   console.log("Repeating five-land Legendary QA rotation mode:", evolutionLegendaryRotationMode);
+  console.log("Repeating five-land Epic QA rotation mode:", evolutionEpicRotationMode);
+  console.log("Repeating Rare/Common QA rotation mode:", evolutionRareCommonRotationMode);
+  console.log("Repeating Common-to-Mythic QA rotation mode:", evolutionAllRarityRotationMode);
   console.log("Evolution test rotation starts at:", METADATA_BY_LAND[Number(evolutionTestLand)].name);
   console.log("Evolution test preferred rarity:", Object.keys(RARITY)[Number(evolutionTestRarity)]);
   const rarityNames = Object.keys(RARITY);
@@ -653,6 +760,18 @@ async function main() {
     await enableEvolutionLegendaryRotationMode(eggoriaBirds);
     return;
   }
+  if (action === "enable-evolution-epic-rotation-mode") {
+    await enableEvolutionEpicRotationMode(eggoriaBirds);
+    return;
+  }
+  if (action === "enable-evolution-rare-common-rotation-mode") {
+    await enableEvolutionRareCommonRotationMode(eggoriaBirds);
+    return;
+  }
+  if (action === "enable-evolution-all-rarity-rotation-mode") {
+    await enableEvolutionAllRarityRotationMode(eggoriaBirds);
+    return;
+  }
   if (action === "set-evolution-test-land") {
     await setEvolutionTestLand(eggoriaBirds);
     return;
@@ -667,7 +786,7 @@ async function main() {
   }
 
   throw new Error(
-    `Unknown EGGORIA_ADMIN_ACTION "${action}". Use "verify-showcase-metadata", "verify-pair-metadata", "configure-metadata", "update-wizard-mythic-metadata", "update-wind-mythic-metadata", "configure-primary", "configure-intermediate", "enable-minting", "enable-evolution-test-mode", "enable-evolution-showcase-mode", "enable-evolution-pair-rotation-mode", "enable-evolution-legendary-rotation-mode", "set-evolution-test-land", "set-evolution-test-rarity", or "status".`,
+    `Unknown EGGORIA_ADMIN_ACTION "${action}". Use "verify-showcase-metadata", "verify-pair-metadata", "configure-metadata", "update-wizard-mythic-metadata", "update-wind-mythic-metadata", "configure-primary", "configure-intermediate", "enable-minting", "enable-evolution-test-mode", "enable-evolution-showcase-mode", "enable-evolution-pair-rotation-mode", "enable-evolution-legendary-rotation-mode", "enable-evolution-epic-rotation-mode", "enable-evolution-rare-common-rotation-mode", "enable-evolution-all-rarity-rotation-mode", "set-evolution-test-land", "set-evolution-test-rarity", or "status".`,
   );
 }
 

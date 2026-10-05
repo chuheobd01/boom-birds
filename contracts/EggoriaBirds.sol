@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.28;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {D20VRFConsumer} from "@d20dao/vrf-sdk/contracts/D20VRFConsumer.sol";
+import {ID20VRF} from "@d20dao/vrf-sdk/contracts/interfaces/ID20VRF.sol";
 
 /// @title Eggoria Birds
 /// @notice A 500-item evolving ERC-721 collection distributed evenly across five lands.
-/// @dev Rarity randomness is fulfilled by a dedicated role. Assign RANDOMIZER_ROLE to a
-///      verifiable-randomness adapter before using this contract in production.
-contract EggoriaBirds is ERC721, AccessControl {
+/// @dev Land and rarity draws are fulfilled only by the authenticated D20 VRF coordinator.
+contract EggoriaBirds is ERC721, AccessControl, D20VRFConsumer {
     uint256 public constant MAX_SUPPLY = 500;
     uint8 public constant LAND_COUNT = 5;
     uint16 public constant LAND_MAX_SUPPLY = 100;
@@ -16,7 +17,20 @@ contract EggoriaBirds is ERC721, AccessControl {
     uint8 public constant ADVANCED_CHECK_INS = 20;
 
     bytes32 public constant METADATA_ROLE = keccak256("METADATA_ROLE");
-    bytes32 public constant RANDOMIZER_ROLE = keccak256("RANDOMIZER_ROLE");
+    uint32 public constant LAND_CALLBACK_GAS = 220_000;
+    uint32 public constant RARITY_CALLBACK_GAS = 260_000;
+
+    enum RandomnessPurpose {
+        None,
+        Land,
+        Rarity
+    }
+
+    struct RandomnessRequest {
+        uint256 tokenId;
+        RandomnessPurpose purpose;
+        bool pending;
+    }
 
     enum Stage {
         Primary,
@@ -49,12 +63,18 @@ contract EggoriaBirds is ERC721, AccessControl {
     bool public evolutionShowcaseMode;
     bool public evolutionPairRotationMode;
     bool public evolutionLegendaryRotationMode;
+    bool public evolutionEpicRotationMode;
+    bool public evolutionRareCommonRotationMode;
+    bool public evolutionAllRarityRotationMode;
     uint8 public evolutionTestLand; // First land in the five-mint QA rotation.
     Rarity public evolutionTestRarity = Rarity.Legendary;
 
     mapping(address account => bool minted) public hasMinted;
     mapping(address account => uint256 tokenId) public mintedTokenOf;
     mapping(uint256 tokenId => Bird bird) public birds;
+    mapping(uint256 tokenId => uint64 day) public mintedAtDay;
+    mapping(uint256 requestId => RandomnessRequest request) public randomnessRequests;
+    mapping(uint256 tokenId => uint256 requestId) public activeRandomnessRequest;
     uint16[LAND_COUNT] public landMinted;
 
     // Exact full-collection quotas: 60%, 25%, 10%, 4%, 1% of 500.
@@ -79,11 +99,17 @@ contract EggoriaBirds is ERC721, AccessControl {
     error LandAlreadyAssigned();
     error LandPoolEmpty();
     error AlreadyCheckedInToday();
+    error CheckpointNotReady(uint64 eligibleDay);
     error EvolutionAlreadyComplete();
     error RarityNotRequested();
     error RarityAlreadyAssigned();
     error RarityPoolEmpty();
     error InvalidTestCheckIns();
+    error RandomnessFeeUnderpaid(uint256 required, uint256 supplied);
+    error RandomnessChangeRefundFailed();
+    error UnexpectedRandomnessCallback();
+    error RandomnessRequestPending();
+    error RandomnessNotRequired();
 
     event LandRequested(uint256 indexed tokenId, address indexed owner);
     event BirdMinted(uint256 indexed tokenId, address indexed owner, uint8 indexed land);
@@ -91,6 +117,8 @@ contract EggoriaBirds is ERC721, AccessControl {
     event BirdEvolved(uint256 indexed tokenId, Stage stage);
     event RarityRequested(uint256 indexed tokenId, address indexed owner);
     event RarityAssigned(uint256 indexed tokenId, Rarity rarity, uint256 randomWord);
+    event RandomnessRequested(uint256 indexed requestId, uint256 indexed tokenId, RandomnessPurpose purpose);
+    event RandomnessRequestRefunded(uint256 indexed requestId, uint256 indexed tokenId, RandomnessPurpose purpose);
     event MintingStatusChanged(bool enabled);
     event EvolutionTestModeChanged(bool enabled);
     event EvolutionShowcaseModeChanged(bool enabled);
@@ -101,10 +129,12 @@ contract EggoriaBirds is ERC721, AccessControl {
     event BatchMetadataUpdate(uint256 indexed fromTokenId, uint256 indexed toTokenId);
     event TestBirdSeeded(uint256 indexed tokenId, address indexed owner, uint8 indexed land, uint8 checkIns);
 
-    constructor(address initialAdmin) ERC721("Eggoria Birds", "EGBIRD") {
+    constructor(address initialAdmin, address coordinator)
+        ERC721("Eggoria Birds", "EGBIRD")
+        D20VRFConsumer(coordinator)
+    {
         _grantRole(DEFAULT_ADMIN_ROLE, initialAdmin);
         _grantRole(METADATA_ROLE, initialAdmin);
-        _grantRole(RANDOMIZER_ROLE, initialAdmin);
 
         for (uint8 land; land < LAND_COUNT; ++land) {
             _landRarityRemaining[land] = [uint16(60), 25, 10, 4, 1];
@@ -113,7 +143,7 @@ contract EggoriaBirds is ERC721, AccessControl {
     }
 
     /// @notice Mints one bird with its land pending secure random fulfillment.
-    function mint() external returns (uint256 tokenId) {
+    function mint() external payable returns (uint256 tokenId) {
         if (!mintingEnabled) revert MintingDisabled();
         if (totalMinted >= MAX_SUPPLY) revert MaxSupplyReached();
         if (hasMinted[msg.sender]) revert WalletAlreadyMinted();
@@ -121,33 +151,40 @@ contract EggoriaBirds is ERC721, AccessControl {
         tokenId = ++totalMinted;
         hasMinted[msg.sender] = true;
         mintedTokenOf[msg.sender] = tokenId;
+        mintedAtDay[tokenId] = uint64(block.timestamp / 1 days);
 
         uint8 testLand;
-        if (evolutionTestMode) {
-            if (evolutionLegendaryRotationMode) {
+        bool qaRotation = evolutionTestMode && _qaRotationEnabled();
+        if (qaRotation) {
+            if (
+                evolutionLegendaryRotationMode || evolutionEpicRotationMode || evolutionRareCommonRotationMode
+                    || evolutionAllRarityRotationMode
+            ) {
                 testLand = uint8((uint256(evolutionTestLand) + tokenId - 1) % LAND_COUNT);
             } else if (evolutionPairRotationMode) {
                 testLand = uint8(((tokenId - 1) / 2) % LAND_COUNT);
             } else if (evolutionShowcaseMode && tokenId <= 12) {
                 testLand = uint8((tokenId - 1) / 3 + 1);
-            } else {
-                testLand = uint8((uint256(evolutionTestLand) + (tokenId - 1) / 5) % LAND_COUNT);
             }
             if (landMinted[testLand] >= LAND_MAX_SUPPLY) revert LandPoolEmpty();
             Bird storage bird = birds[tokenId];
             bird.land = testLand;
             bird.landAssigned = true;
-            bird.checkIns = INTERMEDIATE_CHECK_INS - 1;
+            // Freshly minted test birds follow the same 0-check-in starting
+            // state as production birds. Test mode only assigns the land early.
+            bird.checkIns = 0;
             landMinted[testLand] += 1;
             totalLandsAssigned += 1;
         }
 
         _safeMint(msg.sender, tokenId);
-        if (evolutionTestMode) {
+        if (qaRotation) {
+            _refundChange(msg.value);
             emit BirdMinted(tokenId, msg.sender, testLand);
             emit MetadataUpdate(tokenId);
         } else {
             emit LandRequested(tokenId, msg.sender);
+            _requestRandomness(tokenId, RandomnessPurpose.Land, LAND_CALLBACK_GAS, msg.value);
         }
     }
 
@@ -167,6 +204,7 @@ contract EggoriaBirds is ERC721, AccessControl {
         tokenId = ++totalMinted;
         hasMinted[recipient] = true;
         mintedTokenOf[recipient] = tokenId;
+        mintedAtDay[tokenId] = uint64(block.timestamp / 1 days);
 
         Bird storage bird = birds[tokenId];
         bird.land = land;
@@ -182,9 +220,7 @@ contract EggoriaBirds is ERC721, AccessControl {
         emit MetadataUpdate(tokenId);
     }
 
-    /// @notice Assigns a land by selecting one of all remaining land inventory slots.
-    /// @dev The caller must be a trusted secure-randomness adapter with RANDOMIZER_ROLE.
-    function fulfillLand(uint256 tokenId, uint256 randomWord) external onlyRole(RANDOMIZER_ROLE) {
+    function _fulfillLand(uint256 tokenId, uint256 randomWord) private {
         address owner = ownerOf(tokenId);
         Bird storage bird = birds[tokenId];
         if (bird.landAssigned) revert LandAlreadyAssigned();
@@ -200,8 +236,9 @@ contract EggoriaBirds is ERC721, AccessControl {
         emit MetadataUpdate(tokenId);
     }
 
-    /// @notice Records one check-in per UTC day and evolves at check-ins 10 and 20.
-    function checkIn(uint256 tokenId) external {
+    /// @notice Commits ten off-chain daily check-ins at the 10-day evolution checkpoint.
+    /// @dev The UI stores days 1-9 off-chain. The owner submits only checkpoints 10 and 20.
+    function checkIn(uint256 tokenId) external payable {
         if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
 
         Bird storage bird = birds[tokenId];
@@ -209,25 +246,35 @@ contract EggoriaBirds is ERC721, AccessControl {
         if (bird.checkIns >= ADVANCED_CHECK_INS) revert EvolutionAlreadyComplete();
 
         uint64 today = uint64(block.timestamp / 1 days);
-        if (bird.lastCheckInDay == today) revert AlreadyCheckedInToday();
+        uint64 previousCheckpointDay = bird.lastCheckInDay == 0 ? mintedAtDay[tokenId] : bird.lastCheckInDay;
+        uint64 eligibleDay = previousCheckpointDay + 9;
+        if (today < eligibleDay) revert CheckpointNotReady(eligibleDay);
 
         bird.lastCheckInDay = today;
-        bird.checkIns += 1;
+        bird.checkIns += INTERMEDIATE_CHECK_INS;
         emit BirdCheckedIn(tokenId, bird.checkIns, today);
 
         if (bird.checkIns == INTERMEDIATE_CHECK_INS) {
             bird.stage = Stage.Intermediate;
             emit BirdEvolved(tokenId, Stage.Intermediate);
             emit MetadataUpdate(tokenId);
-            if (evolutionTestMode) {
-                // QA mode skips the waiting period between evolution stages while
-                // preserving the real 10-check-in progression when the mode is off.
-                bird.checkIns = ADVANCED_CHECK_INS - 1;
-                bird.lastCheckInDay = 0;
-            }
+            _refundChange(msg.value);
         } else if (bird.checkIns == ADVANCED_CHECK_INS) {
             emit RarityRequested(tokenId, msg.sender);
-            if (evolutionTestMode) {
+            if (evolutionTestMode && _qaRotationEnabled()) {
+                _refundChange(msg.value);
+                if (evolutionAllRarityRotationMode) {
+                    _fulfillAllRarityRotationTestRarity(tokenId);
+                    return;
+                }
+                if (evolutionRareCommonRotationMode) {
+                    _fulfillRareCommonRotationTestRarity(tokenId);
+                    return;
+                }
+                if (evolutionEpicRotationMode) {
+                    _fulfillEpicRotationTestRarity(tokenId);
+                    return;
+                }
                 if (evolutionLegendaryRotationMode) {
                     _fulfillLegendaryRotationTestRarity(tokenId);
                     return;
@@ -254,15 +301,75 @@ contract EggoriaBirds is ERC721, AccessControl {
                     pick += _landRarityRemaining[bird.land][i];
                 }
                 _fulfillRarity(tokenId, pick);
+            } else {
+                _requestRandomness(tokenId, RandomnessPurpose.Rarity, RARITY_CALLBACK_GAS, msg.value);
             }
         }
     }
 
-    /// @notice Assigns rarity and atomically completes the bird's final evolution.
-    /// @dev Each land has its own shrinking 60/25/10/4/1 weighted pool.
-    function fulfillRarity(uint256 tokenId, uint256 randomWord) external onlyRole(RANDOMIZER_ROLE) {
-        ownerOf(tokenId);
-        _fulfillRarity(tokenId, randomWord);
+    /// @notice Re-requests the same unresolved draw only after the coordinator has refunded an expired request.
+    function retryRandomness(uint256 tokenId) external payable returns (uint256 requestId) {
+        if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+        if (activeRandomnessRequest[tokenId] != 0) revert RandomnessRequestPending();
+        Bird memory bird = birds[tokenId];
+        if (!bird.landAssigned) {
+            return _requestRandomness(tokenId, RandomnessPurpose.Land, LAND_CALLBACK_GAS, msg.value);
+        }
+        if (bird.checkIns == ADVANCED_CHECK_INS && bird.stage == Stage.Intermediate && !bird.rarityAssigned) {
+            return _requestRandomness(tokenId, RandomnessPurpose.Rarity, RARITY_CALLBACK_GAS, msg.value);
+        }
+        revert RandomnessNotRequired();
+    }
+
+    function _requestRandomness(
+        uint256 tokenId,
+        RandomnessPurpose purpose,
+        uint32 callbackGasLimit,
+        uint256 supplied
+    ) private returns (uint256 requestId) {
+        if (activeRandomnessRequest[tokenId] != 0) revert RandomnessRequestPending();
+        ID20VRF rng = ID20VRF(vrfCoordinator);
+        uint256 fee = rng.quoteFee(callbackGasLimit);
+        if (supplied < fee) revert RandomnessFeeUnderpaid(fee, supplied);
+        requestId = rng.requestRandomness{value: fee}(
+            keccak256(abi.encode(address(this), block.chainid, tokenId, purpose)),
+            callbackGasLimit,
+            msg.sender
+        );
+        randomnessRequests[requestId] = RandomnessRequest(tokenId, purpose, true);
+        activeRandomnessRequest[tokenId] = requestId;
+        emit RandomnessRequested(requestId, tokenId, purpose);
+        _refundChange(supplied - fee);
+    }
+
+    function _refundChange(uint256 amount) private {
+        if (amount == 0) return;
+        (bool sent,) = payable(msg.sender).call{value: amount}("");
+        if (!sent) revert RandomnessChangeRefundFailed();
+    }
+
+    function _fulfillRandomness(uint256 requestId, bytes32 randomness) internal override {
+        RandomnessRequest storage request = randomnessRequests[requestId];
+        if (!request.pending || activeRandomnessRequest[request.tokenId] != requestId) {
+            revert UnexpectedRandomnessCallback();
+        }
+        request.pending = false;
+        activeRandomnessRequest[request.tokenId] = 0;
+        if (request.purpose == RandomnessPurpose.Land) {
+            _fulfillLand(request.tokenId, uint256(randomness));
+        } else if (request.purpose == RandomnessPurpose.Rarity) {
+            _fulfillRarity(request.tokenId, uint256(randomness));
+        } else {
+            revert UnexpectedRandomnessCallback();
+        }
+    }
+
+    function _onRefund(uint256 requestId) internal override {
+        RandomnessRequest storage request = randomnessRequests[requestId];
+        if (!request.pending || activeRandomnessRequest[request.tokenId] != requestId) return;
+        request.pending = false;
+        activeRandomnessRequest[request.tokenId] = 0;
+        emit RandomnessRequestRefunded(requestId, request.tokenId, request.purpose);
     }
 
     function _fulfillRarity(uint256 tokenId, uint256 randomWord) private {
@@ -321,6 +428,53 @@ contract EggoriaBirds is ERC721, AccessControl {
         if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
 
         bird.rarity = Rarity.Legendary;
+        bird.rarityAssigned = true;
+        bird.stage = Stage.Advanced;
+
+        emit BirdEvolved(tokenId, Stage.Advanced);
+        emit RarityAssigned(tokenId, bird.rarity, 0);
+        emit MetadataUpdate(tokenId);
+    }
+
+    /// @dev QA-only Epic assignment; production rarity quotas are deliberately untouched.
+    function _fulfillEpicRotationTestRarity(uint256 tokenId) private {
+        Bird storage bird = birds[tokenId];
+        if (bird.rarityAssigned) revert RarityAlreadyAssigned();
+        if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
+
+        bird.rarity = Rarity.Epic;
+        bird.rarityAssigned = true;
+        bird.stage = Stage.Advanced;
+
+        emit BirdEvolved(tokenId, Stage.Advanced);
+        emit RarityAssigned(tokenId, bird.rarity, 0);
+        emit MetadataUpdate(tokenId);
+    }
+
+    /// @dev QA-only rotation: five Rare birds, then five Common birds, repeating.
+    ///      Production rarity quotas are deliberately untouched.
+    function _fulfillRareCommonRotationTestRarity(uint256 tokenId) private {
+        Bird storage bird = birds[tokenId];
+        if (bird.rarityAssigned) revert RarityAlreadyAssigned();
+        if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
+
+        bird.rarity = (tokenId - 1) % 10 < 5 ? Rarity.Rare : Rarity.Common;
+        bird.rarityAssigned = true;
+        bird.stage = Stage.Advanced;
+
+        emit BirdEvolved(tokenId, Stage.Advanced);
+        emit RarityAssigned(tokenId, bird.rarity, 0);
+        emit MetadataUpdate(tokenId);
+    }
+
+    /// @dev QA-only rotation: five lands per rarity from Common through Mythic, repeating.
+    ///      Production rarity quotas are deliberately untouched.
+    function _fulfillAllRarityRotationTestRarity(uint256 tokenId) private {
+        Bird storage bird = birds[tokenId];
+        if (bird.rarityAssigned) revert RarityAlreadyAssigned();
+        if (bird.checkIns != ADVANCED_CHECK_INS || bird.stage != Stage.Intermediate) revert RarityNotRequested();
+
+        bird.rarity = Rarity(uint8(((tokenId - 1) / LAND_COUNT) % 5));
         bird.rarityAssigned = true;
         bird.stage = Stage.Advanced;
 
@@ -392,7 +546,7 @@ contract EggoriaBirds is ERC721, AccessControl {
         emit MintingStatusChanged(enabled);
     }
 
-    /// @notice Makes newly minted testnet birds immediately land-assigned at check-in 9.
+    /// @notice Makes newly minted testnet birds immediately land-assigned from check-in 0.
     /// @dev Keep disabled for production deployments.
     function setEvolutionTestMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
         evolutionTestMode = enabled;
@@ -414,6 +568,21 @@ contract EggoriaBirds is ERC721, AccessControl {
     /// @notice QA only: one mint per land in sequence, always Legendary, repeating every five mints.
     function setEvolutionLegendaryRotationMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
         evolutionLegendaryRotationMode = enabled;
+    }
+
+    /// @notice QA only: one mint per land in sequence, always Epic, repeating every five mints.
+    function setEvolutionEpicRotationMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        evolutionEpicRotationMode = enabled;
+    }
+
+    /// @notice QA only: five Rare mints (one per land), followed by five Common mints, repeating.
+    function setEvolutionRareCommonRotationMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        evolutionRareCommonRotationMode = enabled;
+    }
+
+    /// @notice QA only: Common through Mythic, five lands per rarity, repeating every 25 mints.
+    function setEvolutionAllRarityRotationMode(bool enabled) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        evolutionAllRarityRotationMode = enabled;
     }
 
     /// @notice Chooses the first land in each five-mint test-mode rotation.
@@ -476,6 +645,11 @@ contract EggoriaBirds is ERC721, AccessControl {
 
     function _validateLand(uint8 land) private pure {
         if (land >= LAND_COUNT) revert InvalidLand();
+    }
+
+    function _qaRotationEnabled() private view returns (bool) {
+        return evolutionShowcaseMode || evolutionPairRotationMode || evolutionLegendaryRotationMode
+            || evolutionEpicRotationMode || evolutionRareCommonRotationMode || evolutionAllRarityRotationMode;
     }
 
     function _pickAvailableLand(uint256 randomWord) private view returns (uint8) {

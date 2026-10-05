@@ -1,7 +1,7 @@
 import { network } from "hardhat";
 
 const ARC_TESTNET_CHAIN_ID = 5_042_002n;
-const CHECK_INS_BEFORE_INTERMEDIATE = 9;
+const INITIAL_CHECK_INS = 0;
 const PRIMARY_METADATA_URIS = [
   "ipfs://bafkreigefspgbbhv6kithuavppytwd5xnuakfrlh3llnyakh76zcyajl4u",
   "ipfs://bafkreidmh5j63xef7ouy776vijt36tcqwgwt4uq47a5otiy7i72h6yz6ri",
@@ -54,8 +54,8 @@ async function main() {
 
   if (!(await birds.hasMinted(recipient))) {
     await confirm(
-      `Seed land ${land} test bird at 9 check-ins`,
-      birds.seedTestBird(recipient, land, CHECK_INS_BEFORE_INTERMEDIATE),
+      `Seed land ${land} test bird at 0 check-ins`,
+      birds.seedTestBird(recipient, land, INITIAL_CHECK_INS),
     );
   }
 

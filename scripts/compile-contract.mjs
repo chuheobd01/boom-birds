@@ -27,6 +27,7 @@ const input = {
     [sourceName]: { content: fs.readFileSync(sourcePath, "utf8") },
   },
   settings: {
+    evmVersion: "cancun",
     optimizer: { enabled: true, runs: 200 },
     outputSelection: {
       "*": {

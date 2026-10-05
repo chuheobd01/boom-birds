@@ -8,7 +8,16 @@ dotenv.config();
 export default defineConfig({
   plugins: [hardhatEthers],
 
-  solidity: "0.8.37",
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      evmVersion: "cancun",
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
 
   paths: {
     artifacts: "./hardhat-artifacts",

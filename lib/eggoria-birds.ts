@@ -55,7 +55,7 @@ export const eggoriaBirdsAbi = [
   {
     type: "function",
     name: "mint",
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     inputs: [],
     outputs: [{ name: "tokenId", type: "uint256" }],
   },
@@ -92,7 +92,7 @@ export const eggoriaBirdsAbi = [
   {
     type: "function",
     name: "checkIn",
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     inputs: [{ name: "tokenId", type: "uint256" }],
     outputs: [],
   },
