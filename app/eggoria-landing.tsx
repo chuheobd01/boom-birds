@@ -2420,6 +2420,7 @@ export default function EggoriaLanding({
     <>
     {thirdwebClient && <AutoConnect client={thirdwebClient} wallets={supportedWallets} />}
     <main className="landing" data-node-id="316:5">
+      <link rel="preload" as="image" href={asset("hero-background.png")} />
       <header className="landing-header" data-node-id="316:63">
         <a className="brand-new" href="#home" aria-label="Eggoria home">
           <img src={asset("logo.svg")} alt="" /><span>Eggoria</span>
@@ -2787,6 +2788,9 @@ export default function EggoriaLanding({
         <img className="balloon balloon-one" src={asset("balloon.png")} alt="" />
       </section>
       <section className="how-it-works" id="how-it-works" aria-labelledby="how-it-works-title">
+        <div className="how-it-works-backdrop" aria-hidden="true">
+          <img src={asset("how-it-works-background.png")} alt="" loading="lazy" fetchPriority="low" />
+        </div>
         <header className="how-it-works-heading">
           <h2 id="how-it-works-title">{UI_COPY.howItWorks.title}</h2>
           <p>{UI_COPY.howItWorks.subtitle}</p>
@@ -2799,9 +2803,9 @@ export default function EggoriaLanding({
             <div className="how-step-scene" aria-hidden="true">
               <img className="how-step-island" src={asset("island.png")} alt="" />
               {index === 0 ? <span className="how-wallet-icons"><img src={asset("wallet-google.svg")} alt="" /><img src={asset("wallet-metamask.svg")} alt="" /></span>
-                : index === 1 ? <img className="how-step-icon how-funds-icon" src={asset("funds-usdc-new.png")} alt="" />
+                : index === 1 ? <span className="how-coin-stack">{[0, 1, 2].map((coin) => <img key={coin} src={asset("funds-usdc-new.png")} alt="" />)}</span>
                 : index === 2 ? <img className="how-step-icon how-egg-icon" src={asset("egg.png")} alt="" />
-                : <img className="how-step-icon how-bird-icon" src={asset(ownedBird?.landAssigned ? landHatchlingHeroBirdAssets[ownedBird.land] ?? landHatchlingHeroBirdAssets[0] : "wind-primary-facing-left.png")} alt="" />}
+                : <img className="how-step-icon how-bird-icon" src={asset("wizard-primary-facing-left.png")} alt="" />}
             </div>
             <div className="how-step-card">
               <span className="how-step-number">{index + 1}</span>

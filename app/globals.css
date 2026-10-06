@@ -1116,3 +1116,74 @@
   .how-it-works{width:max(1440px,calc(100vw / var(--landing-scale)));margin-left:calc((1440px - max(1440px,calc(100vw / var(--landing-scale)))) / 2)}
 }
 @media(max-width:760px){.landing:has(.hero-new.is-final-form)::before{height:1360px}}
+
+/* Full-bleed sky: keep the scaled 1440px artwork canvas, but paint its sky outside zoom. */
+.landing{background:transparent;overflow:visible}
+.hero-copy h1,.hero-copy>p{color:#0b0325}
+.how-it-works{isolation:isolate;margin-top:-96px;padding:112px 6% 72px;background:transparent;scroll-margin-top:0}
+.how-it-works-backdrop{position:absolute;z-index:-1;inset:0;overflow:hidden;background:#c193e7;mask-image:linear-gradient(to bottom,transparent 0,#000 96px)}
+.how-it-works-backdrop img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top}
+.how-it-works-heading{z-index:2}
+.how-it-works-steps{z-index:2;max-width:1320px;margin-top:12px;gap:16px}
+.how-step{--how-step-offset:0px;position:relative;transform:translateY(var(--how-step-offset))}
+.how-step-1,.how-step-3{--how-step-offset:54px}
+.how-step-scene{height:192px}
+.how-step-island{z-index:1;bottom:0;width:min(100%,250px);height:120px}
+.how-step-icon{z-index:2;bottom:62px;width:120px;height:138px}
+.how-step-3 .how-step-icon{bottom:70px;width:96px;height:148px}
+.how-step-4 .how-step-icon{bottom:58px;width:116px;height:138px}
+.how-wallet-icons{z-index:2;bottom:76px}
+.how-step-card{z-index:3;margin-top:-12px}
+.how-step-card p{font-size:13px}
+.how-it-works-path{z-index:1;top:235px;height:150px}
+.how-coin-stack{position:absolute;z-index:2;bottom:62px;left:50%;width:138px;height:118px;transform:translateX(-50%)}
+.how-coin-stack img{position:absolute;width:88px;height:88px;object-fit:contain;filter:drop-shadow(0 5px 6px rgba(49,25,92,.18))}
+.how-coin-stack img:nth-child(1){left:0;bottom:3px;transform:rotate(-17deg)}
+.how-coin-stack img:nth-child(2){right:0;bottom:9px;transform:rotate(15deg)}
+.how-coin-stack img:nth-child(3){left:25px;bottom:33px}
+@media(min-width:761px){
+  body:has(.landing){--landing-scale:min(calc(100vw / 1440px),calc(100svh / 840px));position:relative;background:#c092e7}
+  body:has(.landing)::before{position:absolute;z-index:0;top:0;left:0;width:100%;height:min(58.333333vw,100svh);background:#c092e7 url("/assets/landing/hero-background.png") center top/cover no-repeat;content:"";pointer-events:none}
+  .landing{z-index:1}
+  .landing::before{display:none}
+}
+@media(min-width:761px) and (max-width:1099px){
+  .how-it-works{min-height:0;padding-bottom:84px}
+  .how-it-works-steps{max-width:760px;grid-template-columns:repeat(2,minmax(0,1fr));gap:54px 28px}
+  .how-step{--how-step-offset:0px}
+  .how-it-works-path{display:none}
+  .how-it-works-heading p,.how-step-card h3,.how-step-card p,.how-step-number{font-size:calc(13px / var(--landing-scale))}
+}
+@media(max-width:760px){
+  body:has(.landing){overflow-x:hidden;background:#c193e7}
+  .landing::before{height:1012px;background-color:#c092e7;background-size:cover;background-position:center top}
+  .landing:has(.hero-new.is-final-form)::before{height:1312px}
+  .how-it-works{margin-top:-72px;padding:90px 20px 64px;background:transparent}
+  .how-it-works-backdrop{mask-image:linear-gradient(to bottom,transparent 0,#000 72px)}
+  .how-it-works-steps{max-width:530px;grid-template-columns:repeat(2,minmax(0,1fr));gap:36px 16px}
+  .how-step{--how-step-offset:0px}
+  .how-step-scene{height:160px}
+  .how-step-island{width:min(100%,215px);height:106px}
+  .how-step-icon{bottom:56px;width:104px;height:112px}
+  .how-step-3 .how-step-icon{bottom:63px;width:84px;height:125px}
+  .how-step-4 .how-step-icon{bottom:52px;width:100px;height:115px}
+  .how-wallet-icons{bottom:66px}
+  .how-step-card{min-height:112px;margin-top:-10px}
+  .how-step-card h3{font-size:14px}
+  .how-step-card p{font-size:13px}
+  .how-it-works-path{display:none}
+  .how-coin-stack{bottom:50px;scale:.82}
+}
+@media(max-width:500px){
+  .how-it-works{padding-inline:20px}
+  .how-it-works-steps{max-width:290px;grid-template-columns:minmax(0,1fr);gap:18px}
+  .how-step-scene{height:180px}
+  .how-step-island{width:250px;height:120px}
+  .how-step-icon{bottom:62px}
+  .how-step-3 .how-step-icon{bottom:70px}
+  .how-step-4 .how-step-icon{bottom:58px}
+  .how-step-card{width:100%}
+  .how-step-card h3,.how-step-card p{font-size:13px}
+  .how-coin-stack{bottom:58px;scale:1}
+}
+@media(prefers-reduced-motion:reduce){.how-step-icon{animation:none}}
