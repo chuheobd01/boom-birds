@@ -2471,7 +2471,7 @@ export default function EggoriaLanding({
         </div>
       </header>
 
-      <section className={`hero-new${isHatching ? " is-hatching" : ""}${postHatchOwned ? " is-post-hatch" : ""}${ownedBird?.landAssigned && ownedBird.stage >= 2 ? " is-final-form" : ""}`} id="home">
+      <section className={`hero-new${!ownedBird ? " is-pre-mint" : ""}${isHatching ? " is-hatching" : ""}${postHatchOwned ? " is-post-hatch" : ""}${ownedBird?.landAssigned && ownedBird.stage >= 2 ? " is-final-form" : ""}`} id="home">
         <div className="hero-copy" data-node-id="316:52">
           <h1>{ownedBird?.landAssigned && ownedBird.stage >= 2 ? <>Your {getBirdLabel(ownedBird.land)}<br />Has Reached Its<br />Final Form</> : <>Hatch Your<br />Own Bird</>}</h1>
           {!(ownedBird?.landAssigned && ownedBird.stage >= 2) && <><p>Mint a mysterious Egg for free, hatch your Bird,<br />and help it evolve through daily check-ins.</p>
@@ -2796,14 +2796,14 @@ export default function EggoriaLanding({
           <p>{UI_COPY.howItWorks.subtitle}</p>
         </header>
         <svg className="how-it-works-path" viewBox="0 0 1320 160" preserveAspectRatio="none" aria-hidden="true">
-          <path d="M70 115 C150 5 245 5 330 115 S510 225 590 115 S770 5 850 115 S1030 225 1110 115 S1240 35 1300 115" />
+          <path d="M225 98 C300 14 480 14 555 26 M555 26 C630 116 810 116 885 98 M885 98 C960 56 1140 56 1215 64" />
         </svg>
         <div className="how-it-works-steps">
           {UI_COPY.howItWorks.steps.map((step, index) => <article className={`how-step how-step-${index + 1}`} key={step.title}>
             <div className="how-step-scene" aria-hidden="true">
               <img className="how-step-island" src={asset("island.png")} alt="" />
               {index === 0 ? <span className="how-wallet-icons"><img src={asset("wallet-google.svg")} alt="" /><img src={asset("wallet-metamask.svg")} alt="" /></span>
-                : index === 1 ? <span className="how-coin-stack">{[0, 1, 2].map((coin) => <img key={coin} src={asset("funds-usdc-new.png")} alt="" />)}</span>
+                : index === 1 ? <span className="how-coin-stack">{[0, 1, 2].map((coin) => <img key={coin} className={coin < 2 ? "how-coin how-coin-gold" : "how-coin how-coin-usdc"} src={asset("funds-usdc-new.png")} alt="" />)}</span>
                 : index === 2 ? <img className="how-step-icon how-egg-icon" src={asset("egg.png")} alt="" />
                 : <img className="how-step-icon how-bird-icon" src={asset("wizard-primary-facing-left.png")} alt="" />}
             </div>

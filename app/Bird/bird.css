@@ -1,0 +1,626 @@
+/* ============================================================
+   Bird Landing Page – bird.css
+   Mirrors the Figma "Main - Connect Wallet" frame (548:2)
+   ============================================================ */
+
+/* ── Page shell ──────────────────────────────────────────── */
+.bird-page {
+  min-height: 100vh;
+  background: linear-gradient(
+    to bottom,
+    #df9ee0 0%,
+    #de9de0 33.4%,
+    #3856aa 43.3%,
+    #0c2c75 50.6%,
+    #0b2468 100%
+  );
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  color: #180642;
+  overflow-x: hidden;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.bird-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 74px;
+  padding: 0 40px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.bird-header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.bird-header-logo-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+}
+
+.bird-header-logo-text {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  font-size: 22px;
+  color: #180642;
+}
+
+.bird-header-nav {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  padding: 6px 20px;
+  gap: 4px;
+}
+
+.bird-header-nav-link {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #3c2d66;
+  text-decoration: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.bird-header-nav-link:hover {
+  background: rgba(160, 97, 240, 0.15);
+  color: #6a2cd7;
+}
+
+.bird-header-nav-link.active {
+  background: rgba(255, 255, 255, 0.85);
+  color: #180642;
+  font-weight: 600;
+}
+
+.bird-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bird-header-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.bird-header-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.bird-header-icon-btn img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.bird-header-cta {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #6a2cd7 0%, #541db8 100%);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(84, 29, 184, 0.35);
+  transition: opacity 0.2s, box-shadow 0.2s;
+}
+
+.bird-header-cta:hover {
+  opacity: 0.9;
+  box-shadow: 0 6px 20px rgba(84, 29, 184, 0.45);
+}
+
+/* ── Hero Section ────────────────────────────────────────── */
+.bird-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding-top: 74px; /* header height */
+}
+
+.bird-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+}
+
+.bird-hero-glow-left {
+  position: absolute;
+  left: -100px;
+  top: 20%;
+  width: 680px;
+  height: 340px;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.55) 0%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+}
+
+.bird-hero-glow-right {
+  position: absolute;
+  right: -80px;
+  top: 45%;
+  width: 680px;
+  height: 260px;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.bird-hero-inner {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: calc(100vh - 74px);
+}
+
+/* Left content */
+.bird-hero-content {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bird-hero-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  font-size: 60px;
+  line-height: 1.1;
+  color: #180642;
+  margin: 0;
+}
+
+.bird-hero-desc {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #3c2d66;
+  margin: 0;
+  max-width: 380px;
+}
+
+/* Progress */
+.bird-hero-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bird-hero-progress-frame {
+  position: relative;
+  width: 260px;
+  height: 40px;
+}
+
+.bird-hero-progress-frame-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.bird-hero-progress-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 12px;
+  gap: 10px;
+}
+
+.bird-hero-progress-label {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: #180642;
+  white-space: nowrap;
+}
+
+.bird-hero-progress-bar-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(24, 6, 66, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bird-hero-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6a2cd7 0%, #a061f0 100%);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+/* CTA buttons */
+.bird-hero-btn-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.bird-hero-btn-primary {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: #fff;
+  background: linear-gradient(135deg, #3d1a8c 0%, #4e1faa 100%);
+  border: none;
+  border-radius: 999px;
+  padding: 16px 48px;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(61, 26, 140, 0.45);
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  width: 260px;
+  text-align: center;
+}
+
+.bird-hero-btn-primary:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(61, 26, 140, 0.55);
+}
+
+.bird-hero-btn-secondary-text {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: #3c2d66;
+  text-align: center;
+  width: 260px;
+}
+
+/* Right – decorative island + egg */
+.bird-hero-visual {
+  position: relative;
+  flex-shrink: 0;
+  width: 640px;
+  height: 640px;
+}
+
+.bird-hero-island {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 560px;
+  object-fit: contain;
+}
+
+.bird-hero-egg {
+  position: absolute;
+  bottom: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 60px rgba(100, 40, 200, 0.4));
+  animation: bird-float 4s ease-in-out infinite;
+}
+
+.bird-hero-balloon-left {
+  position: absolute;
+  top: 10%;
+  left: 5%;
+  width: 70px;
+  object-fit: contain;
+  animation: bird-float 6s ease-in-out 1s infinite;
+}
+
+.bird-hero-balloon-right {
+  position: absolute;
+  top: 5%;
+  right: 10%;
+  width: 56px;
+  object-fit: contain;
+  animation: bird-float 5s ease-in-out 0.5s infinite;
+}
+
+.bird-hero-sparkle {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+@keyframes bird-float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(-14px); }
+}
+
+/* ── How It Works ─────────────────────────────────────────── */
+.bird-hiw {
+  position: relative;
+  padding: 80px 0 100px;
+  overflow: hidden;
+}
+
+.bird-hiw-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.bird-hiw-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 60px;
+}
+
+.bird-hiw-header {
+  text-align: center;
+  margin-bottom: 56px;
+}
+
+.bird-hiw-title {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  font-size: 48px;
+  color: #180642;
+  margin: 0 0 14px;
+}
+
+.bird-hiw-subtitle {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: #3c2d66;
+  margin: 0 auto;
+  max-width: 460px;
+  line-height: 1.6;
+}
+
+/* Steps row */
+.bird-hiw-steps {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+}
+
+/* Dashed connector between steps */
+.bird-hiw-steps::before {
+  content: "";
+  position: absolute;
+  top: 36%;
+  left: calc(12.5% + 10px);
+  right: calc(12.5% + 10px);
+  height: 2px;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(60, 45, 102, 0.35) 0,
+    rgba(60, 45, 102, 0.35) 8px,
+    transparent 8px,
+    transparent 20px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bird-hiw-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Island + icon image above card */
+.bird-hiw-step-visual {
+  width: 140px;
+  height: 130px;
+  object-fit: contain;
+  margin-bottom: -20px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Step card */
+.bird-hiw-step-card {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 24px 18px 20px;
+  width: 100%;
+  max-width: 220px;
+  box-shadow: 0 8px 32px rgba(24, 6, 66, 0.1);
+  text-align: center;
+  position: relative;
+}
+
+/* Number badge */
+.bird-hiw-step-number {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #6a2cd7 0%, #541db8 100%);
+  border-radius: 50%;
+  border: 2.5px solid #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(84, 29, 184, 0.45);
+}
+
+.bird-hiw-step-card-title {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: #180642;
+  margin: 10px 0 8px;
+}
+
+.bird-hiw-step-card-desc {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  color: #51466f;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── Sky / Panorama section ──────────────────────────────── */
+.bird-sky {
+  width: 100%;
+  height: 560px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bird-sky-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+/* ── Footer ──────────────────────────────────────────────── */
+.bird-footer {
+  background: #0c1c4a;
+  padding: 32px 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bird-footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bird-footer-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+.bird-footer-logo-text {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.bird-footer-copy {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 400;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.bird-footer-links {
+  display: flex;
+  gap: 20px;
+}
+
+.bird-footer-link {
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.bird-footer-link:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Sparkle animation helpers ───────────────────────────── */
+@keyframes bird-sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50%       { opacity: 1; transform: scale(1) rotate(15deg); }
+}
+
+.bird-sparkle-1  { animation: bird-sparkle 2.5s ease-in-out 0.0s infinite; }
+.bird-sparkle-2  { animation: bird-sparkle 2.5s ease-in-out 0.4s infinite; }
+.bird-sparkle-3  { animation: bird-sparkle 2.5s ease-in-out 0.8s infinite; }
+.bird-sparkle-4  { animation: bird-sparkle 2.5s ease-in-out 1.2s infinite; }
+.bird-sparkle-5  { animation: bird-sparkle 2.5s ease-in-out 1.6s infinite; }
+.bird-sparkle-6  { animation: bird-sparkle 2.5s ease-in-out 0.2s infinite; }
+.bird-sparkle-7  { animation: bird-sparkle 2.5s ease-in-out 0.6s infinite; }
+.bird-sparkle-8  { animation: bird-sparkle 2.5s ease-in-out 1.0s infinite; }
+.bird-sparkle-9  { animation: bird-sparkle 2.5s ease-in-out 1.4s infinite; }
+.bird-sparkle-10 { animation: bird-sparkle 2.5s ease-in-out 1.8s infinite; }
+
+/* ── Responsive (basic) ──────────────────────────────────── */
+@media (max-width: 1024px) {
+  .bird-hero-visual { width: 420px; height: 420px; }
+  .bird-hero-title  { font-size: 44px; }
+  .bird-hero-inner  { padding: 0 40px; }
+  .bird-hiw-inner   { padding: 0 32px; }
+}
+
+@media (max-width: 768px) {
+  .bird-header-nav       { display: none; }
+  .bird-hero-inner       { flex-direction: column; gap: 40px; padding: 40px 24px; align-items: flex-start; min-height: auto; }
+  .bird-hero-visual      { width: 100%; height: 320px; }
+  .bird-hero-title       { font-size: 36px; }
+  .bird-hiw-steps        { flex-direction: column; align-items: center; gap: 24px; }
+  .bird-hiw-steps::before { display: none; }
+  .bird-hiw-step-card    { max-width: 100%; }
+  .bird-footer           { flex-direction: column; gap: 16px; text-align: center; }
+}
+
